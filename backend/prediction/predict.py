@@ -48,6 +48,27 @@ CURRENT_STATE_COLUMN = "Current_State"
 # fabricated — it is the model's own "could not score this" state.
 INVALID_FEATURES_LABEL = "INVALID_FEATURES"
 
+
+def summarize_states(counts: dict, n_scored: int) -> dict:
+    """Headline state = the class the most scored flows fall into (ties
+    resolve to the earlier CLASS_NAMES entry, i.e. BENIGN first) — the
+    same "dominant by flow count" rule the temporal state builder uses.
+    The old logic flipped the whole capture to "MALICIOUS" on a single
+    non-BENIGN flow, which reads as "everything here is an attack" even at
+    1% attack flows. The real signal is the ratio, returned alongside."""
+    dominant_state = max(
+        CLASS_NAMES, key=lambda c: (counts.get(c, 0), -CLASS_NAMES.index(c))
+    )
+    attack_flow_count = int(n_scored - counts.get("BENIGN", 0))
+    ratio = round(attack_flow_count / n_scored, 4) if n_scored else 0.0
+    return {
+        "dominant_state": dominant_state,
+        "attack_flow_count": attack_flow_count,
+        "malicious_flow_ratio": ratio,
+        "attack_present": attack_flow_count > 0,
+    }
+
+
 logger = logging.getLogger("nids.prediction")
 if not logger.handlers:
     _handler = logging.StreamHandler()
@@ -182,7 +203,14 @@ def predict_csv(csv_path: Path) -> dict:
     model, scaler = _load_artifacts()
 
     valid_ordered = ordered.to_numpy(dtype=np.float64)[valid_mask]
-    scaled = scaler.transform(valid_ordered).astype(np.float32)
+    # `ordered` was explicitly re-columned to TRAINING_FEATURES above, so
+    # column *order* is already correct; feeding the scaler a nameless
+    # array is intentional. Silence sklearn's "X does not have valid
+    # feature names" UserWarning that fires because minmax.bin was fitted
+    # on a named DataFrame.
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", UserWarning)
+        scaled = scaler.transform(valid_ordered).astype(np.float32)
 
     t0 = time.time()
     valid_probabilities = model.predict(scaled, verbose=0)
@@ -240,7 +268,9 @@ def predict_csv(csv_path: Path) -> dict:
 
     counts = {c: int((predicted_labels == c).sum()) for c in CLASS_NAMES}
     n_scored = int(valid_mask.sum())
-    overall_state = "MALICIOUS" if counts["BENIGN"] < n_scored else "BENIGN"
+    state_summary = summarize_states(counts, n_scored)
+    dominant_state = state_summary["dominant_state"]
+    overall_state = dominant_state
 
     distribution_str = ", ".join(f"{c}={counts[c]}" for c in CLASS_NAMES)
     if n_dropped:
@@ -272,6 +302,10 @@ def predict_csv(csv_path: Path) -> dict:
         "invalid_features_label": INVALID_FEATURES_LABEL if n_dropped else None,
         "class_counts": counts,
         "overall_traffic_state": overall_state,
+        "dominant_state": dominant_state,
+        "attack_flow_count": state_summary["attack_flow_count"],
+        "malicious_flow_ratio": state_summary["malicious_flow_ratio"],
+        "attack_present": state_summary["attack_present"],
         "inference_seconds": inference_seconds,
         "feature_csv_updated": True,
         "current_state_column": CURRENT_STATE_COLUMN,

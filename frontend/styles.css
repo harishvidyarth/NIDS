@@ -244,6 +244,7 @@ input[type="file"]::file-selector-button {
 }
 .state-hero #p-state-value { font-size: 24px; font-weight: 800; letter-spacing: 0.03em; color: var(--text-faint); }
 .state-hero-label { font-size: 10px; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.06em; margin-top: 4px; }
+.state-hero-flagged { font: 11px var(--mono); text-align: center; margin-top: 6px; min-height: 14px; }
 
 .class-distribution { display: flex; flex-direction: column; gap: 6px; }
 .dist-row { display: flex; align-items: center; gap: 8px; font-family: var(--mono); font-size: 11px; }

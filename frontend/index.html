@@ -201,6 +201,7 @@
             <div class="detail-row"><span>Duration</span><span id="d-duration">N/A</span></div>
             <div class="detail-row"><span>Packet count</span><span id="d-packet-count">N/A</span></div>
             <div class="detail-row"><span>Capture target</span><span id="d-packet-target">N/A</span></div>
+            <div class="detail-row" id="d-drops-row" style="display:none;"><span>Received / dropped</span><span id="d-drops">N/A</span></div>
             <div class="detail-row" id="d-stop-reason-row" style="display:none;"><span>Stop reason</span><span id="d-stop-reason">N/A</span></div>
             <div class="detail-row"><span>PCAP file</span><span id="d-pcap-file" class="detail-mono">N/A</span></div>
           </div>
@@ -249,8 +250,9 @@
             <div class="detail-col-title">TRAFFIC STATE</div>
             <div class="state-hero" id="p-state-hero">
               <span id="p-state-value">N/A</span>
-              <span class="state-hero-label">Overall State</span>
+              <span class="state-hero-label">Dominant State</span>
             </div>
+            <div id="p-flagged" class="state-hero-flagged"></div>
             <div class="detail-row"><span>Model</span><span id="p-model">N/A</span></div>
             <div class="detail-row"><span>Flows analyzed</span><span id="p-flows">N/A</span></div>
             <div class="detail-row"><span>Inference status</span><span id="p-status">IDLE</span></div>

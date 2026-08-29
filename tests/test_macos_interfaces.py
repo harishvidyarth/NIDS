@@ -90,13 +90,18 @@ def test_list_interfaces_overlays_friendly_names_on_macos(monkeypatch):
     monkeypatch.setattr(subprocess, "run", _fake_run)
 
     by_device = {i["device"]: i for i in capture_mod.list_interfaces()}
+    # `name` is the bare dropdown label: friendly where known, device id
+    # otherwise — never the raw flag text, never with a "(" in it.
     assert by_device["en0"]["name"] == "Wi-Fi"
-    assert by_device["en0"]["description"] == "Wi-Fi (Up, Running, Disconnected)"
-    assert by_device["en7"]["description"] == "USB 10/100/1000 LAN (Up, Running, Connected)"
-    assert by_device["lo0"]["description"] == "Loopback (Up, Running, Loopback)"
-    # No networksetup entry -> raw pcap flag text is kept untouched.
-    assert by_device["llw0"]["description"] == "Up, Running, Connection status unknown"
-    assert by_device["utun0"]["description"] == "Up, Running"
+    assert by_device["en0"]["description"] == "Wi-Fi — en0 (Up, Running, Disconnected)"
+    assert by_device["en7"]["name"] == "USB 10/100/1000 LAN"
+    assert by_device["lo0"]["name"] == "Loopback"
+    assert "(" not in by_device["en0"]["name"]
+    # No networksetup entry -> label is the device id, flags in description.
+    assert by_device["llw0"]["name"] == "llw0"
+    assert by_device["llw0"]["description"] == "llw0 (Up, Running, Connection status unknown)"
+    assert by_device["utun0"]["name"] == "utun0"
+    assert "_flags" not in by_device["en0"]
 
 
 def test_list_interfaces_overlay_is_macos_gated(monkeypatch):
@@ -113,5 +118,5 @@ def test_list_interfaces_overlay_is_macos_gated(monkeypatch):
     )
 
     by_device = {i["device"]: i for i in capture_mod.list_interfaces()}
-    assert by_device["en0"]["description"] == "Up, Running, Disconnected"
-    assert by_device["en0"]["name"] == "Up, Running, Disconnected"
+    assert by_device["en0"]["description"] == "en0 (Up, Running, Disconnected)"
+    assert by_device["en0"]["name"] == "en0"

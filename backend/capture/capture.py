@@ -51,7 +51,17 @@ TSHARK = WIRESHARK_DIR / "tshark.exe"
 # matters (10-second windows) even though packet count is now the
 # primary target callers care about.
 DEFAULT_CAPTURE_DURATION_SECONDS = 300
-DEFAULT_CAPTURE_PACKET_TARGET = 10000
+# No packet-count autostop by default. A DDoS / high-rate flood reaches
+# any small `-c` value in a fraction of a second, so a default cap made a
+# live capture of an attack "stop immediately" — it looked like the app
+# wasn't capturing at all. A capture now runs until the user stops it,
+# `duration_seconds` elapses, or CAPTURE_SAFETY_TIMEOUT_SECONDS fires. A
+# caller can still pass an explicit packet_target to cap it.
+DEFAULT_CAPTURE_PACKET_TARGET = None
+# dumpcap/tcpdump kernel capture-buffer size. Under a flood the default
+# ring overflows and packets are silently dropped; a larger buffer keeps
+# up. dumpcap -B is MiB, tcpdump -B is KiB (converted at the call site).
+DEFAULT_CAPTURE_BUFFER_MB = 64
 # Hard safety net so a capture on a near-idle interface can't run forever
 # waiting to reach its target — enforced by the API layer polling
 # check_and_finalize() on the same cadence it already polls capture
@@ -124,10 +134,15 @@ def list_interfaces() -> list[dict]:
             m = re.match(r"\s*(\d+)\.\s+(\S+)\s*(?:\((.+)\))?", line)
             if m:
                 idx, device, friendly = m.groups()
+                # `name` is the label the dropdown shows: the human adapter
+                # name ("Wi-Fi", "Ethernet 5", "Npcap Loopback Adapter").
+                # When dumpcap gives no parenthetical, fall back to the
+                # device path with the noisy `\Device\NPF_` prefix stripped.
+                short = re.sub(r"^\\Device\\NPF_", "", device)
                 interfaces.append({
                     "index": int(idx),
                     "device": device,
-                    "name": friendly or device,
+                    "name": friendly or short,
                     "description": friendly or device,
                 })
         return interfaces
@@ -142,11 +157,17 @@ def list_interfaces() -> list[dict]:
             m = re.match(r"\s*(\d+)\.(\S+)\s*(?:\[(.*)\])?", line)
             if m:
                 idx, device, desc = m.groups()
+                # `name` is the dropdown label. On Linux/macOS tcpdump -D
+                # only reports pcap flags in [..], not a human name — so the
+                # label is the device id itself (en0, lo0, eth0). macOS then
+                # overlays real hardware-port names below; the flag text is
+                # kept in `description` for the hover tooltip.
                 interfaces.append({
                     "index": int(idx),
                     "device": device,
-                    "name": desc or device,
-                    "description": desc or device,
+                    "name": device,
+                    "description": f"{device} ({desc})" if desc else device,
+                    "_flags": desc or "",
                 })
 
         # macOS: `tcpdump -D` only reports pcap interface flags in the
@@ -161,15 +182,18 @@ def list_interfaces() -> list[dict]:
             ports = _macos_hardware_ports()
             for iface in interfaces:
                 friendly = ports.get(iface["device"])
-                if not friendly:
-                    continue
-                flags = iface["description"]
-                iface["name"] = friendly
-                iface["description"] = (
-                    f"{friendly} ({flags})"
-                    if flags and flags != friendly and flags != iface["device"]
-                    else friendly
-                )
+                if friendly:
+                    flags = iface.pop("_flags", "")
+                    iface["name"] = friendly
+                    iface["description"] = (
+                        f"{friendly} — {iface['device']} ({flags})" if flags
+                        else f"{friendly} — {iface['device']}"
+                    )
+                else:
+                    iface.pop("_flags", None)
+        else:
+            for iface in interfaces:
+                iface.pop("_flags", None)
         return interfaces
 
 
@@ -185,6 +209,11 @@ class CaptureSession:
     error: Optional[str] = None
     packet_target: Optional[int] = None
     duration_target: Optional[int] = None
+    buffer_mb: Optional[int] = None
+    # Read back from dumpcap/tcpdump's own exit summary on stderr — real
+    # counts, not estimates. None until the capture process has exited.
+    packets_received: Optional[int] = None
+    packets_dropped: Optional[int] = None
     # "duration_target_reached" | "packet_target_reached" | "target_reached"
     # | "user_stopped" | "safety_timeout" | None (still running)
     stop_reason: Optional[str] = None
@@ -220,6 +249,9 @@ class CaptureSession:
             "packet_count": live_count,
             "packet_target": self.packet_target,
             "duration_target": self.duration_target,
+            "buffer_mb": self.buffer_mb,
+            "packets_received": self.packets_received,
+            "packets_dropped": self.packets_dropped,
             "stop_reason": self.stop_reason,
             "error": self.error,
         }
@@ -388,22 +420,25 @@ def start_capture(
     pcaps_dir: Path,
     duration_seconds: Optional[int] = DEFAULT_CAPTURE_DURATION_SECONDS,
     packet_target: Optional[int] = DEFAULT_CAPTURE_PACKET_TARGET,
+    buffer_mb: Optional[int] = DEFAULT_CAPTURE_BUFFER_MB,
 ) -> CaptureSession:
     """
-    packet_target (default 10000) is passed straight to dumpcap/tcpdump's
-    own `-c` autostop flag, so the capture tool stops itself once that
-    many packets have been written — this is the default target callers
-    care about ("capture up to 10000 packets").
+    packet_target (default None) — if set, passed to dumpcap/tcpdump's own
+    `-c` autostop flag. Left unset by default so a live capture of a flood
+    is not cut short after a fraction of a second.
 
-    duration_seconds (default 300) is passed to dumpcap's own
-    `-a duration:N` autostop condition on Windows (tcpdump has no
-    equivalent native flag, so on Linux, and as a cross-platform backstop
-    on every platform, check_and_finalize() enforces duration_target by
-    polling session.duration_seconds() and stopping the process itself).
-    It exists as an upper bound so a capture can't run indefinitely on a
-    quiet interface that never reaches packet_target, and wide enough
-    (300s) to give a normal interface realistic time to actually reach
-    10000 packets before duration cuts it off first.
+    duration_seconds (default 300) — dumpcap's `-a duration:N` on Windows;
+    on Linux/macOS (tcpdump has no such flag) check_and_finalize() enforces
+    it by polling. Upper bound so a capture can't run forever.
+
+    buffer_mb (default 64) — kernel capture-buffer size (`-B`). Under a
+    DDoS / high-rate flood the default ring overflows and packets are
+    silently dropped; a bigger buffer keeps up. dumpcap `-B` is MiB,
+    tcpdump `-B` is KiB, converted here.
+
+    NOTE: capturing a flood against localhost requires selecting the
+    *loopback* adapter (Npcap Loopback Adapter / lo / lo0); a physical NIC
+    never sees 127.0.0.1 traffic. See README "Capturing a localhost flood".
     """
     pcaps_dir.mkdir(parents=True, exist_ok=True)
     timestamp = time.strftime("%Y-%m-%d_%H%M%S")
@@ -416,6 +451,8 @@ def start_capture(
         cmd = [str(DUMPCAP), "-i", interface_device, "-w", str(pcap_path)]
         if duration_seconds:
             cmd += ["-a", f"duration:{duration_seconds}"]
+        if buffer_mb:
+            cmd += ["-B", str(buffer_mb)]  # dumpcap -B is MiB
     else:
         # No `sudo` here on purpose: a backend service has no TTY for a
         # sudo password prompt and would hang. Grant capture rights to the
@@ -428,6 +465,8 @@ def start_capture(
         # Falling back to running the whole backend as root also works.
         # See README.md "macOS setup" / "Linux setup".
         cmd = ["tcpdump", "-i", interface_device, "-w", str(pcap_path)]
+        if buffer_mb:
+            cmd += ["-B", str(buffer_mb * 1024)]  # tcpdump -B is KiB
         # No native duration flag on tcpdump — check_and_finalize() below
         # enforces duration_target via polling instead.
 
@@ -457,7 +496,32 @@ def start_capture(
         start_time=time.time(),
         packet_target=packet_target,
         duration_target=duration_seconds,
+        buffer_mb=buffer_mb,
     )
+
+
+_RECV_RE = re.compile(r"(\d+)\s+packets?\s+received by filter")
+_DROP_KERNEL_RE = re.compile(r"(\d+)\s+packets?\s+dropped by kernel")
+_DUMPCAP_RD_RE = re.compile(r"[Rr]eceived/dropped on interface[^:]*:\s*([\d,]+)\s*/\s*([\d,]+)")
+
+
+def _parse_capture_drops(stderr_text: str) -> tuple[Optional[int], Optional[int]]:
+    """Real received / dropped counts from dumpcap or tcpdump's own exit
+    summary on stderr. Returns (received, dropped) — either may be None if
+    that line wasn't present. Never fabricated."""
+    if not stderr_text:
+        return None, None
+    m = _DUMPCAP_RD_RE.search(stderr_text)  # dumpcap (Windows)
+    if m:
+        return int(m.group(1).replace(",", "")), int(m.group(2).replace(",", ""))
+    received = dropped = None
+    m = _RECV_RE.search(stderr_text)        # tcpdump (Linux/macOS)
+    if m:
+        received = int(m.group(1))
+    m = _DROP_KERNEL_RE.search(stderr_text)
+    if m:
+        dropped = int(m.group(1))
+    return received, dropped
 
 
 def peek_live_packet_count(pcap_path: Path) -> Optional[int]:
@@ -477,6 +541,18 @@ def _finalize(session: CaptureSession) -> CaptureSession:
     safety timeout fired) — reads back the real, final packet count via
     capinfos exactly once the process has actually exited."""
     session.end_time = time.time()
+
+    # dumpcap/tcpdump print a received/dropped summary to stderr on exit —
+    # read it now the process has actually terminated. Tells the user
+    # "captured lossily under load" apart from "captured nothing".
+    if session.process.poll() is not None and session.packets_received is None:
+        try:
+            stderr_text = session.process.stderr.read() if session.process.stderr else ""
+        except (ValueError, OSError):
+            stderr_text = ""
+        received, dropped = _parse_capture_drops(stderr_text or "")
+        session.packets_received = received
+        session.packets_dropped = dropped
 
     if not session.pcap_path.exists() or session.pcap_path.stat().st_size == 0:
         session.error = "Capture stopped but no PCAP data was written."

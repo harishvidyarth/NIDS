@@ -178,8 +178,8 @@ async function loadInterfaces() {
     for (const iface of data.interfaces) {
       const opt = document.createElement("option");
       opt.value = iface.device;
-      const description = iface.description || iface.name || iface.device;
-      opt.textContent = `${iface.device} — ${description}`;
+      opt.textContent = iface.name || iface.device;
+      opt.title = iface.description || iface.device;
       sel.appendChild(opt);
     }
     if (data.interfaces.length === 0) {
@@ -854,6 +854,18 @@ function renderCaptureTab() {
       : "N/A";
     el("d-pcap-file").textContent = na(cap && cap.pcap_path);
 
+    const dropsRow = el("d-drops-row");
+    if (cap && (cap.packets_received != null || cap.packets_dropped != null)) {
+      dropsRow.style.display = "";
+      const rec = cap.packets_received != null ? cap.packets_received : "?";
+      const drp = cap.packets_dropped != null ? cap.packets_dropped : "?";
+      const dEl = el("d-drops");
+      dEl.textContent = `${rec} / ${drp}`;
+      dEl.style.color = (cap.packets_dropped > 0) ? "var(--amber)" : "";
+    } else {
+      dropsRow.style.display = "none";
+    }
+
     const stopRow = el("d-stop-reason-row");
     if (cap && cap.status === "STOPPED" && cap.stop_reason) {
       stopRow.style.display = "";
@@ -959,7 +971,18 @@ function renderPredictionTab() {
 
   const stateVal = el("p-state-value");
   stateVal.textContent = pred ? pred.overall_traffic_state : "N/A";
-  stateVal.className = pred ? "state-" + (pred.overall_traffic_state === "BENIGN" ? "BENIGN" : (pred.overall_traffic_state === "MALICIOUS" ? "DDoS" : pred.overall_traffic_state)) : "";
+  stateVal.className = pred ? "state-" + pred.overall_traffic_state : "";
+
+  const flagged = el("p-flagged");
+  if (flagged) {
+    if (pred && pred.flows_analyzed) {
+      const pct = ((pred.malicious_flow_ratio || 0) * 100).toFixed(1);
+      flagged.textContent = `${pred.attack_flow_count} of ${pred.flows_analyzed} flows flagged (${pct}%)`;
+      flagged.style.color = pred.attack_present ? "var(--red)" : "var(--green)";
+    } else {
+      flagged.textContent = "";
+    }
+  }
 
   el("p-model").textContent = pred ? pred.model : "N/A";
   el("p-flows").textContent = pred ? pred.flows_analyzed : "N/A";

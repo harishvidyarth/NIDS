@@ -325,6 +325,33 @@ exception message in the pipeline strip and the relevant detail card —
 never a fabricated value. Where a value truly isn't available yet, the UI
 shows `N/A`.
 
+The overall state is the **dominant** class (the one the most flows fall
+into); the CAPTURE / PREDICTION cards also show `attack_flow_count` and
+`malicious_flow_ratio` so a small number of flagged flows in a mostly
+benign capture reads as "N of M flows flagged", not "the whole capture is
+an attack".
+
+### Capturing a DDoS / high-rate flood
+
+- **No packet cap by default.** A flood reaches any small `-c` value in a
+  fraction of a second, so `packet_target` is unset — the capture runs
+  until you Stop it or `duration_seconds` (default 300s) elapses. Pass an
+  explicit `packet_target` in the `POST /api/capture/start` body to cap
+  it.
+- **Capture buffer.** `dumpcap`/`tcpdump` are started with `-B 64` (MiB /
+  KiB respectively) so the kernel/Npcap ring doesn't overflow under load.
+  Raise `buffer_mb` in the start request if `Received / dropped` in the
+  CAPTURE card still shows drops.
+- **Localhost floods need the loopback adapter.** If the attacker and the
+  target are the same machine (traffic to `127.0.0.1`), a physical NIC
+  never sees it. Select **`Npcap Loopback Adapter`** (Windows) / **`lo`**
+  (Linux) / **`lo0`** (macOS) from the interface dropdown. Attacking
+  another host on the same switch needs a mirror/SPAN port or the flood is
+  only visible to that host.
+- The CAPTURE card's `Received / dropped` line comes straight from
+  `dumpcap`/`tcpdump`'s own exit summary — it distinguishes "captured
+  lossily" from "captured nothing (wrong interface)".
+
 ## Test result (verified during this build)
 
 Full pipeline run on this machine, real Wi-Fi traffic, no synthetic data:

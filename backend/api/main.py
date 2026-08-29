@@ -73,16 +73,15 @@ state = PipelineState()
 
 class StartCaptureRequest(BaseModel):
     interface: str
-    # Upper-bound elapsed seconds (dumpcap's own `-a duration:N`) so a
-    # capture on a quiet interface can't run forever waiting to reach
-    # packet_target. Defaults to 300s — wide enough to realistically
-    # reach the default 10000-packet target on a normal interface.
+    # Upper-bound elapsed seconds (dumpcap's own `-a duration:N`), so a
+    # capture can't run forever. check_and_finalize() enforces it on
+    # tcpdump platforms.
     duration_seconds: Optional[int] = capture_mod.DEFAULT_CAPTURE_DURATION_SECONDS
-    # Primary capture target, distinct from the packet-table PAGE size —
-    # this bounds what dumpcap/tcpdump actually captures (via their own
-    # -c flag). Defaults to 10000, so the capture keeps going up to that
-    # many packets rather than stopping early.
+    # Optional `-c` packet cap. Default None so a flood isn't cut short
+    # after a fraction of a second; a caller can still pass a value.
     packet_target: Optional[int] = capture_mod.DEFAULT_CAPTURE_PACKET_TARGET
+    # Kernel capture-buffer size (`-B`) to avoid drops under a flood.
+    buffer_mb: Optional[int] = capture_mod.DEFAULT_CAPTURE_BUFFER_MB
 
 
 class ExtractRequest(BaseModel):
@@ -113,6 +112,7 @@ def start_capture(req: StartCaptureRequest):
             PCAPS_DIR,
             duration_seconds=req.duration_seconds,
             packet_target=req.packet_target,
+            buffer_mb=req.buffer_mb,
         )
     except capture_mod.CaptureError as e:
         state.set_error(str(e))
