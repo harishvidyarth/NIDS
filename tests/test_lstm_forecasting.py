@@ -169,7 +169,7 @@ def test_model_save_load_and_batch_inference(tmp_path):
     before = model.predict(sample, batch_size=2, verbose=0)
     path = tmp_path / "model.keras"
     model.save(path)
-    loaded = tf.keras.models.load_model(path)
+    loaded = tf.keras.models.load_model(path, compile=False)
     after = loaded.predict(sample, batch_size=2, verbose=0)
     assert before.shape == (3, 4)
     np.testing.assert_allclose(before, after, rtol=1e-6, atol=1e-6)
@@ -187,7 +187,7 @@ def test_job_status_round_trip_and_api_contract(tmp_path, monkeypatch):
     assert '@app.get("/api/lstm/status")' in source
     assert '@app.post("/api/lstm/forecast")' in source
     assert '@app.get("/api/lstm/report")' in source
-    assert "extra = \"forbid\"" in source
+    assert 'extra="forbid"' in source
 
 
 def test_ui_renders_only_bounded_aggregates():

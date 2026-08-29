@@ -20,7 +20,7 @@ from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from ..config import PCAPS_DIR, FEATURES_DIR, RESULTS_DIR, REPO_ROOT
 from ..capture import capture as capture_mod
@@ -520,10 +520,9 @@ def temporal_validate_report():
 
 
 class LstmTrainRequest(BaseModel):
-    force_rebuild: bool = False
+    model_config = ConfigDict(extra="forbid")
 
-    class Config:
-        extra = "forbid"
+    force_rebuild: bool = False
 
 
 @app.post("/api/lstm/train")

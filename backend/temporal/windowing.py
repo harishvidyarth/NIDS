@@ -33,8 +33,10 @@ def parse_timestamps(series: pd.Series) -> TimestampParseResult:
 
     # Primary path: standard datetime parsing (handles the project's own
     # "YYYY-MM-DD HH:MM:SS" format and most common variants, including
-    # timezone-aware strings if present).
-    parsed = pd.to_datetime(series, errors="coerce", utc=False)
+    # timezone-aware strings if present). `format="mixed"` parses each
+    # value on its own terms and coerces the rest to NaT without pandas'
+    # "Could not infer format, falling back to dateutil" UserWarning.
+    parsed = pd.to_datetime(series, errors="coerce", utc=False, format="mixed")
     format_used = "datetime"
 
     # Fallback: if datetime parsing found nothing at all but the column is

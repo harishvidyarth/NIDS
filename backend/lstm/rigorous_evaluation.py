@@ -271,7 +271,7 @@ def _walk_forward(artifact_dir: Path, training_report: dict, development_windows
                 "status": "NOT_AVAILABLE",
                 "reason": f"Saved fold checkpoint is missing: {checkpoint}",
             }
-        model = tf.keras.models.load_model(checkpoint)
+        model = tf.keras.models.load_model(checkpoint, compile=False)
         lstm_pred, lstm_prob = _predict_lstm(model, fold_evaluation, scaler)
         _, baseline_pred, baseline_prob = _logistic(fold_train, fold_evaluation, scaler)
         current_states = fold_evaluation["input_labels"][:, -1]
@@ -455,7 +455,7 @@ def evaluate_saved_artifact(
     model_path = artifact_dir / "model.keras"
     scaler_path = artifact_dir / "scaler.bin"
     baseline_path = artifact_dir / "baseline_logistic.bin"
-    model = tf.keras.models.load_model(model_path)
+    model = tf.keras.models.load_model(model_path, compile=False)
     scaler = joblib.load(scaler_path)
     baseline = joblib.load(baseline_path)
     session_windows = _load_windows(training_report)

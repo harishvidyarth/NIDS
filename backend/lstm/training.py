@@ -399,7 +399,7 @@ def forecast_latest() -> dict:
     latest = json.loads(LATEST_PATH.read_text())
     artifact_dir = repository_path(latest["artifact_dir"])
     tf = _tensorflow()
-    model = tf.keras.models.load_model(artifact_dir / "model.keras")
+    model = tf.keras.models.load_model(artifact_dir / "model.keras", compile=False)
     scaler = joblib.load(artifact_dir / "scaler.bin")
     report = json.loads((artifact_dir / "report.json").read_text())
     last_cache = report["cache"][-1]

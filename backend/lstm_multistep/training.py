@@ -91,7 +91,7 @@ def _model_gates(model, model_path: Path, validation, scaler, history: dict) -> 
     checks["validation_performance"] = bool(
         np.isfinite(validation_reports[0]["macro_f1"]) and validation_reports[0]["macro_f1"] > 0.0
     )
-    reloaded = _tensorflow().keras.models.load_model(model_path)
+    reloaded = _tensorflow().keras.models.load_model(model_path, compile=False)
     sample = _scale(validation["X"][: min(32, len(validation["X"]))], scaler)
     checks["save_load_parity"] = bool(np.allclose(model.predict(sample, verbose=0), reloaded.predict(sample, verbose=0), atol=1e-6))
     return {"passed": all(checks.values()), "checks": checks, "validation": validation_reports}
@@ -125,7 +125,7 @@ def _one_step_h1_comparison(test, test_probabilities, scaler) -> dict:
     feature_names = json.loads((artifact_dir / "feature_names.json").read_text())
     if feature_names != list(STATE_FEATURE_NAMES):
         return {"status": "N/A", "reason": "Phase 3 feature order is incompatible."}
-    model = _tensorflow().keras.models.load_model(artifact_dir / "model.keras")
+    model = _tensorflow().keras.models.load_model(artifact_dir / "model.keras", compile=False)
     one_step_scaler = joblib.load(artifact_dir / "scaler.bin")
     one_probabilities = model.predict(_scale(test["X"], one_step_scaler), batch_size=BATCH_SIZE, verbose=0)
     direct_predictions = np.asarray(FORECAST_CLASSES)[np.argmax(test_probabilities[:, 0, :], axis=1)]
@@ -141,7 +141,7 @@ def _one_step_h1_comparison(test, test_probabilities, scaler) -> dict:
 
 def _benchmark(artifact_dir: Path, model, scaler, sample: np.ndarray) -> dict:
     tf = _tensorflow()
-    started = time.perf_counter(); loaded = tf.keras.models.load_model(artifact_dir / "model.keras")
+    started = time.perf_counter(); loaded = tf.keras.models.load_model(artifact_dir / "model.keras", compile=False)
     cold_load = time.perf_counter() - started
     one = _scale(sample[:1], scaler)
     loaded.predict(one, verbose=0)
@@ -190,7 +190,7 @@ def train_multistep(force_rebuild: bool = False, status=lambda **kwargs: None) -
         validation_data=(_scale(validation["X"], scaler), _encode(validation["y"])),
         epochs=MAX_EPOCHS, batch_size=BATCH_SIZE, shuffle=False, verbose=0, callbacks=callbacks,
     )
-    model = _tensorflow().keras.models.load_model(artifact_dir / "model.keras")
+    model = _tensorflow().keras.models.load_model(artifact_dir / "model.keras", compile=False)
     joblib.dump(scaler, artifact_dir / "scaler.bin")
     scaler_sha256 = hashlib.sha256((artifact_dir / "scaler.bin").read_bytes()).hexdigest()
     (artifact_dir / "feature_names.json").write_text(json.dumps(STATE_FEATURE_NAMES, indent=2))
@@ -256,7 +256,7 @@ def forecast_latest() -> dict:
         raise RuntimeError("No activated multi-step LSTM artifact is available.")
     latest = json.loads(LATEST_PATH.read_text())
     artifact_dir = repository_path(latest["artifact_dir"])
-    model = _tensorflow().keras.models.load_model(artifact_dir / "model.keras")
+    model = _tensorflow().keras.models.load_model(artifact_dir / "model.keras", compile=False)
     scaler = joblib.load(artifact_dir / "scaler.bin")
     evaluation = json.loads((artifact_dir / "evaluation_report.json").read_text())
     manifest = json.loads((artifact_dir / "dataset_manifest.json").read_text())

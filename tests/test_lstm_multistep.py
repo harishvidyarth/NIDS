@@ -51,7 +51,7 @@ def test_direct_model_output_probabilities_and_batching(tmp_path):
     path = tmp_path / "model.keras"
     model.save(path)
     import tensorflow as tf
-    restored = tf.keras.models.load_model(path)
+    restored = tf.keras.models.load_model(path, compile=False)
     assert np.allclose(probabilities, restored.predict(batch, verbose=0), atol=1e-6)
 
 
