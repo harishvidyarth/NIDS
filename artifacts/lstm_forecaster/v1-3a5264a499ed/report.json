@@ -1,0 +1,3931 @@
+{
+  "model_version": "v1-3a5264a499ed",
+  "architecture": "LSTM(64) -> Dropout(0.3) -> Dense(32, ReLU) -> Softmax(4)",
+  "seed": 42,
+  "chronology": "row_order_proxy",
+  "limitation": "One source row is treated as one proxy second; this is not measured wall-clock forecasting.",
+  "window_size_seconds": 10,
+  "sequence_length": 5,
+  "training_protocol_version": "strict-final-train-scaler/v1",
+  "scaler_fit_scope": "final_training_windows_only",
+  "dataset_fingerprints": [
+    {
+      "name": "Monday-WorkingHours.pcap_ISCX.csv",
+      "size_bytes": 176927918,
+      "sha256": "852c4beb34eda186f32561fa79df7a0747e92e1a6535b01270820dd9ffe17f34"
+    },
+    {
+      "name": "Tuesday-WorkingHours.pcap_ISCX.csv",
+      "size_bytes": 135078995,
+      "sha256": "52b8692ae8c7d2ed04671fe2b98335693c0a92c7ab157d8c8b534d6523080851"
+    },
+    {
+      "name": "Wednesday-workingHours.pcap_ISCX.csv",
+      "size_bytes": 225166395,
+      "sha256": "893c27dc968bf7a8adef1689f90be55ca4a4dc3088fb63d6ff247ac56856df2a"
+    },
+    {
+      "name": "Thursday-WorkingHours-Afternoon-Infilteration.pcap_ISCX.csv",
+      "size_bytes": 83102436,
+      "sha256": "6bcda3857c2504676034e3ea57762d38393cc734cb377a726bd5cb153961b1b5"
+    }
+  ],
+  "ann_artifact_fingerprints": {
+    "ann_model_sha256": "c804be8b658e7994f24539a8a427398b8d2f2d760588f7c7903fdf2c8765e434",
+    "ann_scaler_sha256": "7ff533245289db65c0a6d6ec1bbacf5d7def87158b3a791ad5abfa494b844a9f"
+  },
+  "analysis": {
+    "sources": [
+      {
+        "source": "Monday-WorkingHours.pcap_ISCX.csv",
+        "rows": 529918,
+        "columns": 79,
+        "schema": [
+          " Destination Port",
+          " Flow Duration",
+          " Total Fwd Packets",
+          " Total Backward Packets",
+          "Total Length of Fwd Packets",
+          " Total Length of Bwd Packets",
+          " Fwd Packet Length Max",
+          " Fwd Packet Length Min",
+          " Fwd Packet Length Mean",
+          " Fwd Packet Length Std",
+          "Bwd Packet Length Max",
+          " Bwd Packet Length Min",
+          " Bwd Packet Length Mean",
+          " Bwd Packet Length Std",
+          "Flow Bytes/s",
+          " Flow Packets/s",
+          " Flow IAT Mean",
+          " Flow IAT Std",
+          " Flow IAT Max",
+          " Flow IAT Min",
+          "Fwd IAT Total",
+          " Fwd IAT Mean",
+          " Fwd IAT Std",
+          " Fwd IAT Max",
+          " Fwd IAT Min",
+          "Bwd IAT Total",
+          " Bwd IAT Mean",
+          " Bwd IAT Std",
+          " Bwd IAT Max",
+          " Bwd IAT Min",
+          "Fwd PSH Flags",
+          " Bwd PSH Flags",
+          " Fwd URG Flags",
+          " Bwd URG Flags",
+          " Fwd Header Length",
+          " Bwd Header Length",
+          "Fwd Packets/s",
+          " Bwd Packets/s",
+          " Min Packet Length",
+          " Max Packet Length",
+          " Packet Length Mean",
+          " Packet Length Std",
+          " Packet Length Variance",
+          "FIN Flag Count",
+          " SYN Flag Count",
+          " RST Flag Count",
+          " PSH Flag Count",
+          " ACK Flag Count",
+          " URG Flag Count",
+          " CWE Flag Count",
+          " ECE Flag Count",
+          " Down/Up Ratio",
+          " Average Packet Size",
+          " Avg Fwd Segment Size",
+          " Avg Bwd Segment Size",
+          " Fwd Header Length.1",
+          "Fwd Avg Bytes/Bulk",
+          " Fwd Avg Packets/Bulk",
+          " Fwd Avg Bulk Rate",
+          " Bwd Avg Bytes/Bulk",
+          " Bwd Avg Packets/Bulk",
+          "Bwd Avg Bulk Rate",
+          "Subflow Fwd Packets",
+          " Subflow Fwd Bytes",
+          " Subflow Bwd Packets",
+          " Subflow Bwd Bytes",
+          "Init_Win_bytes_forward",
+          " Init_Win_bytes_backward",
+          " act_data_pkt_fwd",
+          " min_seg_size_forward",
+          "Active Mean",
+          " Active Std",
+          " Active Max",
+          " Active Min",
+          "Idle Mean",
+          " Idle Std",
+          " Idle Max",
+          " Idle Min",
+          " Label"
+        ],
+        "labels": {
+          "BENIGN": 529918
+        },
+        "invalid_values": 874,
+        "duplicate_rows": 26935,
+        "constant_columns": [
+          " Bwd PSH Flags",
+          " Fwd URG Flags",
+          " Bwd URG Flags",
+          " RST Flag Count",
+          " CWE Flag Count",
+          " ECE Flag Count",
+          "Fwd Avg Bytes/Bulk",
+          " Fwd Avg Packets/Bulk",
+          " Fwd Avg Bulk Rate",
+          " Bwd Avg Bytes/Bulk",
+          " Bwd Avg Packets/Bulk",
+          "Bwd Avg Bulk Rate",
+          " Active Std",
+          " Idle Std",
+          " Label"
+        ],
+        "numeric_ranges": {
+          " Destination Port": {
+            "min": 0.0,
+            "max": 65535.0
+          },
+          " Flow Duration": {
+            "min": -1.0,
+            "max": 119999987.0
+          },
+          " Total Fwd Packets": {
+            "min": 1.0,
+            "max": 219759.0
+          },
+          " Total Backward Packets": {
+            "min": 0.0,
+            "max": 291922.0
+          },
+          "Total Length of Fwd Packets": {
+            "min": 0.0,
+            "max": 1323378.0
+          },
+          " Total Length of Bwd Packets": {
+            "min": 0.0,
+            "max": 655453030.0
+          },
+          " Fwd Packet Length Max": {
+            "min": 0.0,
+            "max": 23360.0
+          },
+          " Fwd Packet Length Min": {
+            "min": 0.0,
+            "max": 2293.0
+          },
+          " Fwd Packet Length Mean": {
+            "min": 0.0,
+            "max": 4638.9234693878
+          },
+          " Fwd Packet Length Std": {
+            "min": 0.0,
+            "max": 7125.5968458437
+          },
+          "Bwd Packet Length Max": {
+            "min": 0.0,
+            "max": 13140.0
+          },
+          " Bwd Packet Length Min": {
+            "min": 0.0,
+            "max": 2146.0
+          },
+          " Bwd Packet Length Mean": {
+            "min": 0.0,
+            "max": 2976.3218390805
+          },
+          " Bwd Packet Length Std": {
+            "min": 0.0,
+            "max": 2728.5590214128
+          },
+          "Flow Bytes/s": {
+            "min": -12000000.0,
+            "max": 2071000000.0
+          },
+          " Flow Packets/s": {
+            "min": -2000000.0,
+            "max": 3000000.0
+          },
+          " Flow IAT Mean": {
+            "min": -1.0,
+            "max": 119748208.0
+          },
+          " Flow IAT Std": {
+            "min": 0.0,
+            "max": 84800261.5664079
+          },
+          " Flow IAT Max": {
+            "min": -1.0,
+            "max": 119999735.0
+          },
+          " Flow IAT Min": {
+            "min": -14.0,
+            "max": 119748208.0
+          },
+          "Fwd IAT Total": {
+            "min": 0.0,
+            "max": 119999987.0
+          },
+          " Fwd IAT Mean": {
+            "min": 0.0,
+            "max": 119987020.0
+          },
+          " Fwd IAT Std": {
+            "min": 0.0,
+            "max": 84602929.2769822
+          },
+          " Fwd IAT Max": {
+            "min": 0.0,
+            "max": 119999869.0
+          },
+          " Fwd IAT Min": {
+            "min": 0.0,
+            "max": 119987020.0
+          },
+          "Bwd IAT Total": {
+            "min": 0.0,
+            "max": 119999643.0
+          },
+          " Bwd IAT Mean": {
+            "min": 0.0,
+            "max": 119974145.0
+          },
+          " Bwd IAT Std": {
+            "min": 0.0,
+            "max": 84418013.7826341
+          },
+          " Bwd IAT Max": {
+            "min": 0.0,
+            "max": 119974145.0
+          },
+          " Bwd IAT Min": {
+            "min": 0.0,
+            "max": 119974145.0
+          },
+          "Fwd PSH Flags": {
+            "min": 0.0,
+            "max": 1.0
+          },
+          " Bwd PSH Flags": {
+            "min": 0.0,
+            "max": 0.0
+          },
+          " Fwd URG Flags": {
+            "min": 0.0,
+            "max": 0.0
+          },
+          " Bwd URG Flags": {
+            "min": 0.0,
+            "max": 0.0
+          },
+          " Fwd Header Length": {
+            "min": -1929349973.0,
+            "max": 4644908.0
+          },
+          " Bwd Header Length": {
+            "min": -167770490.0,
+            "max": 5838440.0
+          },
+          "Fwd Packets/s": {
+            "min": 0.0,
+            "max": 3000000.0
+          },
+          " Bwd Packets/s": {
+            "min": 0.0,
+            "max": 2000000.0
+          },
+          " Min Packet Length": {
+            "min": 0.0,
+            "max": 1359.0
+          },
+          " Max Packet Length": {
+            "min": 0.0,
+            "max": 23360.0
+          },
+          " Packet Length Mean": {
+            "min": 0.0,
+            "max": 2456.0
+          },
+          " Packet Length Std": {
+            "min": 0.0,
+            "max": 4414.547151258
+          },
+          " Packet Length Variance": {
+            "min": 0.0,
+            "max": 19488226.5506803
+          },
+          "FIN Flag Count": {
+            "min": 0.0,
+            "max": 1.0
+          },
+          " SYN Flag Count": {
+            "min": 0.0,
+            "max": 1.0
+          },
+          " RST Flag Count": {
+            "min": 0.0,
+            "max": 1.0
+          },
+          " PSH Flag Count": {
+            "min": 0.0,
+            "max": 1.0
+          },
+          " ACK Flag Count": {
+            "min": 0.0,
+            "max": 1.0
+          },
+          " URG Flag Count": {
+            "min": 0.0,
+            "max": 1.0
+          },
+          " CWE Flag Count": {
+            "min": 0.0,
+            "max": 0.0
+          },
+          " ECE Flag Count": {
+            "min": 0.0,
+            "max": 1.0
+          },
+          " Down/Up Ratio": {
+            "min": 0.0,
+            "max": 108.0
+          },
+          " Average Packet Size": {
+            "min": 0.0,
+            "max": 3684.0
+          },
+          " Avg Fwd Segment Size": {
+            "min": 0.0,
+            "max": 4638.9234693878
+          },
+          " Avg Bwd Segment Size": {
+            "min": 0.0,
+            "max": 2976.3218390805
+          },
+          " Fwd Header Length.1": {
+            "min": -1929349973.0,
+            "max": 4644908.0
+          },
+          "Fwd Avg Bytes/Bulk": {
+            "min": 0.0,
+            "max": 0.0
+          },
+          " Fwd Avg Packets/Bulk": {
+            "min": 0.0,
+            "max": 0.0
+          },
+          " Fwd Avg Bulk Rate": {
+            "min": 0.0,
+            "max": 0.0
+          },
+          " Bwd Avg Bytes/Bulk": {
+            "min": 0.0,
+            "max": 0.0
+          },
+          " Bwd Avg Packets/Bulk": {
+            "min": 0.0,
+            "max": 0.0
+          },
+          "Bwd Avg Bulk Rate": {
+            "min": 0.0,
+            "max": 0.0
+          },
+          "Subflow Fwd Packets": {
+            "min": 1.0,
+            "max": 219759.0
+          },
+          " Subflow Fwd Bytes": {
+            "min": 0.0,
+            "max": 1323378.0
+          },
+          " Subflow Bwd Packets": {
+            "min": 0.0,
+            "max": 291922.0
+          },
+          " Subflow Bwd Bytes": {
+            "min": 0.0,
+            "max": 655453030.0
+          },
+          "Init_Win_bytes_forward": {
+            "min": -1.0,
+            "max": 65535.0
+          },
+          " Init_Win_bytes_backward": {
+            "min": -1.0,
+            "max": 65535.0
+          },
+          " act_data_pkt_fwd": {
+            "min": 0.0,
+            "max": 213557.0
+          },
+          " min_seg_size_forward": {
+            "min": -83885313.0,
+            "max": 126.0
+          },
+          "Active Mean": {
+            "min": 0.0,
+            "max": 101659665.0
+          },
+          " Active Std": {
+            "min": 0.0,
+            "max": 64349504.5029073
+          },
+          " Active Max": {
+            "min": 0.0,
+            "max": 101659665.0
+          },
+          " Active Min": {
+            "min": 0.0,
+            "max": 101659665.0
+          },
+          "Idle Mean": {
+            "min": 0.0,
+            "max": 119999735.0
+          },
+          " Idle Std": {
+            "min": 0.0,
+            "max": 75145023.2323283
+          },
+          " Idle Max": {
+            "min": 0.0,
+            "max": 119999735.0
+          },
+          " Idle Min": {
+            "min": 0.0,
+            "max": 119999735.0
+          }
+        },
+        "elapsed_seconds": 6.096
+      },
+      {
+        "source": "Tuesday-WorkingHours.pcap_ISCX.csv",
+        "rows": 445909,
+        "columns": 79,
+        "schema": [
+          " Destination Port",
+          " Flow Duration",
+          " Total Fwd Packets",
+          " Total Backward Packets",
+          "Total Length of Fwd Packets",
+          " Total Length of Bwd Packets",
+          " Fwd Packet Length Max",
+          " Fwd Packet Length Min",
+          " Fwd Packet Length Mean",
+          " Fwd Packet Length Std",
+          "Bwd Packet Length Max",
+          " Bwd Packet Length Min",
+          " Bwd Packet Length Mean",
+          " Bwd Packet Length Std",
+          "Flow Bytes/s",
+          " Flow Packets/s",
+          " Flow IAT Mean",
+          " Flow IAT Std",
+          " Flow IAT Max",
+          " Flow IAT Min",
+          "Fwd IAT Total",
+          " Fwd IAT Mean",
+          " Fwd IAT Std",
+          " Fwd IAT Max",
+          " Fwd IAT Min",
+          "Bwd IAT Total",
+          " Bwd IAT Mean",
+          " Bwd IAT Std",
+          " Bwd IAT Max",
+          " Bwd IAT Min",
+          "Fwd PSH Flags",
+          " Bwd PSH Flags",
+          " Fwd URG Flags",
+          " Bwd URG Flags",
+          " Fwd Header Length",
+          " Bwd Header Length",
+          "Fwd Packets/s",
+          " Bwd Packets/s",
+          " Min Packet Length",
+          " Max Packet Length",
+          " Packet Length Mean",
+          " Packet Length Std",
+          " Packet Length Variance",
+          "FIN Flag Count",
+          " SYN Flag Count",
+          " RST Flag Count",
+          " PSH Flag Count",
+          " ACK Flag Count",
+          " URG Flag Count",
+          " CWE Flag Count",
+          " ECE Flag Count",
+          " Down/Up Ratio",
+          " Average Packet Size",
+          " Avg Fwd Segment Size",
+          " Avg Bwd Segment Size",
+          " Fwd Header Length.1",
+          "Fwd Avg Bytes/Bulk",
+          " Fwd Avg Packets/Bulk",
+          " Fwd Avg Bulk Rate",
+          " Bwd Avg Bytes/Bulk",
+          " Bwd Avg Packets/Bulk",
+          "Bwd Avg Bulk Rate",
+          "Subflow Fwd Packets",
+          " Subflow Fwd Bytes",
+          " Subflow Bwd Packets",
+          " Subflow Bwd Bytes",
+          "Init_Win_bytes_forward",
+          " Init_Win_bytes_backward",
+          " act_data_pkt_fwd",
+          " min_seg_size_forward",
+          "Active Mean",
+          " Active Std",
+          " Active Max",
+          " Active Min",
+          "Idle Mean",
+          " Idle Std",
+          " Idle Max",
+          " Idle Min",
+          " Label"
+        ],
+        "labels": {
+          "BENIGN": 432074,
+          "FTP-Patator": 7938,
+          "SSH-Patator": 5897
+        },
+        "invalid_values": 528,
+        "duplicate_rows": 24065,
+        "constant_columns": [
+          " Bwd PSH Flags",
+          " Fwd URG Flags",
+          " Bwd URG Flags",
+          "FIN Flag Count",
+          " RST Flag Count",
+          " CWE Flag Count",
+          " ECE Flag Count",
+          "Fwd Avg Bytes/Bulk",
+          " Fwd Avg Packets/Bulk",
+          " Fwd Avg Bulk Rate",
+          " Bwd Avg Bytes/Bulk",
+          " Bwd Avg Packets/Bulk",
+          "Bwd Avg Bulk Rate",
+          " Label"
+        ],
+        "numeric_ranges": {
+          " Destination Port": {
+            "min": 0.0,
+            "max": 65505.0
+          },
+          " Flow Duration": {
+            "min": -4.0,
+            "max": 119999977.0
+          },
+          " Total Fwd Packets": {
+            "min": 1.0,
+            "max": 206446.0
+          },
+          " Total Backward Packets": {
+            "min": 0.0,
+            "max": 276072.0
+          },
+          "Total Length of Fwd Packets": {
+            "min": 0.0,
+            "max": 2428415.0
+          },
+          " Total Length of Bwd Packets": {
+            "min": 0.0,
+            "max": 627000000.0
+          },
+          " Fwd Packet Length Max": {
+            "min": 0.0,
+            "max": 24820.0
+          },
+          " Fwd Packet Length Min": {
+            "min": 0.0,
+            "max": 2065.0
+          },
+          " Fwd Packet Length Mean": {
+            "min": 0.0,
+            "max": 4672.0
+          },
+          " Fwd Packet Length Std": {
+            "min": 0.0,
+            "max": 5398.072094
+          },
+          "Bwd Packet Length Max": {
+            "min": 0.0,
+            "max": 13140.0
+          },
+          " Bwd Packet Length Min": {
+            "min": 0.0,
+            "max": 2896.0
+          },
+          " Bwd Packet Length Mean": {
+            "min": 0.0,
+            "max": 3735.736842
+          },
+          " Bwd Packet Length Std": {
+            "min": 0.0,
+            "max": 4113.240146
+          },
+          "Flow Bytes/s": {
+            "min": 0.0,
+            "max": 2070000000.0
+          },
+          " Flow Packets/s": {
+            "min": -2000000.0,
+            "max": 3000000.0
+          },
+          " Flow IAT Mean": {
+            "min": -4.0,
+            "max": 120000000.0
+          },
+          " Flow IAT Std": {
+            "min": 0.0,
+            "max": 84800000.0
+          },
+          " Flow IAT Max": {
+            "min": -4.0,
+            "max": 120000000.0
+          },
+          " Flow IAT Min": {
+            "min": -13.0,
+            "max": 120000000.0
+          },
+          "Fwd IAT Total": {
+            "min": 0.0,
+            "max": 120000000.0
+          },
+          " Fwd IAT Mean": {
+            "min": 0.0,
+            "max": 120000000.0
+          },
+          " Fwd IAT Std": {
+            "min": 0.0,
+            "max": 84400000.0
+          },
+          " Fwd IAT Max": {
+            "min": 0.0,
+            "max": 120000000.0
+          },
+          " Fwd IAT Min": {
+            "min": 0.0,
+            "max": 120000000.0
+          },
+          "Bwd IAT Total": {
+            "min": 0.0,
+            "max": 120000000.0
+          },
+          " Bwd IAT Mean": {
+            "min": 0.0,
+            "max": 120000000.0
+          },
+          " Bwd IAT Std": {
+            "min": 0.0,
+            "max": 82600000.0
+          },
+          " Bwd IAT Max": {
+            "min": 0.0,
+            "max": 120000000.0
+          },
+          " Bwd IAT Min": {
+            "min": 0.0,
+            "max": 120000000.0
+          },
+          "Fwd PSH Flags": {
+            "min": 0.0,
+            "max": 1.0
+          },
+          " Bwd PSH Flags": {
+            "min": 0.0,
+            "max": 0.0
+          },
+          " Fwd URG Flags": {
+            "min": 0.0,
+            "max": 0.0
+          },
+          " Bwd URG Flags": {
+            "min": 0.0,
+            "max": 0.0
+          },
+          " Fwd Header Length": {
+            "min": -32212234632.0,
+            "max": 4225596.0
+          },
+          " Bwd Header Length": {
+            "min": -1073741320.0,
+            "max": 5521440.0
+          },
+          "Fwd Packets/s": {
+            "min": 0.0,
+            "max": 3000000.0
+          },
+          " Bwd Packets/s": {
+            "min": 0.0,
+            "max": 2000000.0
+          },
+          " Min Packet Length": {
+            "min": 0.0,
+            "max": 1408.0
+          },
+          " Max Packet Length": {
+            "min": 0.0,
+            "max": 24820.0
+          },
+          " Packet Length Mean": {
+            "min": 0.0,
+            "max": 3337.142857
+          },
+          " Packet Length Std": {
+            "min": 0.0,
+            "max": 3811.855065
+          },
+          " Packet Length Variance": {
+            "min": 0.0,
+            "max": 14500000.0
+          },
+          "FIN Flag Count": {
+            "min": 0.0,
+            "max": 1.0
+          },
+          " SYN Flag Count": {
+            "min": 0.0,
+            "max": 1.0
+          },
+          " RST Flag Count": {
+            "min": 0.0,
+            "max": 1.0
+          },
+          " PSH Flag Count": {
+            "min": 0.0,
+            "max": 1.0
+          },
+          " ACK Flag Count": {
+            "min": 0.0,
+            "max": 1.0
+          },
+          " URG Flag Count": {
+            "min": 0.0,
+            "max": 1.0
+          },
+          " CWE Flag Count": {
+            "min": 0.0,
+            "max": 0.0
+          },
+          " ECE Flag Count": {
+            "min": 0.0,
+            "max": 1.0
+          },
+          " Down/Up Ratio": {
+            "min": 0.0,
+            "max": 35.0
+          },
+          " Average Packet Size": {
+            "min": 0.0,
+            "max": 3893.333333
+          },
+          " Avg Fwd Segment Size": {
+            "min": 0.0,
+            "max": 4672.0
+          },
+          " Avg Bwd Segment Size": {
+            "min": 0.0,
+            "max": 3735.736842
+          },
+          " Fwd Header Length.1": {
+            "min": -32212234632.0,
+            "max": 4225596.0
+          },
+          "Fwd Avg Bytes/Bulk": {
+            "min": 0.0,
+            "max": 0.0
+          },
+          " Fwd Avg Packets/Bulk": {
+            "min": 0.0,
+            "max": 0.0
+          },
+          " Fwd Avg Bulk Rate": {
+            "min": 0.0,
+            "max": 0.0
+          },
+          " Bwd Avg Bytes/Bulk": {
+            "min": 0.0,
+            "max": 0.0
+          },
+          " Bwd Avg Packets/Bulk": {
+            "min": 0.0,
+            "max": 0.0
+          },
+          "Bwd Avg Bulk Rate": {
+            "min": 0.0,
+            "max": 0.0
+          },
+          "Subflow Fwd Packets": {
+            "min": 1.0,
+            "max": 206446.0
+          },
+          " Subflow Fwd Bytes": {
+            "min": 0.0,
+            "max": 2428415.0
+          },
+          " Subflow Bwd Packets": {
+            "min": 0.0,
+            "max": 276072.0
+          },
+          " Subflow Bwd Bytes": {
+            "min": 0.0,
+            "max": 627039032.0
+          },
+          "Init_Win_bytes_forward": {
+            "min": -1.0,
+            "max": 65535.0
+          },
+          " Init_Win_bytes_backward": {
+            "min": -1.0,
+            "max": 65535.0
+          },
+          " act_data_pkt_fwd": {
+            "min": 0.0,
+            "max": 1846.0
+          },
+          " min_seg_size_forward": {
+            "min": -536870661.0,
+            "max": 138.0
+          },
+          "Active Mean": {
+            "min": 0.0,
+            "max": 107000000.0
+          },
+          " Active Std": {
+            "min": 0.0,
+            "max": 24100000.0
+          },
+          " Active Max": {
+            "min": 0.0,
+            "max": 107000000.0
+          },
+          " Active Min": {
+            "min": 0.0,
+            "max": 107000000.0
+          },
+          "Idle Mean": {
+            "min": 0.0,
+            "max": 120000000.0
+          },
+          " Idle Std": {
+            "min": 0.0,
+            "max": 75900000.0
+          },
+          " Idle Max": {
+            "min": 0.0,
+            "max": 120000000.0
+          },
+          " Idle Min": {
+            "min": 0.0,
+            "max": 120000000.0
+          }
+        },
+        "elapsed_seconds": 4.741
+      },
+      {
+        "source": "Wednesday-workingHours.pcap_ISCX.csv",
+        "rows": 692703,
+        "columns": 79,
+        "schema": [
+          " Destination Port",
+          " Flow Duration",
+          " Total Fwd Packets",
+          " Total Backward Packets",
+          "Total Length of Fwd Packets",
+          " Total Length of Bwd Packets",
+          " Fwd Packet Length Max",
+          " Fwd Packet Length Min",
+          " Fwd Packet Length Mean",
+          " Fwd Packet Length Std",
+          "Bwd Packet Length Max",
+          " Bwd Packet Length Min",
+          " Bwd Packet Length Mean",
+          " Bwd Packet Length Std",
+          "Flow Bytes/s",
+          " Flow Packets/s",
+          " Flow IAT Mean",
+          " Flow IAT Std",
+          " Flow IAT Max",
+          " Flow IAT Min",
+          "Fwd IAT Total",
+          " Fwd IAT Mean",
+          " Fwd IAT Std",
+          " Fwd IAT Max",
+          " Fwd IAT Min",
+          "Bwd IAT Total",
+          " Bwd IAT Mean",
+          " Bwd IAT Std",
+          " Bwd IAT Max",
+          " Bwd IAT Min",
+          "Fwd PSH Flags",
+          " Bwd PSH Flags",
+          " Fwd URG Flags",
+          " Bwd URG Flags",
+          " Fwd Header Length",
+          " Bwd Header Length",
+          "Fwd Packets/s",
+          " Bwd Packets/s",
+          " Min Packet Length",
+          " Max Packet Length",
+          " Packet Length Mean",
+          " Packet Length Std",
+          " Packet Length Variance",
+          "FIN Flag Count",
+          " SYN Flag Count",
+          " RST Flag Count",
+          " PSH Flag Count",
+          " ACK Flag Count",
+          " URG Flag Count",
+          " CWE Flag Count",
+          " ECE Flag Count",
+          " Down/Up Ratio",
+          " Average Packet Size",
+          " Avg Fwd Segment Size",
+          " Avg Bwd Segment Size",
+          " Fwd Header Length.1",
+          "Fwd Avg Bytes/Bulk",
+          " Fwd Avg Packets/Bulk",
+          " Fwd Avg Bulk Rate",
+          " Bwd Avg Bytes/Bulk",
+          " Bwd Avg Packets/Bulk",
+          "Bwd Avg Bulk Rate",
+          "Subflow Fwd Packets",
+          " Subflow Fwd Bytes",
+          " Subflow Bwd Packets",
+          " Subflow Bwd Bytes",
+          "Init_Win_bytes_forward",
+          " Init_Win_bytes_backward",
+          " act_data_pkt_fwd",
+          " min_seg_size_forward",
+          "Active Mean",
+          " Active Std",
+          " Active Max",
+          " Active Min",
+          "Idle Mean",
+          " Idle Std",
+          " Idle Max",
+          " Idle Min",
+          " Label"
+        ],
+        "labels": {
+          "BENIGN": 440031,
+          "DoS GoldenEye": 10293,
+          "DoS Hulk": 231073,
+          "DoS Slowhttptest": 5499,
+          "DoS slowloris": 5796,
+          "Heartbleed": 11
+        },
+        "invalid_values": 2594,
+        "duplicate_rows": 81909,
+        "constant_columns": [
+          " Bwd PSH Flags",
+          " Fwd URG Flags",
+          " Bwd URG Flags",
+          " RST Flag Count",
+          " CWE Flag Count",
+          " ECE Flag Count",
+          "Fwd Avg Bytes/Bulk",
+          " Fwd Avg Packets/Bulk",
+          " Fwd Avg Bulk Rate",
+          " Bwd Avg Bytes/Bulk",
+          " Bwd Avg Packets/Bulk",
+          "Bwd Avg Bulk Rate"
+        ],
+        "numeric_ranges": {
+          " Destination Port": {
+            "min": 0.0,
+            "max": 65487.0
+          },
+          " Flow Duration": {
+            "min": -1.0,
+            "max": 119999998.0
+          },
+          " Total Fwd Packets": {
+            "min": 1.0,
+            "max": 203943.0
+          },
+          " Total Backward Packets": {
+            "min": 0.0,
+            "max": 272353.0
+          },
+          "Total Length of Fwd Packets": {
+            "min": 0.0,
+            "max": 1224076.0
+          },
+          " Total Length of Bwd Packets": {
+            "min": 0.0,
+            "max": 627000000.0
+          },
+          " Fwd Packet Length Max": {
+            "min": 0.0,
+            "max": 24820.0
+          },
+          " Fwd Packet Length Min": {
+            "min": 0.0,
+            "max": 2065.0
+          },
+          " Fwd Packet Length Mean": {
+            "min": 0.0,
+            "max": 4640.757576
+          },
+          " Fwd Packet Length Std": {
+            "min": 0.0,
+            "max": 6429.190773
+          },
+          "Bwd Packet Length Max": {
+            "min": 0.0,
+            "max": 19530.0
+          },
+          " Bwd Packet Length Min": {
+            "min": 0.0,
+            "max": 1983.0
+          },
+          " Bwd Packet Length Mean": {
+            "min": 0.0,
+            "max": 4370.686524
+          },
+          " Bwd Packet Length Std": {
+            "min": 0.0,
+            "max": 6715.738331
+          },
+          "Flow Bytes/s": {
+            "min": -12000000.0,
+            "max": 2070000000.0
+          },
+          " Flow Packets/s": {
+            "min": -2000000.0,
+            "max": 3000000.0
+          },
+          " Flow IAT Mean": {
+            "min": -1.0,
+            "max": 120000000.0
+          },
+          " Flow IAT Std": {
+            "min": 0.0,
+            "max": 84800000.0
+          },
+          " Flow IAT Max": {
+            "min": -1.0,
+            "max": 120000000.0
+          },
+          " Flow IAT Min": {
+            "min": -14.0,
+            "max": 120000000.0
+          },
+          "Fwd IAT Total": {
+            "min": 0.0,
+            "max": 120000000.0
+          },
+          " Fwd IAT Mean": {
+            "min": 0.0,
+            "max": 120000000.0
+          },
+          " Fwd IAT Std": {
+            "min": 0.0,
+            "max": 83700000.0
+          },
+          " Fwd IAT Max": {
+            "min": 0.0,
+            "max": 120000000.0
+          },
+          " Fwd IAT Min": {
+            "min": -8.0,
+            "max": 120000000.0
+          },
+          "Bwd IAT Total": {
+            "min": 0.0,
+            "max": 120000000.0
+          },
+          " Bwd IAT Mean": {
+            "min": 0.0,
+            "max": 120000000.0
+          },
+          " Bwd IAT Std": {
+            "min": 0.0,
+            "max": 82900000.0
+          },
+          " Bwd IAT Max": {
+            "min": 0.0,
+            "max": 120000000.0
+          },
+          " Bwd IAT Min": {
+            "min": 0.0,
+            "max": 120000000.0
+          },
+          "Fwd PSH Flags": {
+            "min": 0.0,
+            "max": 1.0
+          },
+          " Bwd PSH Flags": {
+            "min": 0.0,
+            "max": 0.0
+          },
+          " Fwd URG Flags": {
+            "min": 0.0,
+            "max": 0.0
+          },
+          " Bwd URG Flags": {
+            "min": 0.0,
+            "max": 0.0
+          },
+          " Fwd Header Length": {
+            "min": -11.0,
+            "max": 4290372.0
+          },
+          " Bwd Header Length": {
+            "min": 0.0,
+            "max": 5447060.0
+          },
+          "Fwd Packets/s": {
+            "min": 0.0,
+            "max": 3000000.0
+          },
+          " Bwd Packets/s": {
+            "min": 0.0,
+            "max": 2000000.0
+          },
+          " Min Packet Length": {
+            "min": 0.0,
+            "max": 1448.0
+          },
+          " Max Packet Length": {
+            "min": 0.0,
+            "max": 24820.0
+          },
+          " Packet Length Mean": {
+            "min": 0.0,
+            "max": 2279.754386
+          },
+          " Packet Length Std": {
+            "min": 0.0,
+            "max": 4364.022571
+          },
+          " Packet Length Variance": {
+            "min": 0.0,
+            "max": 19000000.0
+          },
+          "FIN Flag Count": {
+            "min": 0.0,
+            "max": 1.0
+          },
+          " SYN Flag Count": {
+            "min": 0.0,
+            "max": 1.0
+          },
+          " RST Flag Count": {
+            "min": 0.0,
+            "max": 1.0
+          },
+          " PSH Flag Count": {
+            "min": 0.0,
+            "max": 1.0
+          },
+          " ACK Flag Count": {
+            "min": 0.0,
+            "max": 1.0
+          },
+          " URG Flag Count": {
+            "min": 0.0,
+            "max": 1.0
+          },
+          " CWE Flag Count": {
+            "min": 0.0,
+            "max": 0.0
+          },
+          " ECE Flag Count": {
+            "min": 0.0,
+            "max": 1.0
+          },
+          " Down/Up Ratio": {
+            "min": 0.0,
+            "max": 43.0
+          },
+          " Average Packet Size": {
+            "min": 0.0,
+            "max": 2612.0
+          },
+          " Avg Fwd Segment Size": {
+            "min": 0.0,
+            "max": 4640.757576
+          },
+          " Avg Bwd Segment Size": {
+            "min": 0.0,
+            "max": 4370.686524
+          },
+          " Fwd Header Length.1": {
+            "min": -11.0,
+            "max": 4290372.0
+          },
+          "Fwd Avg Bytes/Bulk": {
+            "min": 0.0,
+            "max": 0.0
+          },
+          " Fwd Avg Packets/Bulk": {
+            "min": 0.0,
+            "max": 0.0
+          },
+          " Fwd Avg Bulk Rate": {
+            "min": 0.0,
+            "max": 0.0
+          },
+          " Bwd Avg Bytes/Bulk": {
+            "min": 0.0,
+            "max": 0.0
+          },
+          " Bwd Avg Packets/Bulk": {
+            "min": 0.0,
+            "max": 0.0
+          },
+          "Bwd Avg Bulk Rate": {
+            "min": 0.0,
+            "max": 0.0
+          },
+          "Subflow Fwd Packets": {
+            "min": 1.0,
+            "max": 203943.0
+          },
+          " Subflow Fwd Bytes": {
+            "min": 0.0,
+            "max": 1224076.0
+          },
+          " Subflow Bwd Packets": {
+            "min": 0.0,
+            "max": 272353.0
+          },
+          " Subflow Bwd Bytes": {
+            "min": 0.0,
+            "max": 627046409.0
+          },
+          "Init_Win_bytes_forward": {
+            "min": -1.0,
+            "max": 65535.0
+          },
+          " Init_Win_bytes_backward": {
+            "min": -1.0,
+            "max": 65535.0
+          },
+          " act_data_pkt_fwd": {
+            "min": 0.0,
+            "max": 197124.0
+          },
+          " min_seg_size_forward": {
+            "min": -1.0,
+            "max": 60.0
+          },
+          "Active Mean": {
+            "min": 0.0,
+            "max": 100000000.0
+          },
+          " Active Std": {
+            "min": 0.0,
+            "max": 74200000.0
+          },
+          " Active Max": {
+            "min": 0.0,
+            "max": 105000000.0
+          },
+          " Active Min": {
+            "min": 0.0,
+            "max": 100000000.0
+          },
+          "Idle Mean": {
+            "min": 0.0,
+            "max": 120000000.0
+          },
+          " Idle Std": {
+            "min": 0.0,
+            "max": 76900000.0
+          },
+          " Idle Max": {
+            "min": 0.0,
+            "max": 120000000.0
+          },
+          " Idle Min": {
+            "min": 0.0,
+            "max": 120000000.0
+          }
+        },
+        "elapsed_seconds": 6.959
+      },
+      {
+        "source": "Thursday-WorkingHours-Afternoon-Infilteration.pcap_ISCX.csv",
+        "rows": 288602,
+        "columns": 79,
+        "schema": [
+          " Destination Port",
+          " Flow Duration",
+          " Total Fwd Packets",
+          " Total Backward Packets",
+          "Total Length of Fwd Packets",
+          " Total Length of Bwd Packets",
+          " Fwd Packet Length Max",
+          " Fwd Packet Length Min",
+          " Fwd Packet Length Mean",
+          " Fwd Packet Length Std",
+          "Bwd Packet Length Max",
+          " Bwd Packet Length Min",
+          " Bwd Packet Length Mean",
+          " Bwd Packet Length Std",
+          "Flow Bytes/s",
+          " Flow Packets/s",
+          " Flow IAT Mean",
+          " Flow IAT Std",
+          " Flow IAT Max",
+          " Flow IAT Min",
+          "Fwd IAT Total",
+          " Fwd IAT Mean",
+          " Fwd IAT Std",
+          " Fwd IAT Max",
+          " Fwd IAT Min",
+          "Bwd IAT Total",
+          " Bwd IAT Mean",
+          " Bwd IAT Std",
+          " Bwd IAT Max",
+          " Bwd IAT Min",
+          "Fwd PSH Flags",
+          " Bwd PSH Flags",
+          " Fwd URG Flags",
+          " Bwd URG Flags",
+          " Fwd Header Length",
+          " Bwd Header Length",
+          "Fwd Packets/s",
+          " Bwd Packets/s",
+          " Min Packet Length",
+          " Max Packet Length",
+          " Packet Length Mean",
+          " Packet Length Std",
+          " Packet Length Variance",
+          "FIN Flag Count",
+          " SYN Flag Count",
+          " RST Flag Count",
+          " PSH Flag Count",
+          " ACK Flag Count",
+          " URG Flag Count",
+          " CWE Flag Count",
+          " ECE Flag Count",
+          " Down/Up Ratio",
+          " Average Packet Size",
+          " Avg Fwd Segment Size",
+          " Avg Bwd Segment Size",
+          " Fwd Header Length.1",
+          "Fwd Avg Bytes/Bulk",
+          " Fwd Avg Packets/Bulk",
+          " Fwd Avg Bulk Rate",
+          " Bwd Avg Bytes/Bulk",
+          " Bwd Avg Packets/Bulk",
+          "Bwd Avg Bulk Rate",
+          "Subflow Fwd Packets",
+          " Subflow Fwd Bytes",
+          " Subflow Bwd Packets",
+          " Subflow Bwd Bytes",
+          "Init_Win_bytes_forward",
+          " Init_Win_bytes_backward",
+          " act_data_pkt_fwd",
+          " min_seg_size_forward",
+          "Active Mean",
+          " Active Std",
+          " Active Max",
+          " Active Min",
+          "Idle Mean",
+          " Idle Std",
+          " Idle Max",
+          " Idle Min",
+          " Label"
+        ],
+        "labels": {
+          "BENIGN": 288566,
+          "Infiltration": 36
+        },
+        "invalid_values": 414,
+        "duplicate_rows": 35630,
+        "constant_columns": [
+          " Fwd Packet Length Std",
+          " Bwd Packet Length Std",
+          " Fwd IAT Std",
+          " Bwd IAT Std",
+          "Fwd PSH Flags",
+          " Bwd PSH Flags",
+          " Fwd URG Flags",
+          " Bwd URG Flags",
+          "FIN Flag Count",
+          " SYN Flag Count",
+          " RST Flag Count",
+          " CWE Flag Count",
+          " ECE Flag Count",
+          "Fwd Avg Bytes/Bulk",
+          " Fwd Avg Packets/Bulk",
+          " Fwd Avg Bulk Rate",
+          " Bwd Avg Bytes/Bulk",
+          " Bwd Avg Packets/Bulk",
+          "Bwd Avg Bulk Rate",
+          "Active Mean",
+          " Active Std",
+          " Active Max",
+          " Active Min",
+          "Idle Mean",
+          " Idle Std",
+          " Idle Max",
+          " Idle Min",
+          " Label"
+        ],
+        "numeric_ranges": {
+          " Destination Port": {
+            "min": 0.0,
+            "max": 65533.0
+          },
+          " Flow Duration": {
+            "min": -2.0,
+            "max": 119999936.0
+          },
+          " Total Fwd Packets": {
+            "min": 1.0,
+            "max": 22673.0
+          },
+          " Total Backward Packets": {
+            "min": 0.0,
+            "max": 44553.0
+          },
+          "Total Length of Fwd Packets": {
+            "min": 0.0,
+            "max": 12900000.0
+          },
+          " Total Length of Bwd Packets": {
+            "min": 0.0,
+            "max": 63600000.0
+          },
+          " Fwd Packet Length Max": {
+            "min": 0.0,
+            "max": 23360.0
+          },
+          " Fwd Packet Length Min": {
+            "min": 0.0,
+            "max": 2065.0
+          },
+          " Fwd Packet Length Mean": {
+            "min": 0.0,
+            "max": 4317.097561
+          },
+          " Fwd Packet Length Std": {
+            "min": 0.0,
+            "max": 4467.11346
+          },
+          "Bwd Packet Length Max": {
+            "min": 0.0,
+            "max": 11680.0
+          },
+          " Bwd Packet Length Min": {
+            "min": 0.0,
+            "max": 1543.0
+          },
+          " Bwd Packet Length Mean": {
+            "min": 0.0,
+            "max": 2966.952381
+          },
+          " Bwd Packet Length Std": {
+            "min": 0.0,
+            "max": 2380.9944
+          },
+          "Flow Bytes/s": {
+            "min": -12000000.0,
+            "max": 2070000000.0
+          },
+          " Flow Packets/s": {
+            "min": -2000000.0,
+            "max": 4000000.0
+          },
+          " Flow IAT Mean": {
+            "min": -2.0,
+            "max": 120000000.0
+          },
+          " Flow IAT Std": {
+            "min": 0.0,
+            "max": 84800000.0
+          },
+          " Flow IAT Max": {
+            "min": -2.0,
+            "max": 120000000.0
+          },
+          " Flow IAT Min": {
+            "min": -12.0,
+            "max": 120000000.0
+          },
+          "Fwd IAT Total": {
+            "min": 0.0,
+            "max": 120000000.0
+          },
+          " Fwd IAT Mean": {
+            "min": 0.0,
+            "max": 120000000.0
+          },
+          " Fwd IAT Std": {
+            "min": 0.0,
+            "max": 81600000.0
+          },
+          " Fwd IAT Max": {
+            "min": 0.0,
+            "max": 120000000.0
+          },
+          " Fwd IAT Min": {
+            "min": 0.0,
+            "max": 120000000.0
+          },
+          "Bwd IAT Total": {
+            "min": 0.0,
+            "max": 120000000.0
+          },
+          " Bwd IAT Mean": {
+            "min": 0.0,
+            "max": 120000000.0
+          },
+          " Bwd IAT Std": {
+            "min": 0.0,
+            "max": 81600000.0
+          },
+          " Bwd IAT Max": {
+            "min": 0.0,
+            "max": 120000000.0
+          },
+          " Bwd IAT Min": {
+            "min": 0.0,
+            "max": 120000000.0
+          },
+          "Fwd PSH Flags": {
+            "min": 0.0,
+            "max": 1.0
+          },
+          " Bwd PSH Flags": {
+            "min": 0.0,
+            "max": 0.0
+          },
+          " Fwd URG Flags": {
+            "min": 0.0,
+            "max": 1.0
+          },
+          " Bwd URG Flags": {
+            "min": 0.0,
+            "max": 0.0
+          },
+          " Fwd Header Length": {
+            "min": 0.0,
+            "max": 742984.0
+          },
+          " Bwd Header Length": {
+            "min": 0.0,
+            "max": 1425704.0
+          },
+          "Fwd Packets/s": {
+            "min": 0.0,
+            "max": 3000000.0
+          },
+          " Bwd Packets/s": {
+            "min": 0.0,
+            "max": 2000000.0
+          },
+          " Min Packet Length": {
+            "min": 0.0,
+            "max": 1306.0
+          },
+          " Max Packet Length": {
+            "min": 0.0,
+            "max": 23360.0
+          },
+          " Packet Length Mean": {
+            "min": 0.0,
+            "max": 2417.842105
+          },
+          " Packet Length Std": {
+            "min": 0.0,
+            "max": 3439.674248
+          },
+          " Packet Length Variance": {
+            "min": 0.0,
+            "max": 11800000.0
+          },
+          "FIN Flag Count": {
+            "min": 0.0,
+            "max": 1.0
+          },
+          " SYN Flag Count": {
+            "min": 0.0,
+            "max": 1.0
+          },
+          " RST Flag Count": {
+            "min": 0.0,
+            "max": 1.0
+          },
+          " PSH Flag Count": {
+            "min": 0.0,
+            "max": 1.0
+          },
+          " ACK Flag Count": {
+            "min": 0.0,
+            "max": 1.0
+          },
+          " URG Flag Count": {
+            "min": 0.0,
+            "max": 1.0
+          },
+          " CWE Flag Count": {
+            "min": 0.0,
+            "max": 1.0
+          },
+          " ECE Flag Count": {
+            "min": 0.0,
+            "max": 1.0
+          },
+          " Down/Up Ratio": {
+            "min": 0.0,
+            "max": 156.0
+          },
+          " Average Packet Size": {
+            "min": 0.0,
+            "max": 3558.0
+          },
+          " Avg Fwd Segment Size": {
+            "min": 0.0,
+            "max": 4317.097561
+          },
+          " Avg Bwd Segment Size": {
+            "min": 0.0,
+            "max": 2966.952381
+          },
+          " Fwd Header Length.1": {
+            "min": 0.0,
+            "max": 742984.0
+          },
+          "Fwd Avg Bytes/Bulk": {
+            "min": 0.0,
+            "max": 0.0
+          },
+          " Fwd Avg Packets/Bulk": {
+            "min": 0.0,
+            "max": 0.0
+          },
+          " Fwd Avg Bulk Rate": {
+            "min": 0.0,
+            "max": 0.0
+          },
+          " Bwd Avg Bytes/Bulk": {
+            "min": 0.0,
+            "max": 0.0
+          },
+          " Bwd Avg Packets/Bulk": {
+            "min": 0.0,
+            "max": 0.0
+          },
+          "Bwd Avg Bulk Rate": {
+            "min": 0.0,
+            "max": 0.0
+          },
+          "Subflow Fwd Packets": {
+            "min": 1.0,
+            "max": 22673.0
+          },
+          " Subflow Fwd Bytes": {
+            "min": 0.0,
+            "max": 12870338.0
+          },
+          " Subflow Bwd Packets": {
+            "min": 0.0,
+            "max": 44553.0
+          },
+          " Subflow Bwd Bytes": {
+            "min": 0.0,
+            "max": 63586401.0
+          },
+          "Init_Win_bytes_forward": {
+            "min": -1.0,
+            "max": 65535.0
+          },
+          " Init_Win_bytes_backward": {
+            "min": -1.0,
+            "max": 65535.0
+          },
+          " act_data_pkt_fwd": {
+            "min": 0.0,
+            "max": 9130.0
+          },
+          " min_seg_size_forward": {
+            "min": 0.0,
+            "max": 60.0
+          },
+          "Active Mean": {
+            "min": 0.0,
+            "max": 65200000.0
+          },
+          " Active Std": {
+            "min": 0.0,
+            "max": 38100000.0
+          },
+          " Active Max": {
+            "min": 0.0,
+            "max": 79100000.0
+          },
+          " Active Min": {
+            "min": 0.0,
+            "max": 65200000.0
+          },
+          "Idle Mean": {
+            "min": 0.0,
+            "max": 120000000.0
+          },
+          " Idle Std": {
+            "min": 0.0,
+            "max": 75300000.0
+          },
+          " Idle Max": {
+            "min": 0.0,
+            "max": 120000000.0
+          },
+          " Idle Min": {
+            "min": 0.0,
+            "max": 120000000.0
+          }
+        },
+        "elapsed_seconds": 3.745
+      }
+    ],
+    "source_count": 4,
+    "rows": 1957132,
+    "labels": {
+      "BENIGN": 1690589,
+      "DoS GoldenEye": 10293,
+      "DoS Hulk": 231073,
+      "DoS Slowhttptest": 5499,
+      "DoS slowloris": 5796,
+      "FTP-Patator": 7938,
+      "Heartbleed": 11,
+      "Infiltration": 36,
+      "SSH-Patator": 5897
+    },
+    "invalid_values": 4410,
+    "duplicate_rows_within_sessions": 168539,
+    "session_policy": "independent_capture_sessions",
+    "chronology": "row_order_proxy",
+    "proxy_cadence_seconds": 1
+  },
+  "cache": [
+    {
+      "cache_key": "ad714d9ed9a5ea7011a8b8c3edf46d19dacc6b8f48cb49d4e288eb4cdc47637e",
+      "identity": {
+        "source": {
+          "name": "Monday-WorkingHours.pcap_ISCX.csv",
+          "size_bytes": 176927918,
+          "sha256": "852c4beb34eda186f32561fa79df7a0747e92e1a6535b01270820dd9ffe17f34",
+          "rows": 529918
+        },
+        "ann_artifacts": {
+          "ann_model_sha256": "c804be8b658e7994f24539a8a427398b8d2f2d760588f7c7903fdf2c8765e434",
+          "ann_scaler_sha256": "7ff533245289db65c0a6d6ec1bbacf5d7def87158b3a791ad5abfa494b844a9f"
+        },
+        "schema_version": "row-order-proxy/v2",
+        "window_size_seconds": 10,
+        "sequence_length": 5,
+        "proxy_cadence_seconds": 1,
+        "state_feature_names": [
+          "flow_count",
+          "unique_src_ip_count",
+          "unique_dst_ip_count",
+          "unique_src_port_count",
+          "unique_dst_port_count",
+          "total_fwd_packets",
+          "total_bwd_packets",
+          "total_packets",
+          "total_fwd_bytes",
+          "total_bwd_bytes",
+          "total_bytes",
+          "packets_per_second",
+          "bytes_per_second",
+          "flows_per_second",
+          "syn_count",
+          "ack_count",
+          "fin_count",
+          "rst_count",
+          "psh_count",
+          "urg_count",
+          "mean_iat",
+          "iat_variance",
+          "min_iat",
+          "max_iat",
+          "mean_flow_duration",
+          "max_flow_duration",
+          "mean_packet_size",
+          "max_packet_size"
+        ]
+      },
+      "session_id": "Monday-WorkingHours.pcap_ISCX",
+      "source_path": "Monday-WorkingHours.pcap_ISCX.csv",
+      "rows": 529918,
+      "invalid_rows": 437,
+      "windows": 52992,
+      "dropped_empty_scoreable_windows": 0,
+      "feature_availability": {
+        "unique_src_ip_count": "unavailable_zero",
+        "unique_dst_ip_count": "unavailable_zero",
+        "unique_src_port_count": "unavailable_zero"
+      },
+      "elapsed_seconds": 5.628
+    },
+    {
+      "cache_key": "a3f933df90df8c728a4b1f1587120a09c03577f3356b8d9313388a28a2a2746a",
+      "identity": {
+        "source": {
+          "name": "Tuesday-WorkingHours.pcap_ISCX.csv",
+          "size_bytes": 135078995,
+          "sha256": "52b8692ae8c7d2ed04671fe2b98335693c0a92c7ab157d8c8b534d6523080851",
+          "rows": 445909
+        },
+        "ann_artifacts": {
+          "ann_model_sha256": "c804be8b658e7994f24539a8a427398b8d2f2d760588f7c7903fdf2c8765e434",
+          "ann_scaler_sha256": "7ff533245289db65c0a6d6ec1bbacf5d7def87158b3a791ad5abfa494b844a9f"
+        },
+        "schema_version": "row-order-proxy/v2",
+        "window_size_seconds": 10,
+        "sequence_length": 5,
+        "proxy_cadence_seconds": 1,
+        "state_feature_names": [
+          "flow_count",
+          "unique_src_ip_count",
+          "unique_dst_ip_count",
+          "unique_src_port_count",
+          "unique_dst_port_count",
+          "total_fwd_packets",
+          "total_bwd_packets",
+          "total_packets",
+          "total_fwd_bytes",
+          "total_bwd_bytes",
+          "total_bytes",
+          "packets_per_second",
+          "bytes_per_second",
+          "flows_per_second",
+          "syn_count",
+          "ack_count",
+          "fin_count",
+          "rst_count",
+          "psh_count",
+          "urg_count",
+          "mean_iat",
+          "iat_variance",
+          "min_iat",
+          "max_iat",
+          "mean_flow_duration",
+          "max_flow_duration",
+          "mean_packet_size",
+          "max_packet_size"
+        ]
+      },
+      "session_id": "Tuesday-WorkingHours.pcap_ISCX",
+      "source_path": "Tuesday-WorkingHours.pcap_ISCX.csv",
+      "rows": 445909,
+      "invalid_rows": 264,
+      "windows": 44591,
+      "dropped_empty_scoreable_windows": 0,
+      "feature_availability": {
+        "unique_src_ip_count": "unavailable_zero",
+        "unique_dst_ip_count": "unavailable_zero",
+        "unique_src_port_count": "unavailable_zero"
+      },
+      "elapsed_seconds": 4.529
+    },
+    {
+      "cache_key": "91b1cc0758968a1805e0cc087ee9716db2aff3f1d936088601bdc51dda013c87",
+      "identity": {
+        "source": {
+          "name": "Wednesday-workingHours.pcap_ISCX.csv",
+          "size_bytes": 225166395,
+          "sha256": "893c27dc968bf7a8adef1689f90be55ca4a4dc3088fb63d6ff247ac56856df2a",
+          "rows": 692703
+        },
+        "ann_artifacts": {
+          "ann_model_sha256": "c804be8b658e7994f24539a8a427398b8d2f2d760588f7c7903fdf2c8765e434",
+          "ann_scaler_sha256": "7ff533245289db65c0a6d6ec1bbacf5d7def87158b3a791ad5abfa494b844a9f"
+        },
+        "schema_version": "row-order-proxy/v2",
+        "window_size_seconds": 10,
+        "sequence_length": 5,
+        "proxy_cadence_seconds": 1,
+        "state_feature_names": [
+          "flow_count",
+          "unique_src_ip_count",
+          "unique_dst_ip_count",
+          "unique_src_port_count",
+          "unique_dst_port_count",
+          "total_fwd_packets",
+          "total_bwd_packets",
+          "total_packets",
+          "total_fwd_bytes",
+          "total_bwd_bytes",
+          "total_bytes",
+          "packets_per_second",
+          "bytes_per_second",
+          "flows_per_second",
+          "syn_count",
+          "ack_count",
+          "fin_count",
+          "rst_count",
+          "psh_count",
+          "urg_count",
+          "mean_iat",
+          "iat_variance",
+          "min_iat",
+          "max_iat",
+          "mean_flow_duration",
+          "max_flow_duration",
+          "mean_packet_size",
+          "max_packet_size"
+        ]
+      },
+      "session_id": "Wednesday-workingHours.pcap_ISCX",
+      "source_path": "Wednesday-workingHours.pcap_ISCX.csv",
+      "rows": 692703,
+      "invalid_rows": 1297,
+      "windows": 69271,
+      "dropped_empty_scoreable_windows": 0,
+      "feature_availability": {
+        "unique_src_ip_count": "unavailable_zero",
+        "unique_dst_ip_count": "unavailable_zero",
+        "unique_src_port_count": "unavailable_zero"
+      },
+      "elapsed_seconds": 7.08
+    },
+    {
+      "cache_key": "1619bcd913e38aa69f00a3b11159a57f570b49bbc050fb65d3fbd53f449f93a2",
+      "identity": {
+        "source": {
+          "name": "Thursday-WorkingHours-Afternoon-Infilteration.pcap_ISCX.csv",
+          "size_bytes": 83102436,
+          "sha256": "6bcda3857c2504676034e3ea57762d38393cc734cb377a726bd5cb153961b1b5",
+          "rows": 288602
+        },
+        "ann_artifacts": {
+          "ann_model_sha256": "c804be8b658e7994f24539a8a427398b8d2f2d760588f7c7903fdf2c8765e434",
+          "ann_scaler_sha256": "7ff533245289db65c0a6d6ec1bbacf5d7def87158b3a791ad5abfa494b844a9f"
+        },
+        "schema_version": "row-order-proxy/v2",
+        "window_size_seconds": 10,
+        "sequence_length": 5,
+        "proxy_cadence_seconds": 1,
+        "state_feature_names": [
+          "flow_count",
+          "unique_src_ip_count",
+          "unique_dst_ip_count",
+          "unique_src_port_count",
+          "unique_dst_port_count",
+          "total_fwd_packets",
+          "total_bwd_packets",
+          "total_packets",
+          "total_fwd_bytes",
+          "total_bwd_bytes",
+          "total_bytes",
+          "packets_per_second",
+          "bytes_per_second",
+          "flows_per_second",
+          "syn_count",
+          "ack_count",
+          "fin_count",
+          "rst_count",
+          "psh_count",
+          "urg_count",
+          "mean_iat",
+          "iat_variance",
+          "min_iat",
+          "max_iat",
+          "mean_flow_duration",
+          "max_flow_duration",
+          "mean_packet_size",
+          "max_packet_size"
+        ]
+      },
+      "session_id": "Thursday-WorkingHours-Afternoon-Infilteration.pcap_ISCX",
+      "source_path": "Thursday-WorkingHours-Afternoon-Infilteration.pcap_ISCX.csv",
+      "rows": 288602,
+      "invalid_rows": 207,
+      "windows": 28861,
+      "dropped_empty_scoreable_windows": 0,
+      "feature_availability": {
+        "unique_src_ip_count": "unavailable_zero",
+        "unique_dst_ip_count": "unavailable_zero",
+        "unique_src_port_count": "unavailable_zero"
+      },
+      "elapsed_seconds": 2.767
+    }
+  ],
+  "counts": {
+    "rows": 1957132,
+    "windows": 195715,
+    "train_windows": 166356,
+    "holdout_windows": 29359,
+    "train_sequences": 166336,
+    "final_train_sequences": 149698,
+    "validation_sequences": 16618,
+    "holdout_sequences": 29339
+  },
+  "class_support_windows": {
+    "train": {
+      "Monday-WorkingHours.pcap_ISCX": {
+        "BENIGN": 45032,
+        "DDoS": 0,
+        "DoS": 11,
+        "PortScan": 0
+      },
+      "Tuesday-WorkingHours.pcap_ISCX": {
+        "BENIGN": 37900,
+        "DDoS": 0,
+        "DoS": 2,
+        "PortScan": 0
+      },
+      "Wednesday-workingHours.pcap_ISCX": {
+        "BENIGN": 35744,
+        "DDoS": 0,
+        "DoS": 23136,
+        "PortScan": 0
+      },
+      "Thursday-WorkingHours-Afternoon-Infilteration.pcap_ISCX": {
+        "BENIGN": 17993,
+        "DDoS": 0,
+        "DoS": 0,
+        "PortScan": 6538
+      }
+    },
+    "holdout": {
+      "Monday-WorkingHours.pcap_ISCX": {
+        "BENIGN": 7949,
+        "DDoS": 0,
+        "DoS": 0,
+        "PortScan": 0
+      },
+      "Tuesday-WorkingHours.pcap_ISCX": {
+        "BENIGN": 6689,
+        "DDoS": 0,
+        "DoS": 0,
+        "PortScan": 0
+      },
+      "Wednesday-workingHours.pcap_ISCX": {
+        "BENIGN": 10391,
+        "DDoS": 0,
+        "DoS": 0,
+        "PortScan": 0
+      },
+      "Thursday-WorkingHours-Afternoon-Infilteration.pcap_ISCX": {
+        "BENIGN": 4330,
+        "DDoS": 0,
+        "DoS": 0,
+        "PortScan": 0
+      }
+    }
+  },
+  "metrics": {
+    "selection": [
+      {
+        "fold": 1,
+        "train_samples": 66521,
+        "validation_samples": 33251,
+        "candidates": {
+          "unweighted": {
+            "samples": 33251,
+            "accuracy": 0.9632492255872004,
+            "balanced_accuracy": 0.9673636973138091,
+            "macro_precision": 0.7104833309503038,
+            "macro_recall": 0.7255227729853568,
+            "macro_f1": 0.7177007093295564,
+            "weighted_f1": 0.9635864418993279,
+            "class_support": {
+              "BENIGN": 23866,
+              "DDoS": 0,
+              "DoS": 7589,
+              "PortScan": 1796
+            },
+            "per_class": {
+              "BENIGN": {
+                "precision": 0.9854227405247813,
+                "recall": 0.9630436604374424,
+                "f1": 0.9741046831955923,
+                "support": 23866
+              },
+              "DDoS": {
+                "precision": 0.0,
+                "recall": 0.0,
+                "f1": 0.0,
+                "support": 0
+              },
+              "DoS": {
+                "precision": 0.9010758006677383,
+                "recall": 0.9602055606799315,
+                "f1": 0.9297014544526665,
+                "support": 7589
+              },
+              "PortScan": {
+                "precision": 0.9554347826086956,
+                "recall": 0.9788418708240535,
+                "f1": 0.966996699669967,
+                "support": 1796
+              }
+            },
+            "confusion_matrix": [
+              [
+                22984,
+                0,
+                800,
+                82
+              ],
+              [
+                0,
+                0,
+                0,
+                0
+              ],
+              [
+                302,
+                0,
+                7287,
+                0
+              ],
+              [
+                38,
+                0,
+                0,
+                1758
+              ]
+            ],
+            "roc_auc": {
+              "BENIGN": 0.9886265555406784,
+              "DDoS": "N/A \u2014 class absent from evaluation set",
+              "DoS": 0.9905742300452729,
+              "PortScan": 0.9966343636523914
+            },
+            "pr_auc": {
+              "BENIGN": 0.9948336099853513,
+              "DDoS": "N/A \u2014 class absent from evaluation set",
+              "DoS": 0.9641804965754212,
+              "PortScan": 0.9717470529300721
+            },
+            "multiclass_roc_auc": "N/A \u2014 class absent from evaluation set",
+            "multiclass_pr_auc": "N/A \u2014 class absent from evaluation set",
+            "probability_quality": {
+              "average_confidence": 0.9654162386356395,
+              "confidence_correct": 0.9717677420329749,
+              "confidence_incorrect": 0.7989413594922246,
+              "multiclass_log_loss": 0.11089885819712735,
+              "multiclass_brier_score": 0.059826308938377544,
+              "expected_calibration_error_10_bin": 0.011043982092309008,
+              "calibration_bins": [
+                {
+                  "lower": 0.0,
+                  "upper": 0.1,
+                  "count": 0,
+                  "mean_confidence": null,
+                  "observed_accuracy": null
+                },
+                {
+                  "lower": 0.1,
+                  "upper": 0.2,
+                  "count": 0,
+                  "mean_confidence": null,
+                  "observed_accuracy": null
+                },
+                {
+                  "lower": 0.2,
+                  "upper": 0.30000000000000004,
+                  "count": 0,
+                  "mean_confidence": null,
+                  "observed_accuracy": null
+                },
+                {
+                  "lower": 0.30000000000000004,
+                  "upper": 0.4,
+                  "count": 1,
+                  "mean_confidence": 0.3557840201725972,
+                  "observed_accuracy": 0.0
+                },
+                {
+                  "lower": 0.4,
+                  "upper": 0.5,
+                  "count": 7,
+                  "mean_confidence": 0.49286289710338155,
+                  "observed_accuracy": 0.5714285714285714
+                },
+                {
+                  "lower": 0.5,
+                  "upper": 0.6000000000000001,
+                  "count": 271,
+                  "mean_confidence": 0.5527155070776523,
+                  "observed_accuracy": 0.5498154981549815
+                },
+                {
+                  "lower": 0.6000000000000001,
+                  "upper": 0.7000000000000001,
+                  "count": 510,
+                  "mean_confidence": 0.6586488295321332,
+                  "observed_accuracy": 0.6470588235294118
+                },
+                {
+                  "lower": 0.7000000000000001,
+                  "upper": 0.8,
+                  "count": 1998,
+                  "mean_confidence": 0.7572401956363447,
+                  "observed_accuracy": 0.8308308308308309
+                },
+                {
+                  "lower": 0.8,
+                  "upper": 0.9,
+                  "count": 971,
+                  "mean_confidence": 0.8531201635352811,
+                  "observed_accuracy": 0.7991761071060762
+                },
+                {
+                  "lower": 0.9,
+                  "upper": 1.0,
+                  "count": 29493,
+                  "mean_confidence": 0.9924459068735003,
+                  "observed_accuracy": 0.9870138676974197
+                }
+              ]
+            },
+            "attack_forecasting": {
+              "precision": 0.9111514052583862,
+              "recall": 0.9637719765583378,
+              "f1": 0.9367232808616405,
+              "false_positive_rate": 0.036956339562557616,
+              "false_negative_rate": 0.036228023441662226,
+              "confusion": {
+                "tp": 9045,
+                "tn": 22984,
+                "fp": 882,
+                "fn": 340
+              }
+            },
+            "transitions": [],
+            "evaluation_status": "limited_attack_support",
+            "limitations": [
+              "Holdout does not support every attack class; unsupported AUC values are null and results are not complete attack-performance evidence."
+            ],
+            "epochs": 40,
+            "training_seconds": 53.037
+          },
+          "capped_class_weighted": {
+            "samples": 33251,
+            "accuracy": 0.9605726143574629,
+            "balanced_accuracy": 0.971281933806428,
+            "macro_precision": 0.7055379466992804,
+            "macro_recall": 0.728461450354821,
+            "macro_f1": 0.7162352259640756,
+            "weighted_f1": 0.9611493635049514,
+            "class_support": {
+              "BENIGN": 23866,
+              "DDoS": 0,
+              "DoS": 7589,
+              "PortScan": 1796
+            },
+            "per_class": {
+              "BENIGN": {
+                "precision": 0.9906460735262127,
+                "recall": 0.954076929523171,
+                "f1": 0.9720176730486009,
+                "support": 23866
+              },
+              "DDoS": {
+                "precision": 0.0,
+                "recall": 0.0,
+                "f1": 0.0,
+                "support": 0
+              },
+              "DoS": {
+                "precision": 0.8804567622219579,
+                "recall": 0.975359072341547,
+                "f1": 0.9254813703425856,
+                "support": 7589
+              },
+              "PortScan": {
+                "precision": 0.951048951048951,
+                "recall": 0.9844097995545658,
+                "f1": 0.9674418604651163,
+                "support": 1796
+              }
+            },
+            "confusion_matrix": [
+              [
+                22770,
+                0,
+                1005,
+                91
+              ],
+              [
+                0,
+                0,
+                0,
+                0
+              ],
+              [
+                187,
+                0,
+                7402,
+                0
+              ],
+              [
+                28,
+                0,
+                0,
+                1768
+              ]
+            ],
+            "roc_auc": {
+              "BENIGN": 0.9883331374102101,
+              "DDoS": "N/A \u2014 class absent from evaluation set",
+              "DoS": 0.9905205814802011,
+              "PortScan": 0.9980273902088713
+            },
+            "pr_auc": {
+              "BENIGN": 0.9953703478819287,
+              "DDoS": "N/A \u2014 class absent from evaluation set",
+              "DoS": 0.962348321885442,
+              "PortScan": 0.974729010878593
+            },
+            "multiclass_roc_auc": "N/A \u2014 class absent from evaluation set",
+            "multiclass_pr_auc": "N/A \u2014 class absent from evaluation set",
+            "probability_quality": {
+              "average_confidence": 0.9728245647557259,
+              "confidence_correct": 0.9778495982738339,
+              "confidence_incorrect": 0.8503992630254644,
+              "multiclass_log_loss": 0.12400631029203958,
+              "multiclass_brier_score": 0.06422087576478473,
+              "expected_calibration_error_10_bin": 0.012318127540828012,
+              "calibration_bins": [
+                {
+                  "lower": 0.0,
+                  "upper": 0.1,
+                  "count": 0,
+                  "mean_confidence": null,
+                  "observed_accuracy": null
+                },
+                {
+                  "lower": 0.1,
+                  "upper": 0.2,
+                  "count": 0,
+                  "mean_confidence": null,
+                  "observed_accuracy": null
+                },
+                {
+                  "lower": 0.2,
+                  "upper": 0.30000000000000004,
+                  "count": 0,
+                  "mean_confidence": null,
+                  "observed_accuracy": null
+                },
+                {
+                  "lower": 0.30000000000000004,
+                  "upper": 0.4,
+                  "count": 0,
+                  "mean_confidence": null,
+                  "observed_accuracy": null
+                },
+                {
+                  "lower": 0.4,
+                  "upper": 0.5,
+                  "count": 6,
+                  "mean_confidence": 0.4832953193804674,
+                  "observed_accuracy": 0.6666666666666666
+                },
+                {
+                  "lower": 0.5,
+                  "upper": 0.6000000000000001,
+                  "count": 224,
+                  "mean_confidence": 0.5506651121728201,
+                  "observed_accuracy": 0.5223214285714286
+                },
+                {
+                  "lower": 0.6000000000000001,
+                  "upper": 0.7000000000000001,
+                  "count": 240,
+                  "mean_confidence": 0.649855536085912,
+                  "observed_accuracy": 0.6
+                },
+                {
+                  "lower": 0.7000000000000001,
+                  "upper": 0.8,
+                  "count": 370,
+                  "mean_confidence": 0.756296626799712,
+                  "observed_accuracy": 0.6324324324324324
+                },
+                {
+                  "lower": 0.8,
+                  "upper": 0.9,
+                  "count": 1846,
+                  "mean_confidence": 0.8686729350359035,
+                  "observed_accuracy": 0.7887323943661971
+                },
+                {
+                  "lower": 0.9,
+                  "upper": 1.0,
+                  "count": 30565,
+                  "mean_confidence": 0.9874619835431655,
+                  "observed_accuracy": 0.9810240471127106
+                }
+              ]
+            },
+            "attack_forecasting": {
+              "precision": 0.8932398207675823,
+              "recall": 0.9770911028236547,
+              "f1": 0.9332858378708463,
+              "false_positive_rate": 0.04592307047682896,
+              "false_negative_rate": 0.02290889717634523,
+              "confusion": {
+                "tp": 9170,
+                "tn": 22770,
+                "fp": 1096,
+                "fn": 215
+              }
+            },
+            "transitions": [],
+            "evaluation_status": "limited_attack_support",
+            "limitations": [
+              "Holdout does not support every attack class; unsupported AUC values are null and results are not complete attack-performance evidence."
+            ],
+            "epochs": 40,
+            "training_seconds": 54.064
+          }
+        }
+      },
+      {
+        "fold": 2,
+        "train_samples": 99792,
+        "validation_samples": 33251,
+        "candidates": {
+          "unweighted": {
+            "samples": 33251,
+            "accuracy": 0.9956091546118914,
+            "balanced_accuracy": 0.9925458210942055,
+            "macro_precision": 0.49056857710987023,
+            "macro_recall": 0.49627291054710276,
+            "macro_f1": 0.4933788194949368,
+            "weighted_f1": 0.9956645609525889,
+            "class_support": {
+              "BENIGN": 30299,
+              "DDoS": 0,
+              "DoS": 0,
+              "PortScan": 2952
+            },
+            "per_class": {
+              "BENIGN": {
+                "precision": 0.9989079718058176,
+                "recall": 0.996270503977029,
+                "f1": 0.997587494629697,
+                "support": 30299
+              },
+              "DDoS": {
+                "precision": 0.0,
+                "recall": 0.0,
+                "f1": 0.0,
+                "support": 0
+              },
+              "DoS": {
+                "precision": 0.0,
+                "recall": 0.0,
+                "f1": 0.0,
+                "support": 0
+              },
+              "PortScan": {
+                "precision": 0.9633663366336633,
+                "recall": 0.9888211382113821,
+                "f1": 0.9759277833500501,
+                "support": 2952
+              }
+            },
+            "confusion_matrix": [
+              [
+                30186,
+                0,
+                2,
+                111
+              ],
+              [
+                0,
+                0,
+                0,
+                0
+              ],
+              [
+                0,
+                0,
+                0,
+                0
+              ],
+              [
+                33,
+                0,
+                0,
+                2919
+              ]
+            ],
+            "roc_auc": {
+              "BENIGN": 0.9975436438330851,
+              "DDoS": "N/A \u2014 class absent from evaluation set",
+              "DoS": "N/A \u2014 class absent from evaluation set",
+              "PortScan": 0.9973553276284932
+            },
+            "pr_auc": {
+              "BENIGN": 0.9996879321322971,
+              "DDoS": "N/A \u2014 class absent from evaluation set",
+              "DoS": "N/A \u2014 class absent from evaluation set",
+              "PortScan": 0.9837646088194975
+            },
+            "multiclass_roc_auc": "N/A \u2014 class absent from evaluation set",
+            "multiclass_pr_auc": "N/A \u2014 class absent from evaluation set",
+            "probability_quality": {
+              "average_confidence": 0.994045062880452,
+              "confidence_correct": 0.9948061948574678,
+              "confidence_incorrect": 0.8214609937085297,
+              "multiclass_log_loss": 0.017808646159569612,
+              "multiclass_brier_score": 0.006930690401352976,
+              "expected_calibration_error_10_bin": 0.0025750886835541114,
+              "calibration_bins": [
+                {
+                  "lower": 0.0,
+                  "upper": 0.1,
+                  "count": 0,
+                  "mean_confidence": null,
+                  "observed_accuracy": null
+                },
+                {
+                  "lower": 0.1,
+                  "upper": 0.2,
+                  "count": 0,
+                  "mean_confidence": null,
+                  "observed_accuracy": null
+                },
+                {
+                  "lower": 0.2,
+                  "upper": 0.30000000000000004,
+                  "count": 0,
+                  "mean_confidence": null,
+                  "observed_accuracy": null
+                },
+                {
+                  "lower": 0.30000000000000004,
+                  "upper": 0.4,
+                  "count": 0,
+                  "mean_confidence": null,
+                  "observed_accuracy": null
+                },
+                {
+                  "lower": 0.4,
+                  "upper": 0.5,
+                  "count": 0,
+                  "mean_confidence": null,
+                  "observed_accuracy": null
+                },
+                {
+                  "lower": 0.5,
+                  "upper": 0.6000000000000001,
+                  "count": 45,
+                  "mean_confidence": 0.5539221160240463,
+                  "observed_accuracy": 0.4666666666666667
+                },
+                {
+                  "lower": 0.6000000000000001,
+                  "upper": 0.7000000000000001,
+                  "count": 45,
+                  "mean_confidence": 0.6450024148190795,
+                  "observed_accuracy": 0.4444444444444444
+                },
+                {
+                  "lower": 0.7000000000000001,
+                  "upper": 0.8,
+                  "count": 34,
+                  "mean_confidence": 0.7583002009292393,
+                  "observed_accuracy": 0.6764705882352942
+                },
+                {
+                  "lower": 0.8,
+                  "upper": 0.9,
+                  "count": 106,
+                  "mean_confidence": 0.8686275387532923,
+                  "observed_accuracy": 0.8584905660377359
+                },
+                {
+                  "lower": 0.9,
+                  "upper": 1.0,
+                  "count": 33021,
+                  "mean_confidence": 0.9957658476730119,
+                  "observed_accuracy": 0.9978498531237697
+                }
+              ]
+            },
+            "attack_forecasting": {
+              "precision": 0.962730870712401,
+              "recall": 0.9888211382113821,
+              "f1": 0.9756016042780749,
+              "false_positive_rate": 0.0037294960229710553,
+              "false_negative_rate": 0.011178861788617886,
+              "confusion": {
+                "tp": 2919,
+                "tn": 30186,
+                "fp": 113,
+                "fn": 33
+              }
+            },
+            "transitions": [],
+            "evaluation_status": "limited_attack_support",
+            "limitations": [
+              "Holdout does not support every attack class; unsupported AUC values are null and results are not complete attack-performance evidence."
+            ],
+            "epochs": 40,
+            "training_seconds": 61.53
+          },
+          "capped_class_weighted": {
+            "samples": 33251,
+            "accuracy": 0.9941355147213617,
+            "balanced_accuracy": 0.9938774565350526,
+            "macro_precision": 0.4865273706178961,
+            "macro_recall": 0.4969387282675263,
+            "macro_f1": 0.49159012251685646,
+            "weighted_f1": 0.9943600764420942,
+            "class_support": {
+              "BENIGN": 30299,
+              "DDoS": 0,
+              "DoS": 0,
+              "PortScan": 2952
+            },
+            "per_class": {
+              "BENIGN": {
+                "precision": 0.9993696503218101,
+                "recall": 0.9941912274332486,
+                "f1": 0.9967737132079217,
+                "support": 30299
+              },
+              "DDoS": {
+                "precision": 0.0,
+                "recall": 0.0,
+                "f1": 0.0,
+                "support": 0
+              },
+              "DoS": {
+                "precision": 0.0,
+                "recall": 0.0,
+                "f1": 0.0,
+                "support": 0
+              },
+              "PortScan": {
+                "precision": 0.9467398321497741,
+                "recall": 0.9935636856368564,
+                "f1": 0.9695867768595041,
+                "support": 2952
+              }
+            },
+            "confusion_matrix": [
+              [
+                30123,
+                0,
+                11,
+                165
+              ],
+              [
+                0,
+                0,
+                0,
+                0
+              ],
+              [
+                0,
+                0,
+                0,
+                0
+              ],
+              [
+                19,
+                0,
+                0,
+                2933
+              ]
+            ],
+            "roc_auc": {
+              "BENIGN": 0.9976284411883691,
+              "DDoS": "N/A \u2014 class absent from evaluation set",
+              "DoS": "N/A \u2014 class absent from evaluation set",
+              "PortScan": 0.9976227951122376
+            },
+            "pr_auc": {
+              "BENIGN": 0.999667185951262,
+              "DDoS": "N/A \u2014 class absent from evaluation set",
+              "DoS": "N/A \u2014 class absent from evaluation set",
+              "PortScan": 0.9819541535055556
+            },
+            "multiclass_roc_auc": "N/A \u2014 class absent from evaluation set",
+            "multiclass_pr_auc": "N/A \u2014 class absent from evaluation set",
+            "probability_quality": {
+              "average_confidence": 0.9833112388016715,
+              "confidence_correct": 0.9839466556122083,
+              "confidence_incorrect": 0.8755966844985538,
+              "multiclass_log_loss": 0.03732724717584147,
+              "multiclass_brier_score": 0.012107198309313687,
+              "expected_calibration_error_10_bin": 0.010854342224324782,
+              "calibration_bins": [
+                {
+                  "lower": 0.0,
+                  "upper": 0.1,
+                  "count": 0,
+                  "mean_confidence": null,
+                  "observed_accuracy": null
+                },
+                {
+                  "lower": 0.1,
+                  "upper": 0.2,
+                  "count": 0,
+                  "mean_confidence": null,
+                  "observed_accuracy": null
+                },
+                {
+                  "lower": 0.2,
+                  "upper": 0.30000000000000004,
+                  "count": 0,
+                  "mean_confidence": null,
+                  "observed_accuracy": null
+                },
+                {
+                  "lower": 0.30000000000000004,
+                  "upper": 0.4,
+                  "count": 0,
+                  "mean_confidence": null,
+                  "observed_accuracy": null
+                },
+                {
+                  "lower": 0.4,
+                  "upper": 0.5,
+                  "count": 1,
+                  "mean_confidence": 0.49986734769902924,
+                  "observed_accuracy": 0.0
+                },
+                {
+                  "lower": 0.5,
+                  "upper": 0.6000000000000001,
+                  "count": 46,
+                  "mean_confidence": 0.5491743949681228,
+                  "observed_accuracy": 0.6086956521739131
+                },
+                {
+                  "lower": 0.6000000000000001,
+                  "upper": 0.7000000000000001,
+                  "count": 83,
+                  "mean_confidence": 0.6561025304283891,
+                  "observed_accuracy": 0.8674698795180723
+                },
+                {
+                  "lower": 0.7000000000000001,
+                  "upper": 0.8,
+                  "count": 154,
+                  "mean_confidence": 0.7521459067614552,
+                  "observed_accuracy": 0.8831168831168831
+                },
+                {
+                  "lower": 0.8,
+                  "upper": 0.9,
+                  "count": 661,
+                  "mean_confidence": 0.8653505173057422,
+                  "observed_accuracy": 0.9546142208774584
+                },
+                {
+                  "lower": 0.9,
+                  "upper": 1.0,
+                  "count": 32306,
+                  "mean_confidence": 0.9883005150830256,
+                  "observed_accuracy": 0.996378381724757
+                }
+              ]
+            },
+            "attack_forecasting": {
+              "precision": 0.9433901576069476,
+              "recall": 0.9935636856368564,
+              "f1": 0.9678270912390694,
+              "false_positive_rate": 0.005808772566751378,
+              "false_negative_rate": 0.006436314363143632,
+              "confusion": {
+                "tp": 2933,
+                "tn": 30123,
+                "fp": 176,
+                "fn": 19
+              }
+            },
+            "transitions": [],
+            "evaluation_status": "limited_attack_support",
+            "limitations": [
+              "Holdout does not support every attack class; unsupported AUC values are null and results are not complete attack-performance evidence."
+            ],
+            "epochs": 40,
+            "training_seconds": 61.674
+          }
+        }
+      },
+      {
+        "fold": 3,
+        "train_samples": 133063,
+        "validation_samples": 33253,
+        "candidates": {
+          "unweighted": {
+            "samples": 33253,
+            "accuracy": 0.9963913030403272,
+            "balanced_accuracy": 0.9858976065113995,
+            "macro_precision": 0.4862755446820539,
+            "macro_recall": 0.49294880325569973,
+            "macro_f1": 0.48956075188454595,
+            "weighted_f1": 0.9964164285625285,
+            "class_support": {
+              "BENIGN": 31770,
+              "DDoS": 0,
+              "DoS": 0,
+              "PortScan": 1483
+            },
+            "per_class": {
+              "BENIGN": {
+                "precision": 0.9988022442161003,
+                "recall": 0.9974189486937363,
+                "f1": 0.9981101171727353,
+                "support": 31770
+              },
+              "DDoS": {
+                "precision": 0.0,
+                "recall": 0.0,
+                "f1": 0.0,
+                "support": 0
+              },
+              "DoS": {
+                "precision": 0.0,
+                "recall": 0.0,
+                "f1": 0.0,
+                "support": 0
+              },
+              "PortScan": {
+                "precision": 0.9462999345121152,
+                "recall": 0.9743762643290627,
+                "f1": 0.9601328903654485,
+                "support": 1483
+              }
+            },
+            "confusion_matrix": [
+              [
+                31688,
+                0,
+                0,
+                82
+              ],
+              [
+                0,
+                0,
+                0,
+                0
+              ],
+              [
+                0,
+                0,
+                0,
+                0
+              ],
+              [
+                38,
+                0,
+                0,
+                1445
+              ]
+            ],
+            "roc_auc": {
+              "BENIGN": 0.9922213159273784,
+              "DDoS": "N/A \u2014 class absent from evaluation set",
+              "DoS": "N/A \u2014 class absent from evaluation set",
+              "PortScan": 0.992339495077036
+            },
+            "pr_auc": {
+              "BENIGN": 0.9992969104444148,
+              "DDoS": "N/A \u2014 class absent from evaluation set",
+              "DoS": "N/A \u2014 class absent from evaluation set",
+              "PortScan": 0.9651617759959943
+            },
+            "multiclass_roc_auc": "N/A \u2014 class absent from evaluation set",
+            "multiclass_pr_auc": "N/A \u2014 class absent from evaluation set",
+            "probability_quality": {
+              "average_confidence": 0.9736201502282072,
+              "confidence_correct": 0.9738705056778802,
+              "confidence_incorrect": 0.9044949242781157,
+              "multiclass_log_loss": 0.039547596244639945,
+              "multiclass_brier_score": 0.009150777622421821,
+              "expected_calibration_error_10_bin": 0.022771152812119888,
+              "calibration_bins": [
+                {
+                  "lower": 0.0,
+                  "upper": 0.1,
+                  "count": 0,
+                  "mean_confidence": null,
+                  "observed_accuracy": null
+                },
+                {
+                  "lower": 0.1,
+                  "upper": 0.2,
+                  "count": 0,
+                  "mean_confidence": null,
+                  "observed_accuracy": null
+                },
+                {
+                  "lower": 0.2,
+                  "upper": 0.30000000000000004,
+                  "count": 0,
+                  "mean_confidence": null,
+                  "observed_accuracy": null
+                },
+                {
+                  "lower": 0.30000000000000004,
+                  "upper": 0.4,
+                  "count": 0,
+                  "mean_confidence": null,
+                  "observed_accuracy": null
+                },
+                {
+                  "lower": 0.4,
+                  "upper": 0.5,
+                  "count": 4,
+                  "mean_confidence": 0.4942776413793021,
+                  "observed_accuracy": 0.75
+                },
+                {
+                  "lower": 0.5,
+                  "upper": 0.6000000000000001,
+                  "count": 28,
+                  "mean_confidence": 0.5516011102070385,
+                  "observed_accuracy": 0.6785714285714286
+                },
+                {
+                  "lower": 0.6000000000000001,
+                  "upper": 0.7000000000000001,
+                  "count": 50,
+                  "mean_confidence": 0.6609306046144099,
+                  "observed_accuracy": 0.9
+                },
+                {
+                  "lower": 0.7000000000000001,
+                  "upper": 0.8,
+                  "count": 122,
+                  "mean_confidence": 0.759177502553594,
+                  "observed_accuracy": 0.9508196721311475
+                },
+                {
+                  "lower": 0.8,
+                  "upper": 0.9,
+                  "count": 915,
+                  "mean_confidence": 0.8592153295028209,
+                  "observed_accuracy": 0.9868852459016394
+                },
+                {
+                  "lower": 0.9,
+                  "upper": 1.0,
+                  "count": 32134,
+                  "mean_confidence": 0.9786058598945019,
+                  "observed_accuracy": 0.9972925872907201
+                }
+              ]
+            },
+            "attack_forecasting": {
+              "precision": 0.9462999345121152,
+              "recall": 0.9743762643290627,
+              "f1": 0.9601328903654484,
+              "false_positive_rate": 0.002581051306263771,
+              "false_negative_rate": 0.02562373567093729,
+              "confusion": {
+                "tp": 1445,
+                "tn": 31688,
+                "fp": 82,
+                "fn": 38
+              }
+            },
+            "transitions": [],
+            "evaluation_status": "limited_attack_support",
+            "limitations": [
+              "Holdout does not support every attack class; unsupported AUC values are null and results are not complete attack-performance evidence."
+            ],
+            "epochs": 8,
+            "training_seconds": 15.472
+          },
+          "capped_class_weighted": {
+            "samples": 33253,
+            "accuracy": 0.7844104291342134,
+            "balanced_accuracy": 0.8823521895722607,
+            "macro_precision": 0.29241822029496867,
+            "macro_recall": 0.44117609478613035,
+            "macro_f1": 0.29086757837986366,
+            "weighted_f1": 0.8469225727073033,
+            "class_support": {
+              "BENIGN": 31770,
+              "DDoS": 0,
+              "DoS": 0,
+              "PortScan": 1483
+            },
+            "per_class": {
+              "BENIGN": {
+                "precision": 0.9993910113271893,
+                "recall": 0.7748190116462071,
+                "f1": 0.8728923246041737,
+                "support": 31770
+              },
+              "DDoS": {
+                "precision": 0.0,
+                "recall": 0.0,
+                "f1": 0.0,
+                "support": 0
+              },
+              "DoS": {
+                "precision": 0.0,
+                "recall": 0.0,
+                "f1": 0.0,
+                "support": 0
+              },
+              "PortScan": {
+                "precision": 0.1702818698526853,
+                "recall": 0.9898853674983142,
+                "f1": 0.2905779889152811,
+                "support": 1483
+              }
+            },
+            "confusion_matrix": [
+              [
+                24616,
+                0,
+                1,
+                7153
+              ],
+              [
+                0,
+                0,
+                0,
+                0
+              ],
+              [
+                0,
+                0,
+                0,
+                0
+              ],
+              [
+                15,
+                0,
+                0,
+                1468
+              ]
+            ],
+            "roc_auc": {
+              "BENIGN": 0.9923522086744939,
+              "DDoS": "N/A \u2014 class absent from evaluation set",
+              "DoS": "N/A \u2014 class absent from evaluation set",
+              "PortScan": 0.9923618234652258
+            },
+            "pr_auc": {
+              "BENIGN": 0.9992912946083756,
+              "DDoS": "N/A \u2014 class absent from evaluation set",
+              "DoS": "N/A \u2014 class absent from evaluation set",
+              "PortScan": 0.965220977993797
+            },
+            "multiclass_roc_auc": "N/A \u2014 class absent from evaluation set",
+            "multiclass_pr_auc": "N/A \u2014 class absent from evaluation set",
+            "probability_quality": {
+              "average_confidence": 0.7114185206073259,
+              "confidence_correct": 0.7349925275172936,
+              "confidence_incorrect": 0.6256458331698045,
+              "multiclass_log_loss": 0.49033655033500606,
+              "multiclass_brier_score": 0.30916427263505974,
+              "expected_calibration_error_10_bin": 0.07367789748360971,
+              "calibration_bins": [
+                {
+                  "lower": 0.0,
+                  "upper": 0.1,
+                  "count": 0,
+                  "mean_confidence": null,
+                  "observed_accuracy": null
+                },
+                {
+                  "lower": 0.1,
+                  "upper": 0.2,
+                  "count": 0,
+                  "mean_confidence": null,
+                  "observed_accuracy": null
+                },
+                {
+                  "lower": 0.2,
+                  "upper": 0.30000000000000004,
+                  "count": 0,
+                  "mean_confidence": null,
+                  "observed_accuracy": null
+                },
+                {
+                  "lower": 0.30000000000000004,
+                  "upper": 0.4,
+                  "count": 0,
+                  "mean_confidence": null,
+                  "observed_accuracy": null
+                },
+                {
+                  "lower": 0.4,
+                  "upper": 0.5,
+                  "count": 194,
+                  "mean_confidence": 0.49758501659117504,
+                  "observed_accuracy": 0.5360824742268041
+                },
+                {
+                  "lower": 0.5,
+                  "upper": 0.6000000000000001,
+                  "count": 8474,
+                  "mean_confidence": 0.549556221599518,
+                  "observed_accuracy": 0.5902761387774369
+                },
+                {
+                  "lower": 0.6000000000000001,
+                  "upper": 0.7000000000000001,
+                  "count": 8270,
+                  "mean_confidence": 0.6499450953226681,
+                  "observed_accuracy": 0.7460701330108828
+                },
+                {
+                  "lower": 0.7000000000000001,
+                  "upper": 0.8,
+                  "count": 7298,
+                  "mean_confidence": 0.7479742254263485,
+                  "observed_accuracy": 0.8673609208002192
+                },
+                {
+                  "lower": 0.8,
+                  "upper": 0.9,
+                  "count": 5169,
+                  "mean_confidence": 0.8456493944348051,
+                  "observed_accuracy": 0.926871735345328
+                },
+                {
+                  "lower": 0.9,
+                  "upper": 1.0,
+                  "count": 3848,
+                  "mean_confidence": 0.9611241152258162,
+                  "observed_accuracy": 0.9581600831600832
+                }
+              ]
+            },
+            "attack_forecasting": {
+              "precision": 0.17026212015773604,
+              "recall": 0.9898853674983142,
+              "f1": 0.2905492330529441,
+              "false_positive_rate": 0.22518098835379288,
+              "false_negative_rate": 0.010114632501685773,
+              "confusion": {
+                "tp": 1468,
+                "tn": 24616,
+                "fp": 7154,
+                "fn": 15
+              }
+            },
+            "transitions": [],
+            "evaluation_status": "limited_attack_support",
+            "limitations": [
+              "Holdout does not support every attack class; unsupported AUC values are null and results are not complete attack-performance evidence."
+            ],
+            "epochs": 8,
+            "training_seconds": 14.674
+          }
+        }
+      }
+    ],
+    "mean_rolling_macro_f1": {
+      "unweighted": 0.5668800935696797,
+      "capped_class_weighted": 0.4995643089535986
+    },
+    "selected_training": "unweighted",
+    "final_validation": {
+      "samples": 16618,
+      "accuracy": 0.9976531471897943,
+      "balanced_accuracy": 0.9654471037460381,
+      "macro_precision": 0.4453011465246932,
+      "macro_recall": 0.4827235518730191,
+      "macro_f1": 0.46234799961656775,
+      "weighted_f1": 0.9977557341191214,
+      "class_support": {
+        "BENIGN": 16499,
+        "DDoS": 0,
+        "DoS": 0,
+        "PortScan": 119
+      },
+      "per_class": {
+        "BENIGN": {
+          "precision": 0.9995144452537024,
+          "recall": 0.9981210982483787,
+          "f1": 0.9988172858225929,
+          "support": 16499
+        },
+        "DDoS": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support": 0
+        },
+        "DoS": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support": 0
+        },
+        "PortScan": {
+          "precision": 0.7816901408450704,
+          "recall": 0.9327731092436975,
+          "f1": 0.8505747126436781,
+          "support": 119
+        }
+      },
+      "confusion_matrix": [
+        [
+          16468,
+          0,
+          0,
+          31
+        ],
+        [
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          8,
+          0,
+          0,
+          111
+        ]
+      ],
+      "roc_auc": {
+        "BENIGN": 0.984167107657658,
+        "DDoS": "N/A \u2014 class absent from evaluation set",
+        "DoS": "N/A \u2014 class absent from evaluation set",
+        "PortScan": 0.9843550487653695
+      },
+      "pr_auc": {
+        "BENIGN": 0.9998118883932915,
+        "DDoS": "N/A \u2014 class absent from evaluation set",
+        "DoS": "N/A \u2014 class absent from evaluation set",
+        "PortScan": 0.8756753074536907
+      },
+      "multiclass_roc_auc": "N/A \u2014 class absent from evaluation set",
+      "multiclass_pr_auc": "N/A \u2014 class absent from evaluation set",
+      "probability_quality": {
+        "average_confidence": 0.9852965820820051,
+        "confidence_correct": 0.9856400461067559,
+        "confidence_incorrect": 0.8392891444834217,
+        "multiclass_log_loss": 0.020095346090250647,
+        "multiclass_brier_score": 0.004414694939259182,
+        "expected_calibration_error_10_bin": 0.012642729028753505,
+        "calibration_bins": [
+          {
+            "lower": 0.0,
+            "upper": 0.1,
+            "count": 0,
+            "mean_confidence": null,
+            "observed_accuracy": null
+          },
+          {
+            "lower": 0.1,
+            "upper": 0.2,
+            "count": 0,
+            "mean_confidence": null,
+            "observed_accuracy": null
+          },
+          {
+            "lower": 0.2,
+            "upper": 0.30000000000000004,
+            "count": 0,
+            "mean_confidence": null,
+            "observed_accuracy": null
+          },
+          {
+            "lower": 0.30000000000000004,
+            "upper": 0.4,
+            "count": 0,
+            "mean_confidence": null,
+            "observed_accuracy": null
+          },
+          {
+            "lower": 0.4,
+            "upper": 0.5,
+            "count": 0,
+            "mean_confidence": null,
+            "observed_accuracy": null
+          },
+          {
+            "lower": 0.5,
+            "upper": 0.6000000000000001,
+            "count": 5,
+            "mean_confidence": 0.554529696419354,
+            "observed_accuracy": 0.4
+          },
+          {
+            "lower": 0.6000000000000001,
+            "upper": 0.7000000000000001,
+            "count": 11,
+            "mean_confidence": 0.6350304937371591,
+            "observed_accuracy": 0.5454545454545454
+          },
+          {
+            "lower": 0.7000000000000001,
+            "upper": 0.8,
+            "count": 18,
+            "mean_confidence": 0.7566528947826666,
+            "observed_accuracy": 0.7222222222222222
+          },
+          {
+            "lower": 0.8,
+            "upper": 0.9,
+            "count": 70,
+            "mean_confidence": 0.866193048347058,
+            "observed_accuracy": 0.9428571428571428
+          },
+          {
+            "lower": 0.9,
+            "upper": 1.0,
+            "count": 16514,
+            "mean_confidence": 0.9864143969743959,
+            "observed_accuracy": 0.9986677970207097
+          }
+        ]
+      },
+      "attack_forecasting": {
+        "precision": 0.7816901408450704,
+        "recall": 0.9327731092436975,
+        "f1": 0.8505747126436782,
+        "false_positive_rate": 0.0018789017516213104,
+        "false_negative_rate": 0.06722689075630252,
+        "confusion": {
+          "tp": 111,
+          "tn": 16468,
+          "fp": 31,
+          "fn": 8
+        }
+      },
+      "transitions": [],
+      "evaluation_status": "limited_attack_support",
+      "limitations": [
+        "Holdout does not support every attack class; unsupported AUC values are null and results are not complete attack-performance evidence."
+      ],
+      "epochs": 15,
+      "training_seconds": 25.555
+    },
+    "holdout": {
+      "lstm": {
+        "samples": 29339,
+        "accuracy": 0.9996591567538089,
+        "balanced_accuracy": 0.9996591567538089,
+        "macro_precision": 0.25,
+        "macro_recall": 0.24991478918845222,
+        "macro_f1": 0.2499573873321061,
+        "weighted_f1": 0.9998295493284244,
+        "class_support": {
+          "BENIGN": 29339,
+          "DDoS": 0,
+          "DoS": 0,
+          "PortScan": 0
+        },
+        "per_class": {
+          "BENIGN": {
+            "precision": 1.0,
+            "recall": 0.9996591567538089,
+            "f1": 0.9998295493284244,
+            "support": 29339
+          },
+          "DDoS": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 0
+          },
+          "DoS": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 0
+          },
+          "PortScan": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 0
+          }
+        },
+        "confusion_matrix": [
+          [
+            29329,
+            0,
+            1,
+            9
+          ],
+          [
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0
+          ]
+        ],
+        "roc_auc": {
+          "BENIGN": "N/A \u2014 class absent from evaluation set",
+          "DDoS": "N/A \u2014 class absent from evaluation set",
+          "DoS": "N/A \u2014 class absent from evaluation set",
+          "PortScan": "N/A \u2014 class absent from evaluation set"
+        },
+        "pr_auc": {
+          "BENIGN": "N/A \u2014 class absent from evaluation set",
+          "DDoS": "N/A \u2014 class absent from evaluation set",
+          "DoS": "N/A \u2014 class absent from evaluation set",
+          "PortScan": "N/A \u2014 class absent from evaluation set"
+        },
+        "multiclass_roc_auc": "N/A \u2014 class absent from evaluation set",
+        "multiclass_pr_auc": "N/A \u2014 class absent from evaluation set",
+        "probability_quality": {
+          "average_confidence": 0.98513275665791,
+          "confidence_correct": 0.9852777981117911,
+          "confidence_incorrect": 0.559740676570012,
+          "multiclass_log_loss": 0.015277674239452532,
+          "multiclass_brier_score": 0.0012085881978243522,
+          "expected_calibration_error_10_bin": 0.01472973858210199,
+          "calibration_bins": [
+            {
+              "lower": 0.0,
+              "upper": 0.1,
+              "count": 0,
+              "mean_confidence": null,
+              "observed_accuracy": null
+            },
+            {
+              "lower": 0.1,
+              "upper": 0.2,
+              "count": 0,
+              "mean_confidence": null,
+              "observed_accuracy": null
+            },
+            {
+              "lower": 0.2,
+              "upper": 0.30000000000000004,
+              "count": 0,
+              "mean_confidence": null,
+              "observed_accuracy": null
+            },
+            {
+              "lower": 0.30000000000000004,
+              "upper": 0.4,
+              "count": 0,
+              "mean_confidence": null,
+              "observed_accuracy": null
+            },
+            {
+              "lower": 0.4,
+              "upper": 0.5,
+              "count": 0,
+              "mean_confidence": null,
+              "observed_accuracy": null
+            },
+            {
+              "lower": 0.5,
+              "upper": 0.6000000000000001,
+              "count": 11,
+              "mean_confidence": 0.5438976293959223,
+              "observed_accuracy": 0.2727272727272727
+            },
+            {
+              "lower": 0.6000000000000001,
+              "upper": 0.7000000000000001,
+              "count": 12,
+              "mean_confidence": 0.6555894096996026,
+              "observed_accuracy": 0.8333333333333334
+            },
+            {
+              "lower": 0.7000000000000001,
+              "upper": 0.8,
+              "count": 21,
+              "mean_confidence": 0.767536063460607,
+              "observed_accuracy": 1.0
+            },
+            {
+              "lower": 0.8,
+              "upper": 0.9,
+              "count": 110,
+              "mean_confidence": 0.8680799627378134,
+              "observed_accuracy": 1.0
+            },
+            {
+              "lower": 0.9,
+              "upper": 1.0,
+              "count": 29185,
+              "mean_confidence": 0.986032309320296,
+              "observed_accuracy": 1.0
+            }
+          ]
+        },
+        "attack_forecasting": {
+          "precision": 0.0,
+          "recall": "N/A \u2014 class absent from evaluation set",
+          "f1": "N/A \u2014 class absent from evaluation set",
+          "false_positive_rate": 0.0003408432461910767,
+          "false_negative_rate": "N/A \u2014 class absent from evaluation set",
+          "confusion": {
+            "tp": 0,
+            "tn": 29329,
+            "fp": 10,
+            "fn": 0
+          }
+        },
+        "transitions": [],
+        "evaluation_status": "benign_only_holdout",
+        "limitations": [
+          "Holdout does not support every attack class; unsupported AUC values are null and results are not complete attack-performance evidence."
+        ]
+      },
+      "persistence": {
+        "samples": 29339,
+        "accuracy": 1.0,
+        "balanced_accuracy": 1.0,
+        "macro_precision": 0.25,
+        "macro_recall": 0.25,
+        "macro_f1": 0.25,
+        "weighted_f1": 1.0,
+        "class_support": {
+          "BENIGN": 29339,
+          "DDoS": 0,
+          "DoS": 0,
+          "PortScan": 0
+        },
+        "per_class": {
+          "BENIGN": {
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0,
+            "support": 29339
+          },
+          "DDoS": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 0
+          },
+          "DoS": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 0
+          },
+          "PortScan": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 0
+          }
+        },
+        "confusion_matrix": [
+          [
+            29339,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0
+          ]
+        ],
+        "roc_auc": {
+          "BENIGN": "N/A \u2014 class absent from evaluation set",
+          "DDoS": "N/A \u2014 class absent from evaluation set",
+          "DoS": "N/A \u2014 class absent from evaluation set",
+          "PortScan": "N/A \u2014 class absent from evaluation set"
+        },
+        "pr_auc": {
+          "BENIGN": "N/A \u2014 class absent from evaluation set",
+          "DDoS": "N/A \u2014 class absent from evaluation set",
+          "DoS": "N/A \u2014 class absent from evaluation set",
+          "PortScan": "N/A \u2014 class absent from evaluation set"
+        },
+        "multiclass_roc_auc": "N/A \u2014 class absent from evaluation set",
+        "multiclass_pr_auc": "N/A \u2014 class absent from evaluation set",
+        "probability_quality": {
+          "average_confidence": 0.9999999999969997,
+          "confidence_correct": 0.9999999999969997,
+          "confidence_incorrect": "N/A \u2014 class absent from evaluation set",
+          "multiclass_log_loss": 3.000266701751523e-12,
+          "multiclass_brier_score": 1.2001600281593956e-23,
+          "expected_calibration_error_10_bin": 3.000266701747023e-12,
+          "calibration_bins": [
+            {
+              "lower": 0.0,
+              "upper": 0.1,
+              "count": 0,
+              "mean_confidence": null,
+              "observed_accuracy": null
+            },
+            {
+              "lower": 0.1,
+              "upper": 0.2,
+              "count": 0,
+              "mean_confidence": null,
+              "observed_accuracy": null
+            },
+            {
+              "lower": 0.2,
+              "upper": 0.30000000000000004,
+              "count": 0,
+              "mean_confidence": null,
+              "observed_accuracy": null
+            },
+            {
+              "lower": 0.30000000000000004,
+              "upper": 0.4,
+              "count": 0,
+              "mean_confidence": null,
+              "observed_accuracy": null
+            },
+            {
+              "lower": 0.4,
+              "upper": 0.5,
+              "count": 0,
+              "mean_confidence": null,
+              "observed_accuracy": null
+            },
+            {
+              "lower": 0.5,
+              "upper": 0.6000000000000001,
+              "count": 0,
+              "mean_confidence": null,
+              "observed_accuracy": null
+            },
+            {
+              "lower": 0.6000000000000001,
+              "upper": 0.7000000000000001,
+              "count": 0,
+              "mean_confidence": null,
+              "observed_accuracy": null
+            },
+            {
+              "lower": 0.7000000000000001,
+              "upper": 0.8,
+              "count": 0,
+              "mean_confidence": null,
+              "observed_accuracy": null
+            },
+            {
+              "lower": 0.8,
+              "upper": 0.9,
+              "count": 0,
+              "mean_confidence": null,
+              "observed_accuracy": null
+            },
+            {
+              "lower": 0.9,
+              "upper": 1.0,
+              "count": 29339,
+              "mean_confidence": 0.9999999999969997,
+              "observed_accuracy": 1.0
+            }
+          ]
+        },
+        "attack_forecasting": {
+          "precision": "N/A \u2014 class absent from evaluation set",
+          "recall": "N/A \u2014 class absent from evaluation set",
+          "f1": "N/A \u2014 class absent from evaluation set",
+          "false_positive_rate": 0.0,
+          "false_negative_rate": "N/A \u2014 class absent from evaluation set",
+          "confusion": {
+            "tp": 0,
+            "tn": 29339,
+            "fp": 0,
+            "fn": 0
+          }
+        },
+        "transitions": [],
+        "evaluation_status": "benign_only_holdout",
+        "limitations": [
+          "Holdout does not support every attack class; unsupported AUC values are null and results are not complete attack-performance evidence."
+        ]
+      },
+      "logistic_regression": {
+        "samples": 29339,
+        "accuracy": 0.9999659156753808,
+        "balanced_accuracy": 0.9999659156753808,
+        "macro_precision": 0.25,
+        "macro_recall": 0.2499914789188452,
+        "macro_f1": 0.24999573938681255,
+        "weighted_f1": 0.9999829575472502,
+        "class_support": {
+          "BENIGN": 29339,
+          "DDoS": 0,
+          "DoS": 0,
+          "PortScan": 0
+        },
+        "per_class": {
+          "BENIGN": {
+            "precision": 1.0,
+            "recall": 0.9999659156753808,
+            "f1": 0.9999829575472502,
+            "support": 29339
+          },
+          "DDoS": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 0
+          },
+          "DoS": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 0
+          },
+          "PortScan": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 0
+          }
+        },
+        "confusion_matrix": [
+          [
+            29338,
+            0,
+            1,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0
+          ]
+        ],
+        "roc_auc": {
+          "BENIGN": "N/A \u2014 class absent from evaluation set",
+          "DDoS": "N/A \u2014 class absent from evaluation set",
+          "DoS": "N/A \u2014 class absent from evaluation set",
+          "PortScan": "N/A \u2014 class absent from evaluation set"
+        },
+        "pr_auc": {
+          "BENIGN": "N/A \u2014 class absent from evaluation set",
+          "DDoS": "N/A \u2014 class absent from evaluation set",
+          "DoS": "N/A \u2014 class absent from evaluation set",
+          "PortScan": "N/A \u2014 class absent from evaluation set"
+        },
+        "multiclass_roc_auc": "N/A \u2014 class absent from evaluation set",
+        "multiclass_pr_auc": "N/A \u2014 class absent from evaluation set",
+        "probability_quality": {
+          "average_confidence": 0.9987601793470187,
+          "confidence_correct": 0.9987713316481488,
+          "confidence_incorrect": 0.6715739687931452,
+          "multiclass_log_loss": 0.001286169448868321,
+          "multiclass_brier_score": 9.783806933995147e-05,
+          "expected_calibration_error_10_bin": 0.0012246784955541646,
+          "calibration_bins": [
+            {
+              "lower": 0.0,
+              "upper": 0.1,
+              "count": 0,
+              "mean_confidence": null,
+              "observed_accuracy": null
+            },
+            {
+              "lower": 0.1,
+              "upper": 0.2,
+              "count": 0,
+              "mean_confidence": null,
+              "observed_accuracy": null
+            },
+            {
+              "lower": 0.2,
+              "upper": 0.30000000000000004,
+              "count": 0,
+              "mean_confidence": null,
+              "observed_accuracy": null
+            },
+            {
+              "lower": 0.30000000000000004,
+              "upper": 0.4,
+              "count": 0,
+              "mean_confidence": null,
+              "observed_accuracy": null
+            },
+            {
+              "lower": 0.4,
+              "upper": 0.5,
+              "count": 0,
+              "mean_confidence": null,
+              "observed_accuracy": null
+            },
+            {
+              "lower": 0.5,
+              "upper": 0.6000000000000001,
+              "count": 0,
+              "mean_confidence": null,
+              "observed_accuracy": null
+            },
+            {
+              "lower": 0.6000000000000001,
+              "upper": 0.7000000000000001,
+              "count": 2,
+              "mean_confidence": 0.6389360608117475,
+              "observed_accuracy": 0.5
+            },
+            {
+              "lower": 0.7000000000000001,
+              "upper": 0.8,
+              "count": 2,
+              "mean_confidence": 0.7682258130200353,
+              "observed_accuracy": 1.0
+            },
+            {
+              "lower": 0.8,
+              "upper": 0.9,
+              "count": 17,
+              "mean_confidence": 0.8579991260330999,
+              "observed_accuracy": 1.0
+            },
+            {
+              "lower": 0.9,
+              "upper": 1.0,
+              "count": 29318,
+              "mean_confidence": 0.9988820722072432,
+              "observed_accuracy": 1.0
+            }
+          ]
+        },
+        "attack_forecasting": {
+          "precision": 0.0,
+          "recall": "N/A \u2014 class absent from evaluation set",
+          "f1": "N/A \u2014 class absent from evaluation set",
+          "false_positive_rate": 3.408432461910767e-05,
+          "false_negative_rate": "N/A \u2014 class absent from evaluation set",
+          "confusion": {
+            "tp": 0,
+            "tn": 29338,
+            "fp": 1,
+            "fn": 0
+          }
+        },
+        "transitions": [],
+        "evaluation_status": "benign_only_holdout",
+        "limitations": [
+          "Holdout does not support every attack class; unsupported AUC values are null and results are not complete attack-performance evidence."
+        ]
+      }
+    }
+  },
+  "evaluation_status": "benign_only_holdout",
+  "benchmark": {
+    "total_seconds": 315.918,
+    "analysis_seconds": 21.561,
+    "analysis_rows_per_second": 90772.486,
+    "preprocessing_seconds": 0.121,
+    "preprocessing_rows_per_second": 16183962.578,
+    "sequence_build_seconds": 0.452,
+    "sequences_per_second": 432518.558,
+    "training_seconds": 286.006,
+    "training_sequence_epochs_per_second": 61815.2,
+    "baseline_seconds": 2.441,
+    "holdout_inference_seconds": 0.157,
+    "holdout_sequences_per_second": 186311.65,
+    "peak_ram_mb": 2261.609
+  },
+  "artifact_dir": "artifacts/lstm_forecaster/v1-3a5264a499ed"
+}

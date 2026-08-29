@@ -1,0 +1,6 @@
+{
+  "BENIGN": 0,
+  "DDoS": 1,
+  "DoS": 2,
+  "PortScan": 3
+}
