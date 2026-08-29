@@ -358,7 +358,19 @@ nonexistent PCAP (real "PCAP not found" error, pipeline → `ERROR`).
   API.
 - **`sklearn` version skew**: `models/minmax.bin` was pickled with an
   older scikit-learn (1.0.2); it still loads and functions correctly
-  under 1.5.2 but prints an `InconsistentVersionWarning`.
+  under 1.5.2. The `InconsistentVersionWarning` is now suppressed at the
+  load site (`backend/prediction/predict.py`) — the scaler's fitted
+  attributes are plain arrays and its `transform()` output is unchanged.
+- **Packet-level features are standalone**: `backend/extraction/packet_features.py`
+  derives TTL, TCP window, retransmission, fragment and payload-size
+  statistics per flow (Scapy), but this `cicflowmeter` build emits no
+  source/destination IP columns, so the two feature levels are not yet
+  joined on a common flow key. Run it directly:
+  `python -m backend.extraction.packet_features <pcap> <out.csv>`.
+- **Prediction explainability** is gradient x input attribution over the 77
+  scaled ANN features (`backend/prediction/explain.py`), surfaced per flow
+  (`top_features`) and per capture (`driving_features`, shown in the STATE
+  PREDICTION panel). It is a saliency signal, not SHAP.
 - **Packet table is a periodic snapshot**, not a true packet-by-packet
   live stream: it re-reads the PCAP via `tshark` on each poll
   (~1.5s interval) rather than tailing packets as they arrive.

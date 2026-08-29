@@ -1,0 +1,147 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[margin=22mm]{geometry}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{titlesec}
+\usepackage[hidelinks]{hyperref}
+
+\definecolor{accent}{HTML}{1F6FB2}
+\titleformat{\section}{\large\bfseries\color{accent}}{\thesection}{0.6em}{}
+\titleformat{\subsection}{\normalsize\bfseries}{\thesubsection}{0.5em}{}
+\setlist[itemize]{leftmargin=1.4em,itemsep=2pt,topsep=3pt}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{5pt}
+
+\begin{document}
+
+\begin{center}
+  {\LARGE\bfseries NIDS}\\[2pt]
+  {\large Network State Detection and Forecasting}\\[6pt]
+  {\small Product Description}
+\end{center}
+
+\section{Overview}
+
+NIDS is a fully offline network intrusion detection and short-horizon
+forecasting system. It moves past per-flow benign/malicious labelling towards
+\emph{predictive} defence: it learns how the aggregate state of a network
+evolves over time and forecasts the next several state windows, then attaches a
+restrained MITRE ATT\&CK interpretation and a per-prediction feature
+attribution so a defender can see \emph{why} a call was made.
+
+Everything runs on a local machine. There is no cloud dependency, no telemetry,
+and no external API call at inference time.
+
+\section{The problem it addresses}
+
+Traditional classifiers treat each traffic flow in isolation and map it to a
+single label. That discards the temporal structure of an intrusion --- the
+order in which ports are probed, the way SYN bursts precede floods, the timing
+of reconnaissance before lateral movement. An intrusion is a process that
+unfolds over time. NIDS models that process: it aggregates traffic into
+fixed time windows, learns the state-transition behaviour
+$P(S_{t+1}\mid S_t)$, and rolls it forward.
+
+\section{Pipeline}
+
+\begin{enumerate}[leftmargin=1.6em,itemsep=3pt]
+  \item \textbf{Capture / ingest.} Live capture via \texttt{dumpcap} (Windows)
+  or \texttt{tcpdump} (Linux, macOS), or offline upload of a
+  \texttt{.pcap}/\texttt{.pcapng}/\texttt{.csv} file.
+  \item \textbf{Flow features.} The Scapy-based \texttt{cicflowmeter} package
+  turns packets into the 77-feature CICFlowMeter flow schema.
+  \item \textbf{Packet features.} A separate Scapy pass derives packet-level
+  attributes the flow schema omits: TTL mean/variance, TCP window size,
+  retransmission counts, IP-fragment counts, payload-size distribution.
+  \item \textbf{Per-flow state.} A trained Keras ANN (\texttt{ISAA\_ANN.h5},
+  MinMax-scaled input) classifies each flow as BENIGN / DDoS / DoS / PortScan.
+  \item \textbf{Temporal dataset.} Flows are sorted chronologically, bucketed
+  into 10-second windows, and aggregated into a 28-feature network-state
+  vector per window, with state transitions and length-5 sliding sequences and
+  a strictly chronological train/val/test split.
+  \item \textbf{Forecast.} An LSTM predicts the next window's state; a separate
+  direct model predicts six windows ahead (H1--H6) with a frozen
+  early-warning threshold. Persistence and multinomial-logistic-regression
+  baselines are scored on identical sequences.
+  \item \textbf{ATT\&CK context.} An offline, evidence-aware rules layer maps
+  the predicted state to a small set of ATT\&CK techniques
+  (T1595, T1046, T1498, T1499) with a deterministic heuristic confidence,
+  supporting evidence, and explicit limitations. It never asserts attribution
+  or intent.
+  \item \textbf{Explainability.} Gradient\,$\times$\,input attribution over the
+  77 scaled features identifies which flow statistics drove each prediction,
+  both per flow and aggregated for the capture.
+\end{enumerate}
+
+\section{Key features}
+
+\begin{itemize}
+  \item Two input modes --- live capture and offline file analysis --- sharing
+  one extraction/prediction path.
+  \item No fabricated values anywhere: every figure shown is read back from a
+  real subprocess or model output, or displayed as \texttt{N/A}.
+  \item Chronological-only splits; a dedicated data-leakage check across
+  windows and sequences.
+  \item One-step and six-step forecasting with honest, labelled proxy-time
+  limitations.
+  \item Deterministic, offline ATT\&CK mapping with per-candidate evidence and
+  limitations.
+  \item Per-prediction and per-capture feature attribution.
+  \item A Wireshark-inspired local dashboard (static HTML/CSS/JS, no build
+  step) served by the backend.
+\end{itemize}
+
+\section{Architecture and technology}
+
+\begin{tabular}{@{}ll@{}}
+  \toprule
+  Backend        & FastAPI + Uvicorn, a small explicit state machine \\
+  Model          & TensorFlow~2.18 / Keras Sequential MLP (4-class softmax) \\
+  Scaler         & scikit-learn MinMaxScaler (persisted) \\
+  Flow features  & \texttt{cicflowmeter} 0.5.0 (Scapy-based) \\
+  Packet features& Scapy 2.6.1 streaming \texttt{PcapReader} \\
+  Forecasting    & Keras LSTM (one-step and direct H1--H6) \\
+  ATT\&CK        & Local pinned Enterprise ATT\&CK v19.1 subset \\
+  Frontend       & Plain HTML/CSS/JS, polled REST, no framework \\
+  Capture tools  & \texttt{dumpcap}/\texttt{tcpdump}, \texttt{tshark},
+                   \texttt{capinfos} \\
+  \bottomrule
+\end{tabular}
+
+\section{Platform support}
+
+\begin{itemize}
+  \item \textbf{Windows} --- install Wireshark; run \texttt{scripts\textbackslash
+  run\_backend.ps1}.
+  \item \textbf{Linux} --- \texttt{setcap} on \texttt{tcpdump}; run
+  \texttt{scripts/run\_backend.sh}.
+  \item \textbf{macOS} --- \texttt{scripts/macos\_setup.sh} installs the
+  Wireshark CLI tools and loads the ChmodBPF helper (macOS has no
+  \texttt{setcap}); the interface picker shows friendly names
+  (Wi-Fi, Ethernet, Thunderbolt) mapped from \texttt{networksetup}.
+\end{itemize}
+
+Open the dashboard at \texttt{http://127.0.0.1:8765}.
+
+\section{Known limitations}
+
+\begin{itemize}
+  \item The ANN was trained on CICIDS2017 (2017 lab traffic) and can
+  misclassify modern HTTPS/QUIC/STUN as DoS/DDoS --- a model-generalisation
+  limit, not a pipeline defect.
+  \item Only the ANN is deployable; Random Forest / Decision Tree / KNN from
+  the original notebooks were never persisted.
+  \item Forecast horizons use row-order proxy windows on the training CSVs,
+  not validated wall-clock seconds; the UI labels this explicitly.
+  \item The ATT\&CK layer covers Reconnaissance / Discovery / Impact only;
+  it does not cover Initial Access, Lateral Movement, C2 or Exfiltration
+  (the classifier has no such states).
+  \item The packet-feature extractor is standalone --- this
+  \texttt{cicflowmeter} build emits no source/destination IP columns, so the
+  two feature levels are not yet joined on a common flow key.
+  \item The persisted scaler was pickled under an older scikit-learn; values
+  are unaffected and the version warning is suppressed at load.
+\end{itemize}
+
+\end{document}

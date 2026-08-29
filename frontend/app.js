@@ -971,6 +971,27 @@ function renderPredictionTab() {
   btnDl.disabled = !(mode === "upload" && uploadStatus && uploadStatus.stage === "PREDICTION_COMPLETED");
 
   renderClassDistribution(pred);
+  renderDrivingFeatures(pred);
+}
+
+function renderDrivingFeatures(pred) {
+  const wrap = el("driving-features");
+  if (!wrap) return;
+  const feats = pred && pred.driving_features;
+  if (!feats || !feats.length) {
+    wrap.innerHTML = '<div class="dist-empty">N/A — no prediction yet</div>';
+    return;
+  }
+  const max = Math.max(...feats.map(f => Math.abs(f.mean_abs_contribution))) || 1;
+  wrap.innerHTML = feats.map(f => {
+    const pct = Math.round((Math.abs(f.mean_abs_contribution) / max) * 100);
+    const color = f.mean_signed_contribution >= 0 ? "var(--green)" : "var(--red)";
+    return `<div class="dist-row">
+      <span class="dist-label" title="mean gradient×input over scored flows">${escapeHtml(f.feature)}</span>
+      <span class="dist-bar-track"><span class="dist-bar-fill" style="width:${pct}%; background:${color}"></span></span>
+      <span class="dist-pct">${f.mean_signed_contribution >= 0 ? "+" : ""}${f.mean_signed_contribution.toFixed(4)}</span>
+    </div>`;
+  }).join("");
 }
 
 const CLASS_COLORS = { BENIGN: "var(--green)", DDoS: "var(--red)", DoS: "var(--orange)", PortScan: "var(--amber)" };

@@ -27,13 +27,16 @@ import logging
 import sys
 import json
 import time
+import warnings
 from pathlib import Path
 
 import joblib
 import numpy as np
 import pandas as pd
+from sklearn.exceptions import InconsistentVersionWarning
 
 from .features import TRAINING_FEATURES, match_columns, is_id_or_label_column
+from .explain import attribute, top_features_for_row, driving_features
 
 CLASS_NAMES = ["BENIGN", "DDoS", "DoS", "PortScan"]
 CURRENT_STATE_COLUMN = "Current_State"
@@ -78,11 +81,26 @@ def _load_artifacts():
             raise PredictionError(
                 "TensorFlow is required for ANN inference. Install backend/requirements.txt in a compatible environment."
             ) from error
-        _model = load_model(str(MODEL_PATH))
+        # compile=False: inference only, no optimizer state needed (also
+        # silences Keras' "Skipping variable loading for optimizer 'adam'"
+        # UserWarning). ISAA_ANN.h5 is a legacy Sequential built with
+        # `input_dim=` on its first Dense layer; Keras 3 warns about that
+        # style on load. The weights load correctly and the architecture
+        # is frozen (no retraining in scope), so that warning is noise.
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", UserWarning)
+            _model = load_model(str(MODEL_PATH), compile=False)
     if _scaler is None:
         if not SCALER_PATH.exists():
             raise PredictionError(f"Scaler not found at {SCALER_PATH}")
-        _scaler = joblib.load(str(SCALER_PATH))
+        # minmax.bin was pickled with scikit-learn 1.0.2; this project runs
+        # 1.5.2. MinMaxScaler's fitted attributes (data_min_/data_max_/
+        # scale_/min_) are plain numpy arrays and load unchanged across
+        # this gap — verified by comparing transform() output. The
+        # InconsistentVersionWarning is therefore noise here.
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", InconsistentVersionWarning)
+            _scaler = joblib.load(str(SCALER_PATH))
     return _model, _scaler
 
 
@@ -175,6 +193,16 @@ def predict_csv(csv_path: Path) -> dict:
     valid_labels = [CLASS_NAMES[i] for i in valid_idx]
     valid_confidences = valid_probabilities[np.arange(len(valid_probabilities)), valid_idx]
 
+    # Feature attribution (SIH brief: interpretable decision support —
+    # "which flags/ports/flow patterns are contributing most"). Gradient x
+    # input over the scaled features w.r.t. the predicted class. Never
+    # allowed to break a prediction: on any failure it is simply omitted.
+    try:
+        valid_attribution = attribute(model, scaled, valid_idx)
+    except Exception as exc:  # pragma: no cover - defensive
+        logger.info(f"[Prediction] Feature attribution unavailable: {exc}")
+        valid_attribution = np.zeros((len(scaled), len(TRAINING_FEATURES)))
+
     # Full-length, in original row order: real predictions for scoreable
     # rows, an explicit non-fabricated sentinel for the rest. This keeps
     # CSV and JSON in perfect 1:1 correspondence with every row of the
@@ -187,6 +215,9 @@ def predict_csv(csv_path: Path) -> dict:
     predicted_labels[valid_positions] = valid_labels
     confidences[valid_positions] = valid_confidences
 
+    attribution = np.full((n_total, len(TRAINING_FEATURES)), np.nan)
+    attribution[valid_positions] = valid_attribution
+
     flows = []
     for i in range(n_total):
         conf = confidences[i]
@@ -194,6 +225,8 @@ def predict_csv(csv_path: Path) -> dict:
             "predicted_state": str(predicted_labels[i]),
             "confidence": round(float(conf), 4) if not np.isnan(conf) else None,
         }
+        if not np.isnan(attribution[i]).all():
+            row["top_features"] = top_features_for_row(attribution[i])
         for col in id_cols:
             value = flow_meta.iloc[i][col]
             if isinstance(value, (np.integer,)):
@@ -243,6 +276,7 @@ def predict_csv(csv_path: Path) -> dict:
         "feature_csv_updated": True,
         "current_state_column": CURRENT_STATE_COLUMN,
         "output_csv": str(csv_path),
+        "driving_features": driving_features(valid_attribution),
         "flows": flows,
     }
 
