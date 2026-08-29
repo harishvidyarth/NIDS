@@ -106,6 +106,10 @@ The published artifact inventory and interpretation guidance are documented in
 older versions are retained only as historical evidence of the scaler-leakage
 defect and are unsuitable for normal metric interpretation.
 
+The four CICIDS2017 source CSVs used by Phase 3 are published separately as a
+GitHub Release asset because the raw files exceed GitHub's normal Git-object
+limit. Download, checksum, and setup instructions are in `datasets/README.md`.
+
 API: `POST /api/lstm/train {"force_rebuild": false}`,
 `GET /api/lstm/status`, `POST /api/lstm/forecast`, and
 `GET /api/lstm/report`. The Temporal Dataset → **LSTM FORECAST** tab shows
