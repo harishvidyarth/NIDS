@@ -393,7 +393,59 @@ def train_forecaster(force_rebuild: bool = False, status=lambda **kwargs: None) 
     return report
 
 
-def forecast_latest() -> dict:
+def _load_recent_windows(windows_source) -> "pd.DataFrame":
+    """Last SEQUENCE_LENGTH contiguous 10-second windows to forecast from.
+
+    windows_source is a `data/temporal/<session>/` directory produced by
+    `Temporal Dataset -> Prepare` — i.e. the user's own capture. If it is
+    None, fall back to the frozen training-set window cache
+    (`report.cache[-1]`), which only exists on a machine that rebuilt it
+    from the CICIDS2017 CSVs; a missing cache raises RuntimeError (409),
+    never FileNotFoundError (500)."""
+    from pathlib import Path
+
+    if windows_source is not None:
+        states_csv = Path(windows_source) / "temporal_states.csv"
+        if not states_csv.is_file():
+            raise RuntimeError(
+                f"Prepared temporal dataset has no temporal_states.csv at {states_csv}."
+            )
+        windows = pd.read_csv(states_csv)
+    else:
+        artifact_dir = repository_path(json.loads(LATEST_PATH.read_text())["artifact_dir"])
+        report = json.loads((artifact_dir / "report.json").read_text())
+        from .config import CACHE_ROOT
+
+        cache_key = report["cache"][-1]["cache_key"]
+        npz = CACHE_ROOT / cache_key / "windows.npz"
+        if not npz.is_file():
+            raise RuntimeError(
+                "One-step forecast needs a prepared temporal dataset "
+                "(Temporal Dataset -> Prepare) or the CICIDS2017 training "
+                "window cache, which is not on this machine."
+            )
+        data = np.load(npz, allow_pickle=False)
+        windows = pd.DataFrame({name: data[name] for name in data.files})
+
+    if "window_id" not in windows.columns or "dominant_state" not in windows.columns:
+        raise RuntimeError("Window source is missing window_id / dominant_state columns.")
+    block = windows.sort_values("window_id").reset_index(drop=True)
+    if len(block) < SEQUENCE_LENGTH:
+        raise RuntimeError(
+            f"Need {SEQUENCE_LENGTH} contiguous 10-second windows to forecast, "
+            f"have {len(block)}. Capture ~{SEQUENCE_LENGTH * 10 + 20}s+ of "
+            f"continuous traffic and re-run Prepare Temporal Dataset."
+        )
+    recent = block.iloc[-SEQUENCE_LENGTH:]
+    if not np.all(np.diff(recent["window_id"].to_numpy()) == 1):
+        raise RuntimeError(
+            f"The last {SEQUENCE_LENGTH} windows are not contiguous "
+            "(gaps from invalid-state exclusion). Capture longer / steadier traffic."
+        )
+    return recent
+
+
+def forecast_latest(windows_source=None) -> dict:
     if not LATEST_PATH.is_file():
         raise RuntimeError("No completed LSTM forecasting artifact is available.")
     latest = json.loads(LATEST_PATH.read_text())
@@ -402,17 +454,7 @@ def forecast_latest() -> dict:
     model = tf.keras.models.load_model(artifact_dir / "model.keras", compile=False)
     scaler = joblib.load(artifact_dir / "scaler.bin")
     report = json.loads((artifact_dir / "report.json").read_text())
-    last_cache = report["cache"][-1]
-    cache_key = last_cache["cache_key"]
-    from .config import CACHE_ROOT
-    data = np.load(CACHE_ROOT / cache_key / "windows.npz", allow_pickle=False)
-    windows = pd.DataFrame({name: data[name] for name in data.files})
-    if len(windows) < SEQUENCE_LENGTH:
-        raise RuntimeError("Latest cached session has fewer than five scoreable contiguous windows.")
-    block = windows.sort_values("window_id").reset_index(drop=True)
-    recent = block.iloc[-SEQUENCE_LENGTH:]
-    if not np.all(np.diff(recent["window_id"].to_numpy()) == 1):
-        raise RuntimeError("Latest five cached windows are not contiguous after invalid-state exclusion.")
+    recent = _load_recent_windows(windows_source)
     X = recent[STATE_FEATURE_NAMES].to_numpy(dtype=np.float32)
     X_scaled = scaler.transform(X)[None, :, :]
     probabilities = model.predict(X_scaled, verbose=0)[0]

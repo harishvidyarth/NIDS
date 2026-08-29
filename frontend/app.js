@@ -193,7 +193,8 @@ async function loadInterfaces() {
 }
 
 async function startCapture() {
-  const iface = el("iface-select").value;
+  const captureAll = el("iface-all") && el("iface-all").checked;
+  const iface = captureAll ? "all" : el("iface-select").value;
   if (!iface) return;
   el("btn-start").disabled = true;
   try {
@@ -1062,6 +1063,32 @@ function renderTemporalTab() {
   renderLstmTab();
 }
 
+let benchmarkData = null;
+async function loadBenchmark() {
+  if (benchmarkData) return;
+  try { benchmarkData = await api("/api/benchmark"); renderBenchmark(); } catch (e) { /* leave */ }
+}
+function renderBenchmark() {
+  const wrap = el("lstm-evaluation");
+  if (!wrap) return;
+  const b = benchmarkData && benchmarkData.one_step && benchmarkData.one_step.validation;
+  if (!b) { wrap.innerHTML = '<div class="dist-empty">Loading benchmark…</div>'; loadBenchmark(); return; }
+  const f = (x) => (x == null || typeof x !== "number") ? "N/A" : x.toFixed(4);
+  const row = (label, k) => `<tr><td>${label}</td><td>${f(b.lstm[k])}</td><td>${f(b.logistic_regression[k])}</td></tr>`;
+  wrap.innerHTML = `<div class="detail-col-subtitle">LSTM vs Logistic Regression &mdash; validation split (frozen Phase&nbsp;3 evaluation)</div>
+    <table class="data-table" style="width:100%"><thead><tr><th>Metric</th><th>LSTM</th><th>Logistic Reg.</th></tr></thead><tbody>
+    ${row("Macro F1", "macro_f1")}
+    ${row("Macro precision", "macro_precision")}
+    ${row("Macro recall", "macro_recall")}
+    ${row("Weighted F1", "weighted_f1")}
+    ${row("Attack F1", "attack_f1")}
+    ${row("Attack precision", "attack_precision")}
+    ${row("Attack recall", "attack_recall")}
+    ${row("Attack false-positive rate", "attack_false_positive_rate")}
+    </tbody></table>
+    <div class="dist-empty" style="text-align:left">${escapeHtml(benchmarkData.note || "")}</div>`;
+}
+
 function renderLstmTab() {
   const status = lstmStatus || {};
   el("lstm-stage").textContent = String(status.stage || "idle").toUpperCase();
@@ -1087,7 +1114,7 @@ function renderLstmTab() {
       </tbody></table><div>Evaluation: ${escapeHtml(lstmReport.evaluation_status)}</div>
       <div>Rows / windows / sequences: ${Number(lstmReport.counts.rows).toLocaleString()} / ${Number(lstmReport.counts.windows).toLocaleString()} / ${Number(lstmReport.counts.train_sequences + lstmReport.counts.holdout_sequences).toLocaleString()}</div>`;
   } else {
-    el("lstm-evaluation").innerHTML = '<div class="dist-empty">Complete training to view holdout metrics and baselines.</div>';
+    renderBenchmark();
   }
 
   const forecast = lstmForecast;
@@ -1361,6 +1388,7 @@ el("btn-analyze").addEventListener("click", analyzeFile);
 el("btn-download-csv").addEventListener("click", downloadProcessedCsv);
 el("btn-export-prediction").addEventListener("click", downloadProcessedCsv);
 el("btn-start").addEventListener("click", startCapture);
+el("iface-all").addEventListener("change", () => { el("iface-select").disabled = el("iface-all").checked; });
 el("btn-stop").addEventListener("click", stopCapture);
 el("btn-extract").addEventListener("click", runExtract);
 el("btn-predict").addEventListener("click", runPredict);

@@ -72,7 +72,9 @@ state = PipelineState()
 
 
 class StartCaptureRequest(BaseModel):
-    interface: str
+    # one device id, a list of them, or the string "all" (every connected
+    # interface, merged into one pcap).
+    interface: str | list[str]
     # Upper-bound elapsed seconds (dumpcap's own `-a duration:N`), so a
     # capture can't run forever. check_and_finalize() enforces it on
     # tcpdump platforms.
@@ -538,10 +540,21 @@ def lstm_status():
     return read_lstm_status()
 
 
+def _windows_source_for_forecast() -> Optional[Path]:
+    """The temporal dataset the user last prepared in this process, so a
+    forecast runs on their capture instead of the frozen training-set
+    window cache (which isn't shipped)."""
+    with temporal_state.lock:
+        if temporal_state.stage == "COMPLETED" and temporal_state.summary:
+            out = temporal_state.summary.get("output_dir")
+            return Path(out) if out else None
+    return None
+
+
 @app.post("/api/lstm/forecast")
 def lstm_forecast():
     try:
-        return forecast_latest()
+        return forecast_latest(windows_source=_windows_source_for_forecast())
     except RuntimeError as error:
         raise HTTPException(status_code=409, detail=str(error))
 
@@ -549,9 +562,65 @@ def lstm_forecast():
 @app.post("/api/lstm/forecast/multistep")
 def lstm_forecast_multistep():
     try:
-        return forecast_multistep_latest()
+        return forecast_multistep_latest(windows_source=_windows_source_for_forecast())
     except RuntimeError as error:
         raise HTTPException(status_code=409, detail=str(error))
+
+
+@app.get("/api/benchmark")
+def benchmark():
+    """LSTM vs logistic-regression baseline — F1 / precision / recall / FPR.
+    Served straight from the frozen Phase 3 evaluation report; no training
+    run needed. The `validation` split is the honest headline (the terminal
+    test split contains no attack targets; `train` is fit data)."""
+    import json
+
+    report_path = REPO_ROOT / "reports" / "lstm_evaluation_report.json"
+    if not report_path.is_file():
+        raise HTTPException(status_code=404, detail="No evaluation report on disk.")
+    report = json.loads(report_path.read_text())
+    evals = report.get("evaluations", {})
+
+    def _pick(split_name: str) -> dict:
+        split = evals.get(split_name, {})
+        lstm = split.get("lstm", {})
+        logit = split.get("logistic_regression", {})
+
+        def _flat(m: dict) -> dict:
+            af = m.get("attack_forecasting", {}) or {}
+            return {
+                "macro_f1": m.get("macro_f1"),
+                "macro_precision": m.get("macro_precision"),
+                "macro_recall": m.get("macro_recall"),
+                "weighted_f1": m.get("weighted_f1"),
+                "attack_precision": af.get("precision"),
+                "attack_recall": af.get("recall"),
+                "attack_f1": af.get("f1"),
+                "attack_false_positive_rate": af.get("false_positive_rate"),
+            }
+
+        return {"lstm": _flat(lstm), "logistic_regression": _flat(logit)}
+
+    multistep = None
+    ms_path = REPO_ROOT / "reports" / "multistep_evaluation_report.json"
+    if ms_path.is_file():
+        ms = json.loads(ms_path.read_text())
+        multistep = ms.get("baseline_comparison") or ms.get("evaluations") or None
+
+    return {
+        "source": "reports/lstm_evaluation_report.json",
+        "model_version": report.get("model_identity", {}).get("model_version")
+        or report.get("model_version"),
+        "headline_split": "validation",
+        "one_step": {
+            "validation": _pick("validation"),
+            "train": _pick("train"),
+            "test": _pick("test"),
+        },
+        "multistep_available": multistep is not None,
+        "note": "Frozen Phase 3 rolling-origin evaluation; validation split is "
+        "the honest comparison (test split has no attack targets).",
+    }
 
 
 @app.get("/api/lstm/report")

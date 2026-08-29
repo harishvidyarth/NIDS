@@ -251,7 +251,7 @@ def train_multistep(force_rebuild: bool = False, status=lambda **kwargs: None) -
     return {"training": training_report, "evaluation": evaluation, "benchmark": benchmark}
 
 
-def forecast_latest() -> dict:
+def forecast_latest(windows_source=None) -> dict:
     if not LATEST_PATH.is_file():
         raise RuntimeError("No activated multi-step LSTM artifact is available.")
     latest = json.loads(LATEST_PATH.read_text())
@@ -259,14 +259,29 @@ def forecast_latest() -> dict:
     model = _tensorflow().keras.models.load_model(artifact_dir / "model.keras", compile=False)
     scaler = joblib.load(artifact_dir / "scaler.bin")
     evaluation = json.loads((artifact_dir / "evaluation_report.json").read_text())
-    manifest = json.loads((artifact_dir / "dataset_manifest.json").read_text())
-    last_cache = manifest["cache"][-1]
-    data = np.load(REPO_ROOT / "data" / "lstm_cache" / last_cache["cache_key"] / "windows.npz", allow_pickle=False)
-    import pandas as pd
-    windows = pd.DataFrame({name: data[name] for name in data.files}).sort_values("window_id").reset_index(drop=True)
-    recent = windows.iloc[-SEQUENCE_LENGTH:]
-    if len(recent) != SEQUENCE_LENGTH or not np.all(np.diff(recent["window_id"]) == 1):
-        raise RuntimeError("Latest history does not contain five contiguous observed windows.")
+    # Forecast from the user's prepared temporal dataset when there is one;
+    # otherwise fall back to the frozen training-window cache (absent on
+    # machines without the CICIDS2017 CSVs -> RuntimeError/409, not 500).
+    from ..lstm.training import _load_recent_windows
+
+    if windows_source is not None:
+        recent = _load_recent_windows(windows_source)
+    else:
+        manifest = json.loads((artifact_dir / "dataset_manifest.json").read_text())
+        npz = REPO_ROOT / "data" / "lstm_cache" / manifest["cache"][-1]["cache_key"] / "windows.npz"
+        if not npz.is_file():
+            raise RuntimeError(
+                "Multi-step forecast needs a prepared temporal dataset "
+                "(Temporal Dataset -> Prepare) or the CICIDS2017 training "
+                "window cache, which is not on this machine."
+            )
+        data = np.load(npz, allow_pickle=False)
+        import pandas as pd
+
+        windows = pd.DataFrame({name: data[name] for name in data.files}).sort_values("window_id").reset_index(drop=True)
+        recent = windows.iloc[-SEQUENCE_LENGTH:]
+        if len(recent) != SEQUENCE_LENGTH or not np.all(np.diff(recent["window_id"]) == 1):
+            raise RuntimeError("Latest history does not contain five contiguous observed windows.")
     probabilities = model.predict(_scale(recent[STATE_FEATURE_NAMES].to_numpy(dtype=np.float32)[None, :, :], scaler), verbose=0)[0]
     threshold = evaluation["threshold_selection"]["selected_threshold"]
     mapper = MitreAttackMapper(); observed_features = recent.iloc[-1][STATE_FEATURE_NAMES].to_dict()

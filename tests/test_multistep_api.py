@@ -10,7 +10,7 @@ def test_multistep_route_returns_six_horizons(monkeypatch):
         "early_warning_threshold": 0.8, "earliest_predicted_attack_horizon": None,
         "maximum_attack_probability": 0.1,
     }
-    monkeypatch.setattr(main, "forecast_multistep_latest", lambda: payload)
+    monkeypatch.setattr(main, "forecast_multistep_latest", lambda *a, **k: payload)
     response = main.lstm_forecast_multistep()
     assert len(response["horizons"]) == 6
     assert all(item["seconds_ahead"] is None for item in response["horizons"])

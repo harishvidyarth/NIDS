@@ -128,6 +128,39 @@ $P(S_{t+1}\mid S_t)$, and rolls it forward.
 
 Open the dashboard at \texttt{http://127.0.0.1:8765}.
 
+\section{Benchmark: LSTM vs logistic regression}
+
+The forecaster is evaluated against a multinomial-logistic-regression baseline
+fitted on the identical windowed sequences and the identical chronological
+splits (persistence is also scored internally). Figures below are the frozen
+Phase~3 validation split (\texttt{reports/lstm\_evaluation\_report.json}); the
+terminal test split is not shown because it contains no attack targets.
+``Attack'' rows are the binary attack-vs-benign view. Live numbers are also
+exposed at \texttt{GET /api/benchmark} and in the dashboard's LSTM FORECAST tab.
+
+\begin{center}
+\begin{tabular}{@{}lrr@{}}
+  \toprule
+  Metric (validation split) & LSTM & Logistic regression \\
+  \midrule
+  Macro F1                  & 0.462 & 0.480 \\
+  Macro precision           & 0.445 & 0.483 \\
+  Macro recall              & 0.483 & 0.477 \\
+  Weighted F1               & 0.998 & 0.999 \\
+  Attack F1                 & 0.851 & 0.919 \\
+  Attack precision          & 0.782 & 0.931 \\
+  Attack recall             & 0.933 & 0.908 \\
+  Attack false-positive rate& 0.0019 & 0.0005 \\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+On this dataset the logistic baseline is competitive on the aggregate scores;
+the LSTM's advantage is in \emph{onset} behaviour (higher attack recall) rather
+than headline F1, and both are reported so the trade-off is explicit rather
+than hidden. Evaluation uses three expanding chronological folds plus an
+untouched terminal 15\,\% holdout.
+
 \section{Provenance and attribution}
 
 \subsection*{Base repository}

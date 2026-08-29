@@ -224,6 +224,7 @@ input[type="file"]::file-selector-button {
   margin-bottom: 8px; padding-bottom: 5px; border-bottom: 1px solid var(--border-soft);
 }
 .detail-col-subtitle { text-transform: none; letter-spacing: 0; color: var(--text-dim); font-size: 9.5px; margin-left: 6px; }
+.iface-all-label { font-size: 11px; color: var(--text-dim); display: inline-flex; align-items: center; gap: 3px; margin: 0 4px; cursor: pointer; }
 .detail-row { display: flex; justify-content: space-between; gap: 10px; font-size: 11.5px; padding: 2px 0; }
 .detail-row > span:first-child { color: var(--text-dim); }
 .detail-row > span:last-child { color: var(--text); text-align: right; }

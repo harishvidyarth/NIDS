@@ -210,6 +210,7 @@ class CaptureSession:
     packet_target: Optional[int] = None
     duration_target: Optional[int] = None
     buffer_mb: Optional[int] = None
+    interfaces: list = field(default_factory=list)
     # Read back from dumpcap/tcpdump's own exit summary on stderr — real
     # counts, not estimates. None until the capture process has exited.
     packets_received: Optional[int] = None
@@ -242,6 +243,7 @@ class CaptureSession:
         return {
             "session_id": self.session_id,
             "interface": self.interface,
+            "interfaces": self.interfaces,
             "pcap_path": str(self.pcap_path),
             "status": self.status(),
             "start_time": self.start_time,
@@ -445,10 +447,45 @@ def start_capture(
     session_id = uuid.uuid4().hex[:8]
     pcap_path = pcaps_dir / f"capture_{timestamp}_{session_id}.pcap"
 
-    if IS_WINDOWS:
+    # interface_device: one device string, a list of them, or "all" (every
+    # connected interface). Multiple interfaces are captured into one merged
+    # pcap so the rest of the pipeline is unchanged.
+    if isinstance(interface_device, str) and interface_device.strip().lower() == "all":
+        devices = [
+            i["device"] for i in list_interfaces()
+            if "Disconnected" not in (i.get("description") or "")
+            and (i.get("description") or "") != "none"
+        ]
+        if not devices:
+            raise CaptureError("No connected interfaces to capture on.")
+    elif isinstance(interface_device, (list, tuple)):
+        devices = [str(d) for d in interface_device if str(d).strip()]
+    else:
+        devices = [str(interface_device)]
+    if not devices:
+        raise CaptureError("No capture interface specified.")
+
+    _dumpcap = str(DUMPCAP) if IS_WINDOWS else __import__("shutil").which("dumpcap")
+
+    if len(devices) > 1:
+        # tcpdump has no multi-interface mode; dumpcap does (repeated -i).
+        if not _dumpcap or (IS_WINDOWS and not DUMPCAP.exists()):
+            raise CaptureError(
+                "Multi-interface capture needs dumpcap. Install the Wireshark "
+                "CLI tools (macOS: bash scripts/macos_setup.sh)."
+            )
+        cmd = [_dumpcap]
+        for dev in devices:
+            cmd += ["-i", dev]
+        cmd += ["-w", str(pcap_path)]
+        if duration_seconds:
+            cmd += ["-a", f"duration:{duration_seconds}"]
+        if buffer_mb:
+            cmd += ["-B", str(buffer_mb)]
+    elif IS_WINDOWS:
         if not DUMPCAP.exists():
             raise CaptureError(f"dumpcap.exe not found at {DUMPCAP}")
-        cmd = [str(DUMPCAP), "-i", interface_device, "-w", str(pcap_path)]
+        cmd = [str(DUMPCAP), "-i", devices[0], "-w", str(pcap_path)]
         if duration_seconds:
             cmd += ["-a", f"duration:{duration_seconds}"]
         if buffer_mb:
@@ -464,7 +501,7 @@ def start_capture(
         #           "(cannot open BPF device) /dev/bpf0: Permission denied".
         # Falling back to running the whole backend as root also works.
         # See README.md "macOS setup" / "Linux setup".
-        cmd = ["tcpdump", "-i", interface_device, "-w", str(pcap_path)]
+        cmd = ["tcpdump", "-i", devices[0], "-w", str(pcap_path)]
         if buffer_mb:
             cmd += ["-B", str(buffer_mb * 1024)]  # tcpdump -B is KiB
         # No native duration flag on tcpdump — check_and_finalize() below
@@ -472,6 +509,11 @@ def start_capture(
 
     if packet_target:
         cmd += ["-c", str(packet_target)]
+
+    interface_label = (
+        devices[0] if len(devices) == 1
+        else f"{' + '.join(devices)} ({len(devices)} interfaces)"
+    )
 
     try:
         proc = subprocess.Popen(
@@ -490,7 +532,8 @@ def start_capture(
 
     return CaptureSession(
         session_id=session_id,
-        interface=interface_device,
+        interface=interface_label,
+        interfaces=devices,
         pcap_path=pcap_path,
         process=proc,
         start_time=time.time(),
