@@ -25,6 +25,7 @@ from pathlib import Path
 from typing import Optional
 
 IS_WINDOWS = platform.system() == "Windows"
+IS_MACOS = platform.system() == "Darwin"
 
 WIRESHARK_DIR = Path(r"C:\Program Files\Wireshark")
 DUMPCAP = WIRESHARK_DIR / "dumpcap.exe"
@@ -69,6 +70,43 @@ class CaptureError(Exception):
     pass
 
 
+def _parse_hardware_ports(text: str) -> dict[str, str]:
+    """Map BSD device name -> friendly hardware-port name from the text of
+    `networksetup -listallhardwareports` (macOS). e.g. ``en0`` -> ``"Wi-Fi"``,
+    ``en7`` -> ``"USB 10/100/1000 LAN"``, ``bridge0`` -> ``"Thunderbolt
+    Bridge"``. ``lo0`` -> ``"Loopback"`` is always seeded (networksetup does
+    not list it). Unparseable input just yields the seed."""
+    mapping: dict[str, str] = {"lo0": "Loopback"}
+    port: Optional[str] = None
+    for raw in text.splitlines():
+        line = raw.strip()
+        if line.startswith("Hardware Port:"):
+            port = line.split(":", 1)[1].strip()
+        elif line.startswith("Device:") and port:
+            device = line.split(":", 1)[1].strip()
+            if device:
+                mapping[device] = port
+            port = None
+    return mapping
+
+
+def _macos_hardware_ports() -> dict[str, str]:
+    """Run `networksetup -listallhardwareports` and parse it. Returns just
+    ``{"lo0": "Loopback"}`` if the command is missing, times out, or exits
+    non-zero — never raises, so `list_interfaces()` degrades to raw pcap flag
+    text rather than failing."""
+    try:
+        proc = subprocess.run(
+            ["networksetup", "-listallhardwareports"],
+            capture_output=True, text=True, timeout=15,
+        )
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        return {"lo0": "Loopback"}
+    if proc.returncode != 0:
+        return {"lo0": "Loopback"}
+    return _parse_hardware_ports(proc.stdout)
+
+
 def list_interfaces() -> list[dict]:
     """Return real interfaces available for capture (no placeholders)."""
     if IS_WINDOWS:
@@ -90,6 +128,7 @@ def list_interfaces() -> list[dict]:
                     "index": int(idx),
                     "device": device,
                     "name": friendly or device,
+                    "description": friendly or device,
                 })
         return interfaces
     else:
@@ -107,7 +146,30 @@ def list_interfaces() -> list[dict]:
                     "index": int(idx),
                     "device": device,
                     "name": desc or device,
+                    "description": desc or device,
                 })
+
+        # macOS: `tcpdump -D` only reports pcap interface flags in the
+        # brackets ("Up, Running, Connection status unknown", "Up, Running,
+        # Disconnected", ...) — not a human name. Overlay the real
+        # hardware-port names ("Wi-Fi", "Thunderbolt Bridge", ...) from
+        # `networksetup` so the dropdown reads "en0 — Wi-Fi (Up, Running,
+        # Connected)" instead of "en0 — Up, Running, Disconnected". Devices
+        # networksetup doesn't know (utun*, awdl0, llw0, ...) keep the raw
+        # flag text.
+        if IS_MACOS:
+            ports = _macos_hardware_ports()
+            for iface in interfaces:
+                friendly = ports.get(iface["device"])
+                if not friendly:
+                    continue
+                flags = iface["description"]
+                iface["name"] = friendly
+                iface["description"] = (
+                    f"{friendly} ({flags})"
+                    if flags and flags != friendly and flags != iface["device"]
+                    else friendly
+                )
         return interfaces
 
 
@@ -356,10 +418,15 @@ def start_capture(
             cmd += ["-a", f"duration:{duration_seconds}"]
     else:
         # No `sudo` here on purpose: a backend service has no TTY for a
-        # sudo password prompt and would hang. Run the backend as root,
-        # or (recommended) grant tcpdump capture capabilities once via:
-        #   sudo setcap cap_net_raw,cap_net_admin=eip $(which tcpdump)
-        # See README.md "Linux setup".
+        # sudo password prompt and would hang. Grant capture rights to the
+        # unprivileged backend once, per platform:
+        #   Linux : sudo setcap cap_net_raw,cap_net_admin=eip $(which tcpdump)
+        #   macOS : install Wireshark's ChmodBPF helper so /dev/bpf* is
+        #           group-'admin' readable at boot — `bash scripts/macos_setup.sh`
+        #           (macOS has no setcap). Otherwise tcpdump fails with
+        #           "(cannot open BPF device) /dev/bpf0: Permission denied".
+        # Falling back to running the whole backend as root also works.
+        # See README.md "macOS setup" / "Linux setup".
         cmd = ["tcpdump", "-i", interface_device, "-w", str(pcap_path)]
         # No native duration flag on tcpdump — check_and_finalize() below
         # enforces duration_target via polling instead.
