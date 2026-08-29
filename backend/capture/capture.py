@@ -14,8 +14,11 @@ equivalent the API needs.
 """
 from __future__ import annotations
 
+import logging
 import platform
 import re
+import shutil
+import signal
 import subprocess
 import threading
 import time
@@ -26,6 +29,63 @@ from typing import Optional
 
 IS_WINDOWS = platform.system() == "Windows"
 IS_MACOS = platform.system() == "Darwin"
+
+logger = logging.getLogger("nids.capture")
+if not logger.handlers:
+    _handler = logging.StreamHandler()
+    _handler.setFormatter(logging.Formatter("%(message)s"))
+    logger.addHandler(_handler)
+    logger.setLevel(logging.INFO)
+    logger.propagate = False
+
+# Devices `dumpcap -D` / `tcpdump -D` list that are not real capturable
+# NICs: Apple pseudo-interfaces (awdl0, llw0, ap1), utun* VPN tunnels,
+# anpi* baseband links, gif0/stf0 IPv6 tunnels, p2p* AirDrop, plus the
+# Wireshark "extcap" pseudo-devices. dumpcap's multi-interface mode is
+# all-or-nothing: one of these failing to open aborts the whole "All
+# interfaces" capture so it writes zero packets — hence they are dropped
+# from the "all" expansion (an explicitly named single device is still
+# honoured as-is).
+_PSEUDO_IFACE_RE = re.compile(
+    r"^(?:awdl|llw|ap|p2p|utun|anpi|gif|stf|XHC|VHC|pktap|iptap|pflog|"
+    r"pfsync|bluetooth-monitor|nlmon|nflog|nfqueue|dbus|ciscodump|"
+    r"randpkt|sdjournal|sshdump|udpdump|wifidump)\d*$",
+    re.IGNORECASE,
+)
+
+
+def _capture_failure_hint() -> str:
+    """Actionable next step appended to a genuine no-data capture error."""
+    if IS_MACOS:
+        return (
+            "Grant capture rights: run `bash scripts/macos_setup.sh` to install "
+            "Wireshark's ChmodBPF helper (needed for multi-interface / 'All' "
+            "capture). To capture a flood aimed at 127.0.0.1, pick the loopback "
+            "adapter (lo0) — a physical NIC never sees localhost traffic."
+        )
+    if IS_WINDOWS:
+        return "Check that Npcap is installed and the selected adapter is up."
+    return (
+        "Grant capture rights once: "
+        "`sudo setcap cap_net_raw,cap_net_admin=eip $(which tcpdump)`. "
+        "For a localhost flood, capture on the loopback interface (lo)."
+    )
+
+
+def _first_err_line(stderr_text: str) -> str:
+    """First non-empty, non-noise line of a capture tool's stderr — the bit
+    worth putting in front of the user."""
+    for raw in (stderr_text or "").splitlines():
+        line = raw.strip()
+        if not line:
+            continue
+        low = line.lower()
+        if low.startswith("capturing on") or "packets captured" in low:
+            continue
+        if re.fullmatch(r"[\d,]+ packets? (received|dropped).*", low):
+            continue
+        return line
+    return ""
 
 WIRESHARK_DIR = Path(r"C:\Program Files\Wireshark")
 DUMPCAP = WIRESHARK_DIR / "dumpcap.exe"
@@ -218,7 +278,44 @@ class CaptureSession:
     # "duration_target_reached" | "packet_target_reached" | "target_reached"
     # | "user_stopped" | "safety_timeout" | None (still running)
     stop_reason: Optional[str] = None
+    # Non-fatal note for a capture that completed but recorded 0 packets
+    # (valid file, wrong interface / no matching traffic) — distinct from
+    # `error`, which means nothing usable was written at all.
+    warning: Optional[str] = None
+    # Bounded tail of the capture tool's stderr, drained continuously by a
+    # daemon thread so the OS pipe buffer can't fill and deadlock the
+    # capture process, and so `_finalize` has the real failure reason.
+    stderr_lines: list = field(default_factory=list, repr=False)
+    _stderr_thread: Optional[threading.Thread] = field(
+        default=None, repr=False, compare=False
+    )
     _lock: threading.Lock = field(default_factory=threading.Lock)
+
+    def start_stderr_reader(self) -> None:
+        """Drain process.stderr in the background. dumpcap/tcpdump write
+        periodic progress plus a received/dropped summary there; left
+        unread it fills the ~64 KB pipe buffer and the capture process
+        blocks on write (packets stop being captured)."""
+        if self._stderr_thread is not None or self.process.stderr is None:
+            return
+
+        def _drain() -> None:
+            try:
+                for line in self.process.stderr:
+                    self.stderr_lines.append(line)
+                    if len(self.stderr_lines) > 200:
+                        del self.stderr_lines[:-200]
+            except (ValueError, OSError):
+                pass
+
+        thread = threading.Thread(
+            target=_drain, daemon=True, name=f"capture-stderr-{self.session_id}"
+        )
+        thread.start()
+        self._stderr_thread = thread
+
+    def stderr_text(self) -> str:
+        return "".join(self.stderr_lines)
 
     def status(self) -> str:
         if self.error:
@@ -255,6 +352,7 @@ class CaptureSession:
             "packets_received": self.packets_received,
             "packets_dropped": self.packets_dropped,
             "stop_reason": self.stop_reason,
+            "warning": self.warning,
             "error": self.error,
         }
 
@@ -451,13 +549,28 @@ def start_capture(
     # connected interface). Multiple interfaces are captured into one merged
     # pcap so the rest of the pipeline is unchanged.
     if isinstance(interface_device, str) and interface_device.strip().lower() == "all":
+        # "All interfaces" -> only real, connected NICs. dumpcap aborts the
+        # entire merged capture if any one -i device fails to open, so
+        # pseudo-interfaces (awdl0, utun*, gif0, ...) and link-down NICs
+        # must be filtered out here or "All" writes a zero-packet file.
+        all_ifaces = list_interfaces()
         devices = [
-            i["device"] for i in list_interfaces()
-            if "Disconnected" not in (i.get("description") or "")
+            i["device"] for i in all_ifaces
+            if not _PSEUDO_IFACE_RE.match(i["device"])
+            and "Disconnected" not in (i.get("description") or "")
             and (i.get("description") or "") != "none"
         ]
+        skipped = [i["device"] for i in all_ifaces if i["device"] not in devices]
         if not devices:
-            raise CaptureError("No connected interfaces to capture on.")
+            raise CaptureError(
+                "No capturable connected interface found for 'All' "
+                f"(skipped: {', '.join(skipped) or 'none'}). Select a specific "
+                "interface instead."
+            )
+        logger.info(
+            "capture: 'all' -> %s (skipped %s)",
+            ", ".join(devices), ", ".join(skipped) or "none",
+        )
     elif isinstance(interface_device, (list, tuple)):
         devices = [str(d) for d in interface_device if str(d).strip()]
     else:
@@ -465,7 +578,7 @@ def start_capture(
     if not devices:
         raise CaptureError("No capture interface specified.")
 
-    _dumpcap = str(DUMPCAP) if IS_WINDOWS else __import__("shutil").which("dumpcap")
+    _dumpcap = str(DUMPCAP) if IS_WINDOWS else shutil.which("dumpcap")
 
     if len(devices) > 1:
         # tcpdump has no multi-interface mode; dumpcap does (repeated -i).
@@ -501,7 +614,11 @@ def start_capture(
         #           "(cannot open BPF device) /dev/bpf0: Permission denied".
         # Falling back to running the whole backend as root also works.
         # See README.md "macOS setup" / "Linux setup".
-        cmd = ["tcpdump", "-i", devices[0], "-w", str(pcap_path)]
+        # -U: packet-buffered write. Without it tcpdump only flushes the
+        # savefile when its userland buffer fills, so a short or low-traffic
+        # capture that is stopped quickly can leave a 0-byte / header-only
+        # file even though packets were seen.
+        cmd = ["tcpdump", "-U", "-i", devices[0], "-w", str(pcap_path)]
         if buffer_mb:
             cmd += ["-B", str(buffer_mb * 1024)]  # tcpdump -B is KiB
         # No native duration flag on tcpdump — check_and_finalize() below
@@ -515,6 +632,7 @@ def start_capture(
         else f"{' + '.join(devices)} ({len(devices)} interfaces)"
     )
 
+    logger.info("capture: exec %s", " ".join(cmd))
     try:
         proc = subprocess.Popen(
             cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
@@ -525,12 +643,14 @@ def start_capture(
     time.sleep(0.5)
     if proc.poll() is not None:
         _, stderr = proc.communicate()
+        detail = _first_err_line(stderr) or (stderr or "").strip()
+        logger.warning("capture: process exited immediately: %s", detail)
         raise CaptureError(
             f"Capture process exited immediately (code {proc.returncode}): "
-            f"{stderr.strip()}"
+            f"{detail}. {_capture_failure_hint()}"
         )
 
-    return CaptureSession(
+    session = CaptureSession(
         session_id=session_id,
         interface=interface_label,
         interfaces=devices,
@@ -541,6 +661,8 @@ def start_capture(
         duration_target=duration_seconds,
         buffer_mb=buffer_mb,
     )
+    session.start_stderr_reader()
+    return session
 
 
 _RECV_RE = re.compile(r"(\d+)\s+packets?\s+received by filter")
@@ -586,23 +708,52 @@ def _finalize(session: CaptureSession) -> CaptureSession:
     session.end_time = time.time()
 
     # dumpcap/tcpdump print a received/dropped summary to stderr on exit —
-    # read it now the process has actually terminated. Tells the user
+    # the background reader thread has been collecting it; give it a beat to
+    # flush now the process has actually terminated. Tells the user
     # "captured lossily under load" apart from "captured nothing".
-    if session.process.poll() is not None and session.packets_received is None:
+    if session._stderr_thread is not None:
+        session._stderr_thread.join(timeout=2)
+    stderr_text = session.stderr_text()
+    if not stderr_text:
         try:
             stderr_text = session.process.stderr.read() if session.process.stderr else ""
         except (ValueError, OSError):
             stderr_text = ""
+    if session.process.poll() is not None and session.packets_received is None:
         received, dropped = _parse_capture_drops(stderr_text or "")
         session.packets_received = received
         session.packets_dropped = dropped
 
+    first_err = _first_err_line(stderr_text)
+
+    # Genuinely nothing written (missing file, or 0 bytes — the capture
+    # tool died before even the 24-byte pcap global header). Hard error
+    # with the real reason and a fix.
     if not session.pcap_path.exists() or session.pcap_path.stat().st_size == 0:
-        session.error = "Capture stopped but no PCAP data was written."
+        reason = f" ({first_err})" if first_err else ""
+        session.error = (
+            f"Capture wrote no PCAP data{reason}. {_capture_failure_hint()}"
+        )
+        logger.warning("capture: no data written%s", reason)
         return session
 
     stats = _capfile_stats(session.pcap_path)
     session.packet_count = stats["packet_count"]
+
+    # A valid capture file that recorded 0 packets is not an error — it is
+    # a completed capture on an interface that saw no matching traffic
+    # (very often: a physical NIC selected while the traffic under test is
+    # localhost / lo0). Surface it as a non-fatal warning so the pipeline
+    # still advances instead of dead-ending in ERROR.
+    if not session.packet_count:
+        hint = (
+            "The interface saw no packets. For a flood aimed at 127.0.0.1 "
+            "capture on the loopback adapter (lo0), not a physical NIC."
+        )
+        session.warning = f"Capture completed with 0 packets. {hint}"
+        if first_err:
+            session.warning += f" ({first_err})"
+        logger.info("capture: completed with 0 packets")
     return session
 
 
@@ -622,9 +773,20 @@ def stop_capture(session: CaptureSession) -> CaptureSession:
         # calling us to actually terminate the process).
         if session.stop_reason is None:
             session.stop_reason = "user_stopped"
+        # tcpdump and dumpcap both flush and cleanly close the savefile on
+        # SIGINT (Ctrl-C); SIGTERM/SIGKILL can leave the last block
+        # unwritten or the file empty. Try SIGINT first, then escalate.
         try:
-            session.process.terminate()
-            session.process.wait(timeout=10)
+            if not IS_WINDOWS:
+                session.process.send_signal(signal.SIGINT)
+                try:
+                    session.process.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    session.process.terminate()
+                    session.process.wait(timeout=5)
+            else:
+                session.process.terminate()
+                session.process.wait(timeout=10)
         except subprocess.TimeoutExpired:
             session.process.kill()
             session.process.wait(timeout=5)

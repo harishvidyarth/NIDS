@@ -139,6 +139,95 @@ def extract_packet_features(pcap_path: Path | str) -> pd.DataFrame:
     return pd.DataFrame(rows).sort_values("packet_count", ascending=False).reset_index(drop=True)
 
 
+def port_scan_signature(pcap_path: Path | str) -> dict:
+    """Packet-level scan detection: for each (src_ip -> dst_ip) pair, the
+    ORDER destination ports were first contacted, classified as
+    'sequential' (mostly +1 steps), 'strided' (constant step > 1) or
+    'randomised' (high-entropy). One streaming pass, TCP SYN / UDP first
+    contact only. Returns the most aggressive sweep found, or a 'none'
+    verdict."""
+    pcap_path = Path(pcap_path)
+    if not pcap_path.exists() or pcap_path.stat().st_size == 0:
+        raise PacketFeatureError(f"PCAP missing/empty: {pcap_path}")
+    try:
+        from scapy.all import PcapReader, IP, IPv6, TCP, UDP
+    except ImportError as exc:  # pragma: no cover
+        raise PacketFeatureError(f"scapy is required: {exc}") from exc
+
+    order: dict[tuple, list[int]] = defaultdict(list)
+    seen: dict[tuple, set] = defaultdict(set)
+    try:
+        with PcapReader(str(pcap_path)) as reader:
+            for pkt in reader:
+                if IP in pkt:
+                    src, dst = pkt[IP].src, pkt[IP].dst
+                elif IPv6 in pkt:
+                    src, dst = pkt[IPv6].src, pkt[IPv6].dst
+                else:
+                    continue
+                if TCP in pkt:
+                    if not (int(pkt[TCP].flags) & 0x02):  # SYN only
+                        continue
+                    dport = int(pkt[TCP].dport)
+                elif UDP in pkt:
+                    dport = int(pkt[UDP].dport)
+                else:
+                    continue
+                pair = (src, dst)
+                if dport not in seen[pair]:
+                    seen[pair].add(dport)
+                    order[pair].append(dport)
+    except Exception as exc:  # pragma: no cover
+        if not order:
+            raise PacketFeatureError(f"Could not read {pcap_path}: {exc}") from exc
+
+    best = {"pattern": "none", "src": None, "dst": None, "unique_ports": 0}
+    for (src, dst), ports in order.items():
+        if len(ports) < 10:
+            continue
+        pattern = _classify_port_order(ports)
+        if pattern != "none" and len(ports) > best["unique_ports"]:
+            best = {
+                "pattern": pattern, "src": src, "dst": dst,
+                "unique_ports": len(ports),
+                "port_range": [min(ports), max(ports)],
+            }
+    return best
+
+
+def _classify_port_order(ports: list[int]) -> str:
+    uniq = sorted(set(ports))
+    if len(uniq) < 10:
+        return "none"
+    import numpy as np
+
+    if np.all(np.diff(uniq) == 1):
+        return "sequential"
+    steps = np.abs(np.diff(ports))
+    if steps.size and np.mean(steps == 1) >= 0.6:
+        return "sequential"
+    if steps.size and np.std(steps) < 1e-6 and steps[0] > 1:
+        return "strided"
+    if len(uniq) >= 20 and (max(uniq) - min(uniq)) > len(uniq) * 4:
+        return "randomised"
+    return "none"
+
+
+def packet_features_summary(pcap_path: Path | str) -> dict:
+    """JSON-friendly bundle for the Main Stage PACKET FEATURES panel."""
+    frame = extract_packet_features(pcap_path)
+    try:
+        scan = port_scan_signature(pcap_path)
+    except PacketFeatureError:
+        scan = {"pattern": "none", "unique_ports": 0}
+    return {
+        "flow_count": int(len(frame)),
+        "flows": frame.to_dict(orient="records"),
+        "port_scan": scan,
+        "columns": list(frame.columns),
+    }
+
+
 if __name__ == "__main__":
     import sys
 

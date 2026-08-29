@@ -147,10 +147,15 @@ function setBackendConnected(ok) {
   el("sb-backend").style.color = ok ? "" : "var(--red)";
 }
 
-function showError(message) {
-  if (!message) { el("error-banner").style.display = "none"; return; }
+function showError(message, severity) {
+  const banner = el("error-banner");
+  if (!message) { banner.style.display = "none"; return; }
+  const warn = severity === "warning";
+  banner.classList.toggle("is-warning", warn);
   el("error-banner-text").textContent = message;
-  el("error-banner").style.display = "";
+  banner.querySelector(".error-banner-icon").innerHTML = warn ? "&#9888;" : "&#10007;";
+  banner.querySelector(".error-banner-title").textContent = warn ? "WARNING" : "ERROR";
+  banner.style.display = "";
 }
 
 /* ==================== Mode switching ==================== */
@@ -571,14 +576,17 @@ function renderPipelineStrip() {
   const errMsg = mode === "live"
     ? (liveSnap && liveSnap.error ? liveSnap.error : (temporalStatus.stage === "ERROR" ? temporalStatus.error : ""))
     : (uploadStatus && uploadStatus.error ? uploadStatus.error : (temporalStatus.stage === "ERROR" ? temporalStatus.error : ""));
-  showError(errMsg || null);
+  const capWarn = mode === "live" && liveSnap && liveSnap.capture ? liveSnap.capture.warning : "";
+  if (errMsg) showError(errMsg, "error");
+  else if (capWarn) showError(capWarn, "warning");
+  else showError(null);
 }
 
 /* ==================== Table tabs ==================== */
 function switchTableTab(tab) {
   activeTableTab = tab;
   document.querySelectorAll(".table-tab").forEach((b) => b.classList.toggle("table-tab-active", b.dataset.tableTab === tab));
-  for (const t of ["packets", "flows", "predictions", "temporal"]) {
+  for (const t of ["packets", "flows", "predictions", "featurevalues", "temporal"]) {
     el(`tablewrap-${t}`).style.display = t === tab ? "" : "none";
   }
   el("predictions-state-filter-wrap").style.display = tab === "predictions" ? "" : "none";
@@ -664,6 +672,45 @@ function renderFlowsTable() {
       <td>${escapeHtml(pickField(f, ["Dst Port", "dst_port"], "N/A"))}</td>
       <td>${escapeHtml(pickField(f, ["Protocol", "protocol"], "N/A"))}</td>
     </tr>`).join("");
+}
+
+const FEATUREVALUE_COLS = [
+  ["src_ip", "Src IP"], ["src_port", "Src Port"], ["dst_ip", "Dst IP"], ["dst_port", "Dst Port"],
+  ["protocol", "Proto"],
+  ["flow_duration", "Duration"], ["tot_fwd_pkts", "Fwd Pkts"], ["tot_bwd_pkts", "Bwd Pkts"],
+  ["totlen_fwd_pkts", "Fwd Bytes"], ["totlen_bwd_pkts", "Bwd Bytes"],
+  ["flow_pkts_s", "Pkts/s"], ["flow_byts_s", "Bytes/s"],
+  ["flow_iat_mean", "IAT mean"], ["flow_iat_var", "IAT var"], ["flow_iat_max", "IAT max"],
+  ["tcp_flags", "Flags"], ["tcp_flag_bitmask", "Flag mask"],
+  ["syn_flag_cnt", "SYN"], ["ack_flag_cnt", "ACK"], ["fin_flag_cnt", "FIN"],
+  ["rst_flag_cnt", "RST"], ["psh_flag_cnt", "PSH"], ["urg_flag_cnt", "URG"],
+  ["down_up_ratio", "Down/Up"], ["init_fwd_win_byts", "Init Fwd Win"], ["init_bwd_win_byts", "Init Bwd Win"],
+];
+
+function renderFeatureValuesTable() {
+  const flows = currentFlows();
+  const head = el("featurevalues-head");
+  const body = el("featurevalues-tbody");
+  if (!flows) {
+    head.innerHTML = "";
+    body.innerHTML = '<tr class="empty-row"><td>No flow data yet — run State Prediction.</td></tr>';
+    el("table-row-count").textContent = "0 rows";
+    return;
+  }
+  const rows = applyTextFilters(flows,
+    (f) => `${pickField(f, ["Protocol", "protocol"], "")}`,
+    (f) => `${pickField(f, ["Src IP", "src_ip"], "")} ${pickField(f, ["Dst IP", "dst_ip"], "")}`);
+  head.innerHTML = "<th>#</th>" + FEATUREVALUE_COLS.map(([, label]) => `<th>${escapeHtml(label)}</th>`).join("");
+  el("table-row-count").textContent = `${rows.length} rows`;
+  body.innerHTML = rows.map((f, i) => {
+    const fv = f.features || {};
+    const cells = FEATUREVALUE_COLS.map(([key]) => {
+      let v = fv[key];
+      if (v === undefined || v === null) v = pickField(f, [key, key.replace(/_/g, " ")], "");
+      return `<td>${escapeHtml(String(v))}</td>`;
+    }).join("");
+    return `<tr><td>${i + 1}</td>${cells}</tr>`;
+  }).join("");
 }
 
 function renderPredictionsTable() {
@@ -791,6 +838,7 @@ function renderActiveTable() {
   if (activeTableTab === "packets") renderPacketsTable();
   else if (activeTableTab === "flows") renderFlowsTable();
   else if (activeTableTab === "predictions") renderPredictionsTable();
+  else if (activeTableTab === "featurevalues") renderFeatureValuesTable();
   else if (activeTableTab === "temporal") renderTemporalTable();
 }
 
@@ -962,6 +1010,107 @@ function renderExtractionTab() {
   renderFeatureSpace(pred ? "all" : "none");
 }
 
+let packetFeatureData = null;
+async function loadPacketFeatures() {
+  const btn = el("btn-packet-features");
+  if (btn) { btn.disabled = true; btn.textContent = "Computing…"; }
+  try {
+    const body = {};
+    if (mode === "upload" && uploadStatus && uploadStatus.session_id) body.upload_session_id = uploadStatus.session_id;
+    packetFeatureData = await api("/api/extract/packet", {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
+    });
+    renderPacketFeatures();
+  } catch (e) {
+    el("packet-features-body").innerHTML = `<div class="dist-empty">${escapeHtml(e.message || "failed")}</div>`;
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = "Recompute packet-level features"; }
+  }
+}
+
+function renderPacketFeatures() {
+  const d = packetFeatureData;
+  const card = el("port-scan-card");
+  const body = el("packet-features-body");
+  if (!d) return;
+  const ps = d.port_scan || {};
+  if (ps.pattern && ps.pattern !== "none") {
+    card.style.display = "";
+    card.className = "port-scan-card port-scan-hit";
+    card.textContent = `PORT SCAN: ${ps.pattern} sweep ${ps.src || "?"} → ${ps.dst || "?"}, ` +
+      `${ps.unique_ports} ports` + (ps.port_range ? ` (${ps.port_range[0]}–${ps.port_range[1]})` : "");
+  } else {
+    card.style.display = "";
+    card.className = "port-scan-card";
+    card.textContent = "PORT SCAN: no sequential/randomised port sweep detected";
+  }
+  const cols = d.columns || [];
+  const rows = (d.flows || []).slice(0, 500);
+  body.innerHTML = `<table class="data-table"><thead><tr>${
+    cols.map(c => `<th>${escapeHtml(c)}</th>`).join("")
+  }</tr></thead><tbody>${
+    rows.map(r => `<tr>${cols.map(c => `<td>${escapeHtml(String(r[c] ?? ""))}</td>`).join("")}</tr>`).join("")
+  }</tbody></table><div class="dist-empty" style="text-align:left">${d.flow_count} bidirectional flow(s)${rows.length < (d.flows || []).length ? " (first 500 shown)" : ""}</div>`;
+}
+
+let classifierMetricsData = null;
+async function loadClassifierMetrics() {
+  const btn = el("btn-classifier-metrics");
+  if (btn) { btn.disabled = true; btn.textContent = "Computing…"; }
+  try {
+    classifierMetricsData = await api("/api/predict/metrics");
+    renderClassifierMetrics();
+  } catch (e) {
+    el("classifier-metrics-body").innerHTML = `<div class="dist-empty">${escapeHtml(e.message || "failed")}</div>`;
+    el("classifier-metrics-source").style.display = "none";
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = "Recompute classifier metrics"; }
+  }
+}
+
+function renderClassifierMetrics() {
+  const m = classifierMetricsData;
+  const src = el("classifier-metrics-source");
+  const body = el("classifier-metrics-body");
+  if (!m) return;
+  const gt = m.is_ground_truth;
+  src.style.display = "";
+  src.className = "metrics-source " + (gt ? "metrics-source-gt" : "metrics-source-proxy");
+  src.textContent = gt
+    ? `Ground truth · ${m.source} · n=${m.n}`
+    : `PROXY (not ground truth) · ${m.source} · n=${m.n} · agreement ${((m.agreement_rate || 0) * 100).toFixed(1)}%`;
+  const pc = m.per_class || {};
+  const f = (x) => (x == null || typeof x !== "number") ? "—" : x.toFixed(3);
+  const rows = (m.labels || Object.keys(pc)).map((c) => {
+    const v = pc[c] || {};
+    return `<tr><td>${escapeHtml(c)}</td><td>${f(v.precision)}</td><td>${f(v.recall)}</td><td>${f(v.f1)}</td><td>${v.support ?? 0}</td></tr>`;
+  }).join("");
+  const a = m.attack || {};
+  const cm = m.confusion_matrix || [];
+  const maxCell = Math.max(1, ...cm.flat());
+  const cmHtml = cm.length ? `
+    <div class="detail-col-subtitle" style="margin-top:8px;">Confusion — rows = ${gt ? "true" : "signature"}, cols = ANN predicted</div>
+    <table class="data-table confusion-grid"><thead><tr><th></th>${(m.labels || []).map(c => `<th>${escapeHtml(c)}</th>`).join("")}</tr></thead>
+    <tbody>${cm.map((row, i) => `<tr><th>${escapeHtml((m.labels || [])[i] || i)}</th>${row.map((n, j) => {
+      const bg = `rgba(90,150,255,${(n / maxCell).toFixed(3)})`;
+      return `<td style="background:${n ? bg : "transparent"}${i === j ? ";font-weight:700" : ""}">${n}</td>`;
+    }).join("")}</tr>`).join("")}</tbody></table>` : "";
+  body.innerHTML = `
+    <table class="data-table" style="width:100%; margin-top:6px;">
+      <thead><tr><th>Class</th><th>Prec.</th><th>Recall</th><th>F1</th><th>Support</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <div class="dist-row" style="margin-top:6px;"><span class="dist-label">Macro F1</span><span class="dist-pct">${f(m.macro_f1)}</span></div>
+    <div class="dist-row"><span class="dist-label">Weighted F1</span><span class="dist-pct">${f(m.weighted_f1)}</span></div>
+    <div class="dist-row"><span class="dist-label">Accuracy</span><span class="dist-pct">${f(m.accuracy)}</span></div>
+    <div class="dist-row"><span class="dist-label">Attack precision</span><span class="dist-pct">${f(a.precision)}</span></div>
+    <div class="dist-row"><span class="dist-label">Attack recall</span><span class="dist-pct">${f(a.recall)}</span></div>
+    <div class="dist-row"><span class="dist-label">Attack F1</span><span class="dist-pct">${f(a.f1)}</span></div>
+    <div class="dist-row"><span class="dist-label">Attack false-positive rate</span><span class="dist-pct">${f(a.false_positive_rate)}</span></div>
+    ${cmHtml}
+    ${m.note ? `<div class="dist-empty" style="text-align:left; margin-top:6px;">${escapeHtml(m.note)}</div>` : ""}`;
+}
+
 function renderPredictionTab() {
   const pred = mode === "live" ? (liveSnap && liveSnap.prediction) : (uploadStatus && uploadStatus.prediction);
   const stage = mode === "live" ? (liveSnap && liveSnap.stage) : (uploadStatus && uploadStatus.stage);
@@ -971,8 +1120,39 @@ function renderPredictionTab() {
   el("btn-predict").disabled = !canPredictLive;
 
   const stateVal = el("p-state-value");
-  stateVal.textContent = pred ? pred.overall_traffic_state : "N/A";
-  stateVal.className = pred ? "state-" + pred.overall_traffic_state : "";
+  // Effective = ANN verdict, escalated where the signature layer disagrees.
+  const attackClass = pred && (pred.effective_attack_class || pred.attack_class);
+  const conf = pred && (pred.effective_confidence || pred.confidence);
+  if (!pred) {
+    stateVal.textContent = "N/A";
+    stateVal.className = "";
+  } else if (attackClass && conf === "high") {
+    stateVal.textContent = "ATTACK: " + attackClass;
+    stateVal.className = "state-" + attackClass + " verdict-attack";
+  } else if (attackClass) {
+    // low confidence — a few ANN-only flows, no deterministic confirmation
+    stateVal.textContent = "SUSPICIOUS: " + attackClass + "?";
+    stateVal.className = "state-" + attackClass + " verdict-suspicious";
+  } else {
+    stateVal.textContent = "BENIGN";
+    stateVal.className = "state-BENIGN";
+  }
+
+  const domEl = el("p-dominant");
+  if (domEl) {
+    if (!pred) {
+      domEl.textContent = "";
+    } else {
+      let sub = `ANN dominant: ${pred.dominant_state}`;
+      if (pred.attack_class) {
+        sub += ` · ANN: ${pred.attack_class_counts[pred.attack_class]} ${pred.attack_class} flow(s)`;
+      }
+      if (pred.signature_verdict && pred.signature_verdict !== pred.attack_class) {
+        sub += ` · signature: ${pred.signature_verdict}`;
+      }
+      domEl.textContent = sub;
+    }
+  }
 
   const flagged = el("p-flagged");
   if (flagged) {
@@ -995,7 +1175,27 @@ function renderPredictionTab() {
   btnDl.disabled = !(mode === "upload" && uploadStatus && uploadStatus.stage === "PREDICTION_COMPLETED");
 
   renderClassDistribution(pred);
+  renderSignatureHits(pred);
   renderDrivingFeatures(pred);
+}
+
+function renderSignatureHits(pred) {
+  const wrap = el("signature-hits");
+  if (!wrap) return;
+  if (!pred) {
+    wrap.innerHTML = '<div class="dist-empty">N/A — no prediction yet</div>';
+    return;
+  }
+  const hits = pred.signature_hits || [];
+  if (!hits.length) {
+    wrap.innerHTML = '<div class="dist-empty">No signature rule fired</div>';
+    return;
+  }
+  wrap.innerHTML = hits.map(h => `<div class="dist-row">
+    <span class="dist-label state-${escapeHtml(h.state)}" title="${escapeHtml(h.rule)}">${escapeHtml(h.state)}</span>
+    <span class="sig-detail">${escapeHtml(h.detail)}</span>
+    <span class="dist-pct">${h.flow_count} flow${h.flow_count === 1 ? "" : "s"}</span>
+  </div>`).join("");
 }
 
 function renderDrivingFeatures(pred) {
@@ -1169,6 +1369,82 @@ function renderMultistepTab() {
   }).join("");
 }
 
+let worldModelForecast = null;
+async function runWorldModelForecast() {
+  const btn = el("btn-worldmodel-forecast");
+  const k = parseInt(el("wm-k").value, 10) || 6;
+  btn.disabled = true;
+  el("wm-error").style.display = "none";
+  try {
+    worldModelForecast = await api("/api/worldmodel/forecast", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ k }),
+    });
+    renderWorldModelTab();
+  } catch (e) {
+    el("wm-error").style.display = "";
+    el("wm-error").textContent = e.message || "forecast failed";
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function renderWorldModelTab() {
+  const f = worldModelForecast;
+  el("wm-current").textContent = f ? f.current_state : "N/A";
+  el("wm-current-stage").textContent = f ? f.current_mitre_stage : "N/A";
+  if (!f) return;
+  const steps = f.k_steps || [];
+  const alarm = f.earliest_alarm_step;
+  el("wm-warning").textContent = alarm
+    ? `EARLY WARNING: infiltration probability reaches ${(f.early_warning_threshold * 100).toFixed(0)}% at step ${alarm} (~${alarm * f.window_seconds}s ahead).`
+    : `NO EARLY WARNING across ${steps.length} steps · max infiltration ${(f.maximum_infiltration_probability * 100).toFixed(1)}%`;
+  el("wm-warning").className = "multistep-warning " + (alarm ? "warning-active" : "");
+
+  // infiltration-probability curve
+  const w = 640, h = 160, left = 40, top = 14, plotW = 560, plotH = 110;
+  const n = Math.max(1, steps.length - 1);
+  const pts = steps.map((s, i) => {
+    const x = left + i * (plotW / n);
+    const y = top + (1 - s.infiltration_probability) * plotH;
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(" ");
+  const xlabels = steps.map((s, i) => `<text x="${left + i * (plotW / n)}" y="${top + plotH + 16}" text-anchor="middle">+${s.offset_seconds}s</text>`).join("");
+  el("wm-chart").innerHTML = `<svg viewBox="0 0 ${w} ${h}" role="img" aria-label="infiltration probability over K steps">
+    <line x1="${left}" y1="${top + plotH}" x2="${left + plotW}" y2="${top + plotH}" stroke="currentColor"/>
+    <polyline points="${pts}" fill="none" stroke="var(--red)" stroke-width="2"/>${xlabels}</svg>`;
+
+  const ps = f.predicted_mitre_stage || {};
+  const ladder = (ps.progress_stages || []).map(s => `<span class="${s.active ? "wm-stage-active" : ""}">${escapeHtml(s.name)}</span>`).join(" → ");
+  el("wm-stage").innerHTML = `Predicted stage: <strong>${escapeHtml(ps.predicted_stage || "—")}</strong> (${escapeHtml(ps.tactic_id || "n/a")})` +
+    (ps.terminal_impact_alert ? ' <span style="color:var(--red)">· TERMINAL IMPACT ALERT</span>' : "") +
+    `<div style="margin-top:4px;">${ladder}</div>`;
+
+  const feats = f.top_features || [];
+  const fmax = Math.max(...feats.map(x => Math.abs(x.mean_abs_contribution)), 1e-9);
+  el("wm-features").innerHTML = feats.length ? feats.map(x => {
+    const pct = Math.round((Math.abs(x.mean_abs_contribution) / fmax) * 100);
+    const color = x.mean_signed_contribution >= 0 ? "var(--red)" : "var(--green)";
+    return `<div class="dist-row"><span class="dist-label">${escapeHtml(x.feature)}</span>
+      <span class="dist-bar-track"><span class="dist-bar-fill" style="width:${pct}%; background:${color}"></span></span>
+      <span class="dist-pct">${x.mean_signed_contribution >= 0 ? "+" : ""}${x.mean_signed_contribution.toFixed(4)}</span></div>`;
+  }).join("") : '<div class="dist-empty">none</div>';
+
+  const wins = f.top_windows || [];
+  el("wm-windows").innerHTML = wins.length ? wins.map(x =>
+    `<div class="dist-row"><span class="dist-label">window ${x.window_id} (t${x.position})</span>
+     <span class="dist-bar-track"><span class="dist-bar-fill" style="width:${Math.round(x.attention * 100)}%"></span></span>
+     <span class="dist-pct">${(x.attention * 100).toFixed(1)}%</span></div>`).join("") : '<div class="dist-empty">none</div>';
+
+  el("wm-steps").innerHTML = steps.map(s => {
+    const probs = Object.entries(s.probabilities).map(([k2, v]) => `<li>${escapeHtml(k2)}: ${(v * 100).toFixed(1)}%</li>`).join("");
+    return `<details class="multistep-horizon"><summary><strong>step ${s.step}</strong>
+      <span>+${s.offset_seconds}s</span><span>${escapeHtml(s.predicted_state)}</span>
+      <span>infil ${(s.infiltration_probability * 100).toFixed(1)}%</span><span>${escapeHtml(s.risk_level)}</span></summary>
+      <div><strong>Probabilities</strong><ul>${probs}</ul>MITRE stage: ${escapeHtml(s.mitre_stage)}</div></details>`;
+  }).join("");
+}
+
 const VALIDATION_STAGE_LABEL = {
   NOT_VALIDATED: "NOT VALIDATED", VALIDATING: "VALIDATING…",
   VALIDATED: "VALIDATED", VALIDATED_WITH_WARNINGS: "VALIDATED WITH WARNINGS",
@@ -1331,7 +1607,7 @@ function renderStatusBar() {
   const packetCount = mode === "live" ? (cap && cap.packet_count != null ? cap.packet_count : 0) : (uploadStatus && uploadStatus.packet_count != null ? uploadStatus.packet_count : 0);
   el("sb-packets").textContent = `Packets: ${packetCount}`;
   el("sb-flows").textContent = `Flows: ${pred ? pred.flows_analyzed : "—"}`;
-  el("sb-state").textContent = `State: ${pred ? pred.overall_traffic_state : "—"}`;
+  el("sb-state").textContent = `State: ${pred ? (pred.attack_class ? "ATTACK/" + pred.attack_class : "BENIGN") : "—"}`;
   el("sb-temporal").textContent = `Temporal: ${
     temporalStatus.stage === "COMPLETED" ? `READY (${temporalStatus.result.total_windows}w/${temporalStatus.result.total_sequences}s)` :
     temporalStatus.stage === "PREPARING" ? "PREPARING" :
@@ -1354,6 +1630,7 @@ function renderAll() {
   renderPredictionTab();
   renderTemporalTab();
   renderMultistepTab();
+  renderWorldModelTab();
   renderActiveTable();
   renderStatusBar();
 }
@@ -1390,6 +1667,8 @@ el("btn-export-prediction").addEventListener("click", downloadProcessedCsv);
 el("btn-start").addEventListener("click", startCapture);
 el("iface-all").addEventListener("change", () => { el("iface-select").disabled = el("iface-all").checked; });
 el("btn-stop").addEventListener("click", stopCapture);
+el("btn-packet-features").addEventListener("click", loadPacketFeatures);
+el("btn-classifier-metrics").addEventListener("click", loadClassifierMetrics);
 el("btn-extract").addEventListener("click", runExtract);
 el("btn-predict").addEventListener("click", runPredict);
 el("btn-reset").addEventListener("click", resetPipeline);
@@ -1400,6 +1679,7 @@ el("btn-lstm-train").addEventListener("click", startLstmTraining);
 el("btn-lstm-forecast").addEventListener("click", runLstmForecast);
 el("btn-lstm-report").addEventListener("click", downloadLstmReport);
 el("btn-multistep-forecast").addEventListener("click", runMultistepForecast);
+el("btn-worldmodel-forecast").addEventListener("click", runWorldModelForecast);
 el("btn-packets-prev").addEventListener("click", () => goToPacketsPage(-1));
 el("btn-packets-next").addEventListener("click", () => goToPacketsPage(1));
 

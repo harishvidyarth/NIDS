@@ -37,6 +37,7 @@ from sklearn.exceptions import InconsistentVersionWarning
 
 from .features import TRAINING_FEATURES, match_columns, is_id_or_label_column
 from .explain import attribute, top_features_for_row, driving_features
+from .signatures import flow_signatures
 
 CLASS_NAMES = ["BENIGN", "DDoS", "DoS", "PortScan"]
 CURRENT_STATE_COLUMN = "Current_State"
@@ -49,24 +50,131 @@ CURRENT_STATE_COLUMN = "Current_State"
 INVALID_FEATURES_LABEL = "INVALID_FEATURES"
 
 
-def summarize_states(counts: dict, n_scored: int) -> dict:
+# Confidence gate for the headline verdict. A handful of ANN-only flagged
+# flows (e.g. 5 of 35) is not a confirmed attack — especially DDoS, which
+# is a *volumetric, many-source* phenomenon. Below the gate the hero reads
+# "SUSPICIOUS — <class>?" (amber, review) instead of "ATTACK — <class>"
+# (red). The deterministic signature layer firing for the same class
+# always clears the gate. Tunables in one place:
+MIN_ATTACK_FLOWS_DDOS = 20
+MIN_ATTACK_RATIO_DDOS = 0.10
+MIN_ATTACK_FLOWS_OTHER = 5
+MIN_ATTACK_RATIO_OTHER = 0.05
+
+
+def summarize_states(
+    counts: dict, n_scored: int, *, signature_attack_class: str | None = None
+) -> dict:
     """Headline state = the class the most scored flows fall into (ties
     resolve to the earlier CLASS_NAMES entry, i.e. BENIGN first) — the
     same "dominant by flow count" rule the temporal state builder uses.
     The old logic flipped the whole capture to "MALICIOUS" on a single
     non-BENIGN flow, which reads as "everything here is an attack" even at
-    1% attack flows. The real signal is the ratio, returned alongside."""
+    1% attack flows. The real signal is the ratio, returned alongside.
+
+    `verdict` / `confidence` apply the gate above: BENIGN (none) → SUSPICIOUS
+    (low) → ATTACK (high). `signature_attack_class` is the deterministic
+    signature layer's verdict for this capture, if any — it clears the gate
+    for its class."""
     dominant_state = max(
         CLASS_NAMES, key=lambda c: (counts.get(c, 0), -CLASS_NAMES.index(c))
     )
     attack_flow_count = int(n_scored - counts.get("BENIGN", 0))
     ratio = round(attack_flow_count / n_scored, 4) if n_scored else 0.0
+
+    # `attack_class` = the single most common *non-BENIGN* class among
+    # scored flows (ties -> the more severe, i.e. earlier non-BENIGN entry).
+    attack_classes = [c for c in CLASS_NAMES if c != "BENIGN"]
+    attack_class_counts = {c: counts.get(c, 0) for c in attack_classes}
+    attack_class = None
+    if attack_flow_count > 0:
+        attack_class = max(
+            attack_classes,
+            key=lambda c: (attack_class_counts[c], -attack_classes.index(c)),
+        )
+
+    if attack_class is None:
+        verdict, confidence = "BENIGN", "none"
+    else:
+        if attack_class == "DDoS":
+            min_flows, min_ratio = MIN_ATTACK_FLOWS_DDOS, MIN_ATTACK_RATIO_DDOS
+        else:
+            min_flows, min_ratio = MIN_ATTACK_FLOWS_OTHER, MIN_ATTACK_RATIO_OTHER
+        cls_count = attack_class_counts[attack_class]
+        confirmed = (
+            signature_attack_class == attack_class
+            or (cls_count >= min_flows and ratio >= min_ratio)
+        )
+        if confirmed:
+            verdict, confidence = f"ATTACK — {attack_class}", "high"
+        else:
+            verdict, confidence = f"SUSPICIOUS — {attack_class}?", "low"
+
     return {
         "dominant_state": dominant_state,
         "attack_flow_count": attack_flow_count,
         "malicious_flow_ratio": ratio,
         "attack_present": attack_flow_count > 0,
+        "attack_class": attack_class,
+        "attack_class_counts": attack_class_counts,
+        "verdict": verdict,
+        "confidence": confidence,
     }
+
+
+# Curated per-flow feature VALUES surfaced on the Main Stage "FEATURE
+# VALUES" panel (the FEATURE SPACE accordion only ever showed names). Keys
+# are the CICFlowMeter column names in this build's feature CSV.
+_FLOW_VALUE_COLUMNS = [
+    "flow_duration", "flow_byts_s", "flow_pkts_s",
+    "tot_fwd_pkts", "tot_bwd_pkts", "totlen_fwd_pkts", "totlen_bwd_pkts",
+    "flow_iat_mean", "flow_iat_std", "flow_iat_max",
+    "fin_flag_cnt", "syn_flag_cnt", "rst_flag_cnt",
+    "psh_flag_cnt", "ack_flag_cnt", "urg_flag_cnt",
+    "down_up_ratio", "pkt_len_mean", "pkt_len_max",
+    "init_fwd_win_byts", "init_bwd_win_byts",
+]
+# TCP flag bitmask, high->low bit: URG ACK PSH RST SYN FIN.
+_FLAG_BITS = [
+    ("urg_flag_cnt", 0x20, "U"), ("ack_flag_cnt", 0x10, "A"),
+    ("psh_flag_cnt", 0x08, "P"), ("rst_flag_cnt", 0x04, "R"),
+    ("syn_flag_cnt", 0x02, "S"), ("fin_flag_cnt", 0x01, "F"),
+]
+
+
+def _flow_feature_values(df: pd.DataFrame) -> list[dict]:
+    """Per-row dict of the curated flow-level feature VALUES, plus a
+    derived TCP-flag bitmask (hex + letters) and IAT variance."""
+    cols = {c.strip().lower(): c for c in df.columns}
+    out: list[dict] = []
+    for i in range(len(df)):
+        rec: dict = {}
+        for name in _FLOW_VALUE_COLUMNS:
+            real = cols.get(name)
+            if real is None:
+                continue
+            val = df.iloc[i][real]
+            try:
+                num = float(val)
+            except (TypeError, ValueError):
+                rec[name] = str(val)
+                continue
+            rec[name] = round(num, 4)
+        if "flow_iat_std" in rec and isinstance(rec["flow_iat_std"], float):
+            rec["flow_iat_var"] = round(rec["flow_iat_std"] ** 2, 4)
+        bits, letters = 0, ""
+        for name, bit, ch in _FLAG_BITS:
+            real = cols.get(name)
+            try:
+                on = real is not None and float(df.iloc[i][real]) > 0
+            except (TypeError, ValueError):
+                on = False
+            bits |= bit if on else 0
+            letters += ch if on else "."
+        rec["tcp_flag_bitmask"] = f"0x{bits:02X}"
+        rec["tcp_flags"] = letters
+        out.append(rec)
+    return out
 
 
 logger = logging.getLogger("nids.prediction")
@@ -246,15 +354,44 @@ def predict_csv(csv_path: Path) -> dict:
     attribution = np.full((n_total, len(TRAINING_FEATURES)), np.nan)
     attribution[valid_positions] = valid_attribution
 
+    # Deterministic cross-flow signature layer — catches a volumetric DDoS
+    # the per-flow ANN dilutes to BENIGN, and gives INVALID_FEATURES rows a
+    # verdict. It never overwrites an ANN label; `effective_state` below is
+    # what the UI treats as the row's class, and both are always reported.
+    try:
+        sig = flow_signatures(df)
+    except Exception as exc:  # pragma: no cover - defensive
+        logger.info(f"[Prediction] Signature layer unavailable: {exc}")
+        sig = {"states": ["BENIGN"] * n_total, "hits": [], "attack_class": None,
+               "counts": {"BENIGN": n_total}, "port_scan": None}
+    sig_states = sig["states"]
+
+    try:
+        feature_values = _flow_feature_values(df)
+    except Exception as exc:  # pragma: no cover - defensive
+        logger.info(f"[Prediction] Feature-value panel unavailable: {exc}")
+        feature_values = [{} for _ in range(n_total)]
+
     flows = []
     for i in range(n_total):
         conf = confidences[i]
+        ann_state = str(predicted_labels[i])
+        sig_state = sig_states[i] if i < len(sig_states) else "BENIGN"
+        # ANN wins when it made a real call; the signature only speaks up
+        # for rows the ANN left BENIGN or could not score at all.
+        effective_state = ann_state
+        if sig_state != "BENIGN" and ann_state in ("BENIGN", INVALID_FEATURES_LABEL):
+            effective_state = sig_state
         row = {
-            "predicted_state": str(predicted_labels[i]),
+            "predicted_state": ann_state,
+            "signature_state": sig_state,
+            "effective_state": effective_state,
             "confidence": round(float(conf), 4) if not np.isnan(conf) else None,
         }
         if not np.isnan(attribution[i]).all():
             row["top_features"] = top_features_for_row(attribution[i])
+        if i < len(feature_values):
+            row["features"] = feature_values[i]
         for col in id_cols:
             value = flow_meta.iloc[i][col]
             if isinstance(value, (np.integer,)):
@@ -268,9 +405,29 @@ def predict_csv(csv_path: Path) -> dict:
 
     counts = {c: int((predicted_labels == c).sum()) for c in CLASS_NAMES}
     n_scored = int(valid_mask.sum())
-    state_summary = summarize_states(counts, n_scored)
+    sig_attack_class = sig.get("attack_class")
+    state_summary = summarize_states(
+        counts, n_scored, signature_attack_class=sig_attack_class
+    )
     dominant_state = state_summary["dominant_state"]
     overall_state = dominant_state
+
+    # Combined verdict: the ANN verdict, escalated if the deterministic
+    # signature layer independently flagged an attack the ANN missed.
+    effective_states = [f["effective_state"] for f in flows]
+    effective_counts = {
+        c: int(sum(1 for s in effective_states if s == c)) for c in CLASS_NAMES
+    }
+    effective_summary = summarize_states(
+        effective_counts, sum(effective_counts.values()),
+        signature_attack_class=sig_attack_class,
+    )
+    sig_hits = sig.get("hits", [])
+    if sig.get("attack_class") and sig["attack_class"] != state_summary["attack_class"]:
+        logger.info(
+            f"[Prediction] Signature layer flagged {sig['attack_class']} "
+            f"(ANN verdict: {state_summary['verdict']}) — {len(sig_hits)} rule hit(s)"
+        )
 
     distribution_str = ", ".join(f"{c}={counts[c]}" for c in CLASS_NAMES)
     if n_dropped:
@@ -291,6 +448,8 @@ def predict_csv(csv_path: Path) -> dict:
     # the same order, so this is a safe positional assignment.
     out_df = df.copy()
     out_df[CURRENT_STATE_COLUMN] = predicted_labels
+    out_df["Signature_State"] = sig["states"][:n_total]
+    out_df["Effective_State"] = effective_states
     out_df.to_csv(csv_path, index=False)
     logger.info(f"[Prediction] Added {CURRENT_STATE_COLUMN} column")
     logger.info(f"[Prediction] Updated CSV: {csv_path}")
@@ -303,9 +462,30 @@ def predict_csv(csv_path: Path) -> dict:
         "class_counts": counts,
         "overall_traffic_state": overall_state,
         "dominant_state": dominant_state,
+        # Headline the UI shows: "ATTACK — DDoS" whenever any non-BENIGN
+        # flow is present, so a DDoS in a mostly-benign capture is never
+        # silently swallowed by the dominant-by-count rule.
+        "verdict": state_summary["verdict"],
+        # "none" | "low" (SUSPICIOUS — few ANN-only flows) | "high"
+        # (ATTACK — cleared the flow-count/ratio gate or the signature
+        # layer confirmed it).
+        "confidence": state_summary["confidence"],
+        "attack_class": state_summary["attack_class"],
+        "attack_class_counts": state_summary["attack_class_counts"],
         "attack_flow_count": state_summary["attack_flow_count"],
         "malicious_flow_ratio": state_summary["malicious_flow_ratio"],
         "attack_present": state_summary["attack_present"],
+        # Deterministic signature/heuristic layer (cross-flow) run alongside
+        # the ANN — independent verdict, never overwrites an ANN label.
+        "signature_verdict": sig.get("attack_class"),
+        "signature_hits": sig_hits,
+        "signature_class_counts": sig.get("counts", {}),
+        "port_scan_signature": sig.get("port_scan"),
+        # ANN verdict escalated by the signature layer where they disagree.
+        "effective_verdict": effective_summary["verdict"],
+        "effective_confidence": effective_summary["confidence"],
+        "effective_attack_class": effective_summary["attack_class"],
+        "effective_class_counts": effective_counts,
         "inference_seconds": inference_seconds,
         "feature_csv_updated": True,
         "current_state_column": CURRENT_STATE_COLUMN,

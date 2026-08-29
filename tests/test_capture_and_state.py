@@ -5,12 +5,56 @@ from backend.capture.capture import _parse_capture_drops
 from backend.prediction.predict import summarize_states
 
 
-def test_dominant_state_majority_benign_is_benign():
+def test_few_ann_ddos_flows_are_suspicious_not_attack():
+    # 13 of 348 (3.7%) DDoS flows, ANN only, no signature hit -> below the
+    # DDoS gate -> SUSPICIOUS, not a red ATTACK.
     s = summarize_states({"BENIGN": 335, "DDoS": 13, "DoS": 0, "PortScan": 0}, 348)
     assert s["dominant_state"] == "BENIGN"          # was "MALICIOUS" before
     assert s["attack_flow_count"] == 13
-    assert s["malicious_flow_ratio"] == round(13 / 348, 4)
     assert s["attack_present"] is True
+    assert s["attack_class"] == "DDoS"              # still disclosed
+    assert s["verdict"] == "SUSPICIOUS — DDoS?"
+    assert s["confidence"] == "low"
+
+
+def test_signature_hit_clears_the_gate():
+    # Same few flows, but the deterministic signature layer flagged DDoS.
+    s = summarize_states(
+        {"BENIGN": 335, "DDoS": 13, "DoS": 0, "PortScan": 0}, 348,
+        signature_attack_class="DDoS",
+    )
+    assert s["verdict"] == "ATTACK — DDoS"
+    assert s["confidence"] == "high"
+
+
+def test_ddos_clears_gate_on_volume():
+    # 30 of 100 (30%) DDoS flows -> clears MIN_ATTACK_FLOWS_DDOS/ratio.
+    s = summarize_states({"BENIGN": 70, "DDoS": 30, "DoS": 0, "PortScan": 0}, 100)
+    assert s["verdict"] == "ATTACK — DDoS"
+    assert s["confidence"] == "high"
+
+
+def test_verdict_benign_when_no_attack_flows():
+    s = summarize_states({"BENIGN": 100, "DDoS": 0, "DoS": 0, "PortScan": 0}, 100)
+    assert s["attack_class"] is None
+    assert s["verdict"] == "BENIGN"
+    assert s["confidence"] == "none"
+
+
+def test_attack_class_ties_prefer_more_severe():
+    # DoS and PortScan tie on count; DoS is the earlier (more severe) entry.
+    # 20% attack ratio, 10 DoS flows -> clears the non-DDoS gate.
+    s = summarize_states({"BENIGN": 80, "DDoS": 0, "DoS": 10, "PortScan": 10}, 100)
+    assert s["dominant_state"] == "BENIGN"
+    assert s["attack_class"] == "DoS"
+    assert s["verdict"] == "ATTACK — DoS"
+
+
+def test_one_off_portscan_flow_is_suspicious():
+    s = summarize_states({"BENIGN": 99, "DDoS": 0, "DoS": 0, "PortScan": 1}, 100)
+    assert s["attack_class"] == "PortScan"
+    assert s["verdict"] == "SUSPICIOUS — PortScan?"
+    assert s["confidence"] == "low"
 
 
 def test_dominant_state_all_benign():

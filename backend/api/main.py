@@ -25,7 +25,9 @@ from pydantic import BaseModel, ConfigDict
 from ..config import PCAPS_DIR, FEATURES_DIR, RESULTS_DIR, REPO_ROOT
 from ..capture import capture as capture_mod
 from ..extraction.extract import run_extraction, ExtractionError
+from ..extraction.packet_features import packet_features_summary, PacketFeatureError
 from ..prediction.predict import predict_csv, PredictionError
+from ..prediction.metrics import evaluate_ann_metrics, proxy_agreement_metrics
 from ..upload import manager as upload_mgr
 from ..temporal.temporal_dataset import prepare_temporal_dataset
 from ..temporal.windowing import TemporalError
@@ -34,6 +36,8 @@ from ..temporal.validate import validate_temporal_dataset, ValidationError
 from ..lstm.config import LATEST_PATH
 from ..lstm.jobs import forecast_latest, read_status as read_lstm_status, start_training
 from ..lstm_multistep.training import forecast_latest as forecast_multistep_latest
+from ..worldmodel import jobs as worldmodel_jobs
+from ..worldmodel.engine import WorldModelUnavailable
 
 app = FastAPI(title="NIDS Pipeline API")
 app.add_middleware(
@@ -88,6 +92,11 @@ class StartCaptureRequest(BaseModel):
 
 class ExtractRequest(BaseModel):
     pcap_path: Optional[str] = None
+
+
+class PacketFeatureRequest(BaseModel):
+    pcap_path: Optional[str] = None
+    upload_session_id: Optional[str] = None
 
 
 class PredictRequest(BaseModel):
@@ -225,6 +234,37 @@ def extract(req: ExtractRequest):
     return {"started": True, "pcap_path": pcap_path}
 
 
+_packet_feature_cache: dict[str, dict] = {}
+
+
+@app.post("/api/extract/packet")
+def extract_packet_level(req: PacketFeatureRequest):
+    """PCAP-derived packet-level features (TTL mean/std, TCP window,
+    retransmissions, IP fragments, payload-size distribution) + a
+    sequential-vs-randomised port-scan verdict. Complements the flow-level
+    CICFlowMeter CSV; not fed to the ANN."""
+    pcap_path = req.pcap_path
+    if not pcap_path and req.upload_session_id:
+        sess = upload_mgr.get_session(req.upload_session_id)
+        if sess is not None and sess.input_type == "pcap":
+            pcap_path = str(sess.stored_path)
+    if not pcap_path:
+        with state.lock:
+            if state.capture_session:
+                pcap_path = str(state.capture_session.pcap_path)
+    if not pcap_path:
+        raise HTTPException(status_code=400, detail="No PCAP available for packet-level extraction.")
+    if pcap_path in _packet_feature_cache:
+        return _packet_feature_cache[pcap_path]
+    try:
+        result = packet_features_summary(pcap_path)
+    except PacketFeatureError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+    result["pcap_path"] = pcap_path
+    _packet_feature_cache[pcap_path] = result
+    return result
+
+
 @app.get("/api/extract/status")
 def extract_status():
     with state.lock:
@@ -266,6 +306,31 @@ def predict(req: PredictRequest):
     thread = threading.Thread(target=_run_prediction_bg, args=(Path(csv_path),), daemon=True)
     thread.start()
     return {"started": True, "csv_path": csv_path}
+
+
+@app.get("/api/predict/metrics")
+def predict_metrics(csv_path: Optional[str] = None):
+    """ANN classifier precision / recall / F1 / FPR + confusion matrix.
+    Ground truth from `NIDS_CICIDS2017_DIR` (or `?csv_path=` to a labelled
+    CSV); otherwise an ANN-vs-signature agreement matrix on the current
+    capture, flagged `is_ground_truth: false`."""
+    try:
+        real = evaluate_ann_metrics(csv_path)
+    except (FileNotFoundError, ValueError) as e:
+        raise HTTPException(status_code=422, detail=str(e))
+    if real is not None:
+        return real
+    with state.lock:
+        pred = state.prediction_result
+    flows = (pred or {}).get("flows") or []
+    if not flows:
+        raise HTTPException(
+            status_code=409,
+            detail=("No ground-truth labels (set NIDS_CICIDS2017_DIR or pass "
+                    "?csv_path=) and no prediction has been run yet for the "
+                    "proxy view."),
+        )
+    return proxy_agreement_metrics(flows)
 
 
 @app.get("/api/predict/status")
@@ -564,6 +629,38 @@ def lstm_forecast_multistep():
     try:
         return forecast_multistep_latest(windows_source=_windows_source_for_forecast())
     except RuntimeError as error:
+        raise HTTPException(status_code=409, detail=str(error))
+
+
+class WorldModelForecastRequest(BaseModel):
+    k: Optional[int] = None
+
+
+@app.post("/api/worldmodel/train")
+def worldmodel_train(force_rebuild: bool = False):
+    try:
+        return worldmodel_jobs.start_training(force_rebuild=force_rebuild)
+    except RuntimeError as error:
+        raise HTTPException(status_code=409, detail=str(error))
+
+
+@app.get("/api/worldmodel/status")
+def worldmodel_status():
+    return worldmodel_jobs.read_status()
+
+
+@app.post("/api/worldmodel/forecast")
+def worldmodel_forecast(req: WorldModelForecastRequest | None = None):
+    """K-step autoregressive infiltration forecast: per-step infiltration
+    probability, predicted MITRE kill-chain stage, and the top contributing
+    state features + input windows. 409 until a model is trained (needs the
+    CICIDS2017 CSVs) and a temporal dataset is prepared."""
+    k = req.k if req else None
+    try:
+        return worldmodel_jobs.forecast(
+            windows_source=_windows_source_for_forecast(), k=k
+        )
+    except WorldModelUnavailable as error:
         raise HTTPException(status_code=409, detail=str(error))
 
 

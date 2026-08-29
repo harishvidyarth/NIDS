@@ -5,7 +5,12 @@ from pathlib import Path
 
 import pytest
 
-from backend.extraction.packet_features import PacketFeatureError, extract_packet_features
+from backend.extraction.packet_features import (
+    PacketFeatureError,
+    _classify_port_order,
+    extract_packet_features,
+    packet_features_summary,
+)
 
 ROOT = Path(__file__).resolve().parents[1]
 # One of the small demo captures extracted from captures.zip. Skip cleanly
@@ -59,3 +64,20 @@ def test_flow_key_is_direction_independent():
 def test_missing_file_raises():
     with pytest.raises(PacketFeatureError):
         extract_packet_features(ROOT / "pcaps" / "does_not_exist.pcap")
+
+
+def test_classify_port_order():
+    assert _classify_port_order(list(range(20, 45))) == "sequential"
+    assert _classify_port_order([100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200]) == "strided"
+    assert _classify_port_order([80, 443, 22]) == "none"  # too few
+    wide = [11, 2222, 55, 9001, 333, 4004, 77, 6060, 8, 1234, 5678, 90, 4321,
+            65000, 22, 8443, 1, 60000, 12, 40000, 7, 30000]
+    assert _classify_port_order(wide) == "randomised"
+
+
+def test_packet_features_summary_shape():
+    pcap = _first_available()
+    out = packet_features_summary(pcap)
+    assert out["flow_count"] == len(out["flows"])
+    assert set(out["columns"]) == EXPECTED_COLUMNS
+    assert out["port_scan"]["pattern"] in {"none", "sequential", "strided", "randomised"}
