@@ -1,0 +1,13 @@
+{
+  "dirs": {
+    "pcaps": "pcaps",
+    "features": "features",
+    "results": "results"
+  },
+  "extraction": {
+    "_comment": "Feature extraction uses the cicflowmeter PyPI package in-process (backend/extraction/extract.py). Run scripts/patch_cicflowmeter.py once after installing requirements, see README.md."
+  },
+  "capture": {
+    "wireshark_dir": "C:/Program Files/Wireshark"
+  }
+}

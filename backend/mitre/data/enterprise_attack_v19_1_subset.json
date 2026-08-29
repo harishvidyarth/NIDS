@@ -1,0 +1,55 @@
+{
+  "schema": "mitre-attack-enterprise-subset/v1",
+  "attack_version": "19.1",
+  "data_modified": "2026-05-12T14:00:00.188Z",
+  "domain": "enterprise-attack",
+  "source": {
+    "publisher": "The MITRE Corporation",
+    "repository": "https://github.com/mitre-attack/attack-stix-data",
+    "url": "https://github.com/mitre-attack/attack-stix-data/blob/master/enterprise-attack/enterprise-attack-19.1.json",
+    "stix_bundle_sha256": "bdf1ce86a4e604214c5076d37ae4dcb322678afc528df8492e6fdc1b554f5da3",
+    "retrieved_date": "2026-08-29"
+  },
+  "collection": {
+    "id": "x-mitre-collection--1f5f1533-f617-4ca8-9ab4-6a02367fa019",
+    "name": "Enterprise ATT&CK"
+  },
+  "techniques": [
+    {
+      "stix_id": "attack-pattern--e3a12395-188d-4051-9a16-ea8e14d07b88",
+      "technique_id": "T1046",
+      "technique_name": "Network Service Discovery",
+      "tactics": ["Discovery"],
+      "url": "https://attack.mitre.org/techniques/T1046",
+      "object_version": "3.2",
+      "modified": "2026-05-12T15:12:00.723Z"
+    },
+    {
+      "stix_id": "attack-pattern--67073dde-d720-45ae-83da-b12d5e73ca3b",
+      "technique_id": "T1595",
+      "technique_name": "Active Scanning",
+      "tactics": ["Reconnaissance"],
+      "url": "https://attack.mitre.org/techniques/T1595",
+      "object_version": "1.0",
+      "modified": "2025-10-24T17:48:53.018Z"
+    },
+    {
+      "stix_id": "attack-pattern--d74c4a7e-ffbf-432f-9365-7ebf1f787cab",
+      "technique_id": "T1498",
+      "technique_name": "Network Denial of Service",
+      "tactics": ["Impact"],
+      "url": "https://attack.mitre.org/techniques/T1498",
+      "object_version": "1.2",
+      "modified": "2025-10-24T17:49:28.162Z"
+    },
+    {
+      "stix_id": "attack-pattern--c675646d-e204-4aa8-978d-e3d6d65885c4",
+      "technique_id": "T1499",
+      "technique_name": "Endpoint Denial of Service",
+      "tactics": ["Impact"],
+      "url": "https://attack.mitre.org/techniques/T1499",
+      "object_version": "1.2",
+      "modified": "2025-10-24T17:49:22.088Z"
+    }
+  ]
+}

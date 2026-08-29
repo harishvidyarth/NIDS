@@ -1,0 +1,846 @@
+{
+  "selection": [
+    {
+      "fold": 1,
+      "train_samples": 66521,
+      "validation_samples": 33251,
+      "candidates": {
+        "unweighted": {
+          "samples": 33251,
+          "accuracy": 0.9632492255872004,
+          "macro_f1": 0.7177007093295564,
+          "weighted_f1": 0.9635864418993279,
+          "class_support": {
+            "BENIGN": 23866,
+            "DDoS": 0,
+            "DoS": 7589,
+            "PortScan": 1796
+          },
+          "per_class": {
+            "BENIGN": {
+              "precision": 0.9854227405247813,
+              "recall": 0.9630436604374424,
+              "f1": 0.9741046831955923,
+              "support": 23866
+            },
+            "DDoS": {
+              "precision": 0.0,
+              "recall": 0.0,
+              "f1": 0.0,
+              "support": 0
+            },
+            "DoS": {
+              "precision": 0.9010758006677383,
+              "recall": 0.9602055606799315,
+              "f1": 0.9297014544526665,
+              "support": 7589
+            },
+            "PortScan": {
+              "precision": 0.9554347826086956,
+              "recall": 0.9788418708240535,
+              "f1": 0.966996699669967,
+              "support": 1796
+            }
+          },
+          "confusion_matrix": [
+            [
+              22984,
+              0,
+              800,
+              82
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              302,
+              0,
+              7287,
+              0
+            ],
+            [
+              38,
+              0,
+              0,
+              1758
+            ]
+          ],
+          "roc_auc": {
+            "BENIGN": 0.9886265555406784,
+            "DDoS": null,
+            "DoS": 0.9905742300452729,
+            "PortScan": 0.9966343636523914
+          },
+          "pr_auc": {
+            "BENIGN": 0.9948336099853513,
+            "DDoS": null,
+            "DoS": 0.9641804965754212,
+            "PortScan": 0.9717470529300721
+          },
+          "evaluation_status": "limited_attack_support",
+          "limitations": [
+            "Holdout does not support every attack class; unsupported AUC values are null and results are not complete attack-performance evidence."
+          ],
+          "epochs": 40,
+          "training_seconds": 46.868
+        },
+        "capped_class_weighted": {
+          "samples": 33251,
+          "accuracy": 0.9605726143574629,
+          "macro_f1": 0.7162352259640756,
+          "weighted_f1": 0.9611493635049514,
+          "class_support": {
+            "BENIGN": 23866,
+            "DDoS": 0,
+            "DoS": 7589,
+            "PortScan": 1796
+          },
+          "per_class": {
+            "BENIGN": {
+              "precision": 0.9906460735262127,
+              "recall": 0.954076929523171,
+              "f1": 0.9720176730486009,
+              "support": 23866
+            },
+            "DDoS": {
+              "precision": 0.0,
+              "recall": 0.0,
+              "f1": 0.0,
+              "support": 0
+            },
+            "DoS": {
+              "precision": 0.8804567622219579,
+              "recall": 0.975359072341547,
+              "f1": 0.9254813703425856,
+              "support": 7589
+            },
+            "PortScan": {
+              "precision": 0.951048951048951,
+              "recall": 0.9844097995545658,
+              "f1": 0.9674418604651163,
+              "support": 1796
+            }
+          },
+          "confusion_matrix": [
+            [
+              22770,
+              0,
+              1005,
+              91
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              187,
+              0,
+              7402,
+              0
+            ],
+            [
+              28,
+              0,
+              0,
+              1768
+            ]
+          ],
+          "roc_auc": {
+            "BENIGN": 0.9883331374102101,
+            "DDoS": null,
+            "DoS": 0.9905205814802011,
+            "PortScan": 0.9980273902088713
+          },
+          "pr_auc": {
+            "BENIGN": 0.9953703478819287,
+            "DDoS": null,
+            "DoS": 0.962348321885442,
+            "PortScan": 0.974729010878593
+          },
+          "evaluation_status": "limited_attack_support",
+          "limitations": [
+            "Holdout does not support every attack class; unsupported AUC values are null and results are not complete attack-performance evidence."
+          ],
+          "epochs": 40,
+          "training_seconds": 47.386
+        }
+      }
+    },
+    {
+      "fold": 2,
+      "train_samples": 99792,
+      "validation_samples": 33251,
+      "candidates": {
+        "unweighted": {
+          "samples": 33251,
+          "accuracy": 0.9956091546118914,
+          "macro_f1": 0.4933788194949368,
+          "weighted_f1": 0.9956645609525889,
+          "class_support": {
+            "BENIGN": 30299,
+            "DDoS": 0,
+            "DoS": 0,
+            "PortScan": 2952
+          },
+          "per_class": {
+            "BENIGN": {
+              "precision": 0.9989079718058176,
+              "recall": 0.996270503977029,
+              "f1": 0.997587494629697,
+              "support": 30299
+            },
+            "DDoS": {
+              "precision": 0.0,
+              "recall": 0.0,
+              "f1": 0.0,
+              "support": 0
+            },
+            "DoS": {
+              "precision": 0.0,
+              "recall": 0.0,
+              "f1": 0.0,
+              "support": 0
+            },
+            "PortScan": {
+              "precision": 0.9633663366336633,
+              "recall": 0.9888211382113821,
+              "f1": 0.9759277833500501,
+              "support": 2952
+            }
+          },
+          "confusion_matrix": [
+            [
+              30186,
+              0,
+              2,
+              111
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              33,
+              0,
+              0,
+              2919
+            ]
+          ],
+          "roc_auc": {
+            "BENIGN": 0.9975436438330851,
+            "DDoS": null,
+            "DoS": null,
+            "PortScan": 0.9973553276284932
+          },
+          "pr_auc": {
+            "BENIGN": 0.9996879321322971,
+            "DDoS": null,
+            "DoS": null,
+            "PortScan": 0.9837646088194975
+          },
+          "evaluation_status": "limited_attack_support",
+          "limitations": [
+            "Holdout does not support every attack class; unsupported AUC values are null and results are not complete attack-performance evidence."
+          ],
+          "epochs": 40,
+          "training_seconds": 55.708
+        },
+        "capped_class_weighted": {
+          "samples": 33251,
+          "accuracy": 0.9941355147213617,
+          "macro_f1": 0.49159012251685646,
+          "weighted_f1": 0.9943600764420942,
+          "class_support": {
+            "BENIGN": 30299,
+            "DDoS": 0,
+            "DoS": 0,
+            "PortScan": 2952
+          },
+          "per_class": {
+            "BENIGN": {
+              "precision": 0.9993696503218101,
+              "recall": 0.9941912274332486,
+              "f1": 0.9967737132079217,
+              "support": 30299
+            },
+            "DDoS": {
+              "precision": 0.0,
+              "recall": 0.0,
+              "f1": 0.0,
+              "support": 0
+            },
+            "DoS": {
+              "precision": 0.0,
+              "recall": 0.0,
+              "f1": 0.0,
+              "support": 0
+            },
+            "PortScan": {
+              "precision": 0.9467398321497741,
+              "recall": 0.9935636856368564,
+              "f1": 0.9695867768595041,
+              "support": 2952
+            }
+          },
+          "confusion_matrix": [
+            [
+              30123,
+              0,
+              11,
+              165
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              19,
+              0,
+              0,
+              2933
+            ]
+          ],
+          "roc_auc": {
+            "BENIGN": 0.9976284411883691,
+            "DDoS": null,
+            "DoS": null,
+            "PortScan": 0.9976227951122376
+          },
+          "pr_auc": {
+            "BENIGN": 0.999667185951262,
+            "DDoS": null,
+            "DoS": null,
+            "PortScan": 0.9819541535055556
+          },
+          "evaluation_status": "limited_attack_support",
+          "limitations": [
+            "Holdout does not support every attack class; unsupported AUC values are null and results are not complete attack-performance evidence."
+          ],
+          "epochs": 40,
+          "training_seconds": 56.953
+        }
+      }
+    },
+    {
+      "fold": 3,
+      "train_samples": 133063,
+      "validation_samples": 33253,
+      "candidates": {
+        "unweighted": {
+          "samples": 33253,
+          "accuracy": 0.9963913030403272,
+          "macro_f1": 0.48956075188454595,
+          "weighted_f1": 0.9964164285625285,
+          "class_support": {
+            "BENIGN": 31770,
+            "DDoS": 0,
+            "DoS": 0,
+            "PortScan": 1483
+          },
+          "per_class": {
+            "BENIGN": {
+              "precision": 0.9988022442161003,
+              "recall": 0.9974189486937363,
+              "f1": 0.9981101171727353,
+              "support": 31770
+            },
+            "DDoS": {
+              "precision": 0.0,
+              "recall": 0.0,
+              "f1": 0.0,
+              "support": 0
+            },
+            "DoS": {
+              "precision": 0.0,
+              "recall": 0.0,
+              "f1": 0.0,
+              "support": 0
+            },
+            "PortScan": {
+              "precision": 0.9462999345121152,
+              "recall": 0.9743762643290627,
+              "f1": 0.9601328903654485,
+              "support": 1483
+            }
+          },
+          "confusion_matrix": [
+            [
+              31688,
+              0,
+              0,
+              82
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              38,
+              0,
+              0,
+              1445
+            ]
+          ],
+          "roc_auc": {
+            "BENIGN": 0.9922213159273784,
+            "DDoS": null,
+            "DoS": null,
+            "PortScan": 0.992339495077036
+          },
+          "pr_auc": {
+            "BENIGN": 0.9992969104444148,
+            "DDoS": null,
+            "DoS": null,
+            "PortScan": 0.9651617759959943
+          },
+          "evaluation_status": "limited_attack_support",
+          "limitations": [
+            "Holdout does not support every attack class; unsupported AUC values are null and results are not complete attack-performance evidence."
+          ],
+          "epochs": 8,
+          "training_seconds": 16.02
+        },
+        "capped_class_weighted": {
+          "samples": 33253,
+          "accuracy": 0.7844104291342134,
+          "macro_f1": 0.29086757837986366,
+          "weighted_f1": 0.8469225727073033,
+          "class_support": {
+            "BENIGN": 31770,
+            "DDoS": 0,
+            "DoS": 0,
+            "PortScan": 1483
+          },
+          "per_class": {
+            "BENIGN": {
+              "precision": 0.9993910113271893,
+              "recall": 0.7748190116462071,
+              "f1": 0.8728923246041737,
+              "support": 31770
+            },
+            "DDoS": {
+              "precision": 0.0,
+              "recall": 0.0,
+              "f1": 0.0,
+              "support": 0
+            },
+            "DoS": {
+              "precision": 0.0,
+              "recall": 0.0,
+              "f1": 0.0,
+              "support": 0
+            },
+            "PortScan": {
+              "precision": 0.1702818698526853,
+              "recall": 0.9898853674983142,
+              "f1": 0.2905779889152811,
+              "support": 1483
+            }
+          },
+          "confusion_matrix": [
+            [
+              24616,
+              0,
+              1,
+              7153
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              15,
+              0,
+              0,
+              1468
+            ]
+          ],
+          "roc_auc": {
+            "BENIGN": 0.9923522086744939,
+            "DDoS": null,
+            "DoS": null,
+            "PortScan": 0.9923618234652258
+          },
+          "pr_auc": {
+            "BENIGN": 0.9992912946083756,
+            "DDoS": null,
+            "DoS": null,
+            "PortScan": 0.965220977993797
+          },
+          "evaluation_status": "limited_attack_support",
+          "limitations": [
+            "Holdout does not support every attack class; unsupported AUC values are null and results are not complete attack-performance evidence."
+          ],
+          "epochs": 8,
+          "training_seconds": 15.088
+        }
+      }
+    }
+  ],
+  "mean_rolling_macro_f1": {
+    "unweighted": 0.5668800935696797,
+    "capped_class_weighted": 0.4995643089535986
+  },
+  "selected_training": "unweighted",
+  "final_validation": {
+    "samples": 16618,
+    "accuracy": 0.9976531471897943,
+    "macro_f1": 0.46234799961656775,
+    "weighted_f1": 0.9977557341191214,
+    "class_support": {
+      "BENIGN": 16499,
+      "DDoS": 0,
+      "DoS": 0,
+      "PortScan": 119
+    },
+    "per_class": {
+      "BENIGN": {
+        "precision": 0.9995144452537024,
+        "recall": 0.9981210982483787,
+        "f1": 0.9988172858225929,
+        "support": 16499
+      },
+      "DDoS": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "support": 0
+      },
+      "DoS": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "support": 0
+      },
+      "PortScan": {
+        "precision": 0.7816901408450704,
+        "recall": 0.9327731092436975,
+        "f1": 0.8505747126436781,
+        "support": 119
+      }
+    },
+    "confusion_matrix": [
+      [
+        16468,
+        0,
+        0,
+        31
+      ],
+      [
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        8,
+        0,
+        0,
+        111
+      ]
+    ],
+    "roc_auc": {
+      "BENIGN": 0.984167107657658,
+      "DDoS": null,
+      "DoS": null,
+      "PortScan": 0.9843550487653695
+    },
+    "pr_auc": {
+      "BENIGN": 0.9998118883932915,
+      "DDoS": null,
+      "DoS": null,
+      "PortScan": 0.8756753074536907
+    },
+    "evaluation_status": "limited_attack_support",
+    "limitations": [
+      "Holdout does not support every attack class; unsupported AUC values are null and results are not complete attack-performance evidence."
+    ],
+    "epochs": 15,
+    "training_seconds": 24.503
+  },
+  "holdout": {
+    "lstm": {
+      "samples": 29339,
+      "accuracy": 0.9996591567538089,
+      "macro_f1": 0.2499573873321061,
+      "weighted_f1": 0.9998295493284244,
+      "class_support": {
+        "BENIGN": 29339,
+        "DDoS": 0,
+        "DoS": 0,
+        "PortScan": 0
+      },
+      "per_class": {
+        "BENIGN": {
+          "precision": 1.0,
+          "recall": 0.9996591567538089,
+          "f1": 0.9998295493284244,
+          "support": 29339
+        },
+        "DDoS": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support": 0
+        },
+        "DoS": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support": 0
+        },
+        "PortScan": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support": 0
+        }
+      },
+      "confusion_matrix": [
+        [
+          29329,
+          0,
+          1,
+          9
+        ],
+        [
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "roc_auc": {
+        "BENIGN": null,
+        "DDoS": null,
+        "DoS": null,
+        "PortScan": null
+      },
+      "pr_auc": {
+        "BENIGN": null,
+        "DDoS": null,
+        "DoS": null,
+        "PortScan": null
+      },
+      "evaluation_status": "benign_only_holdout",
+      "limitations": [
+        "Holdout does not support every attack class; unsupported AUC values are null and results are not complete attack-performance evidence."
+      ]
+    },
+    "persistence": {
+      "samples": 29339,
+      "accuracy": 1.0,
+      "macro_f1": 0.25,
+      "weighted_f1": 1.0,
+      "class_support": {
+        "BENIGN": 29339,
+        "DDoS": 0,
+        "DoS": 0,
+        "PortScan": 0
+      },
+      "per_class": {
+        "BENIGN": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 29339
+        },
+        "DDoS": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support": 0
+        },
+        "DoS": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support": 0
+        },
+        "PortScan": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support": 0
+        }
+      },
+      "confusion_matrix": [
+        [
+          29339,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "roc_auc": {
+        "BENIGN": null,
+        "DDoS": null,
+        "DoS": null,
+        "PortScan": null
+      },
+      "pr_auc": {
+        "BENIGN": null,
+        "DDoS": null,
+        "DoS": null,
+        "PortScan": null
+      },
+      "evaluation_status": "benign_only_holdout",
+      "limitations": [
+        "Holdout does not support every attack class; unsupported AUC values are null and results are not complete attack-performance evidence."
+      ]
+    },
+    "logistic_regression": {
+      "samples": 29339,
+      "accuracy": 0.9999659156753808,
+      "macro_f1": 0.24999573938681255,
+      "weighted_f1": 0.9999829575472502,
+      "class_support": {
+        "BENIGN": 29339,
+        "DDoS": 0,
+        "DoS": 0,
+        "PortScan": 0
+      },
+      "per_class": {
+        "BENIGN": {
+          "precision": 1.0,
+          "recall": 0.9999659156753808,
+          "f1": 0.9999829575472502,
+          "support": 29339
+        },
+        "DDoS": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support": 0
+        },
+        "DoS": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support": 0
+        },
+        "PortScan": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support": 0
+        }
+      },
+      "confusion_matrix": [
+        [
+          29338,
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "roc_auc": {
+        "BENIGN": null,
+        "DDoS": null,
+        "DoS": null,
+        "PortScan": null
+      },
+      "pr_auc": {
+        "BENIGN": null,
+        "DDoS": null,
+        "DoS": null,
+        "PortScan": null
+      },
+      "evaluation_status": "benign_only_holdout",
+      "limitations": [
+        "Holdout does not support every attack class; unsupported AUC values are null and results are not complete attack-performance evidence."
+      ]
+    }
+  }
+}

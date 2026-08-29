@@ -1,0 +1,444 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>NIDS Network Traffic Analyzer</title>
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<header class="app-header">
+  <div class="app-header-left">
+    <span class="app-icon">&#9906;</span>
+    <div class="app-title-block">
+      <span class="app-title">NIDS</span>
+      <span class="app-subtitle">Network Traffic Analyzer</span>
+    </div>
+    <span class="badge-local">LOCAL&nbsp;ANALYSIS</span>
+  </div>
+  <div class="app-header-right">
+    <span id="hdr-session" class="hdr-item">Session: <span id="hdr-session-val">&mdash;</span></span>
+    <span id="hdr-backend" class="hdr-item hdr-backend-connected">
+      <span class="status-dot status-stopped"></span> Backend: <span id="hdr-backend-val">CONNECTING&hellip;</span>
+    </span>
+    <button id="btn-help" class="icon-btn" title="About / Help">?</button>
+  </div>
+</header>
+
+<div class="mode-bar">
+  <div class="mode-selector" role="radiogroup" aria-label="Input mode">
+    <button id="mode-live" class="mode-btn mode-btn-active" data-mode="live">&#9679;&nbsp;LIVE CAPTURE</button>
+    <button id="mode-upload" class="mode-btn" data-mode="upload">&#9675;&nbsp;FILE ANALYSIS</button>
+  </div>
+
+  <div class="mode-toolbar" id="live-controls">
+    <span class="toolbar-label">Interface</span>
+    <select id="iface-select"></select>
+    <button id="btn-start" class="btn btn-start">&#9654; START CAPTURE</button>
+    <button id="btn-stop" class="btn btn-stop" disabled>&#9632; STOP</button>
+    <span class="toolbar-sep"></span>
+    <span class="toolbar-metric"><span class="metric-label">Duration</span><span id="metric-duration" class="metric-value">--</span></span>
+    <span class="toolbar-metric"><span class="metric-label">Packets</span><span id="metric-packets" class="metric-value">--</span></span>
+    <span class="status-pill"><span id="capture-dot" class="status-dot status-idle"></span><span id="capture-status-text">IDLE</span></span>
+  </div>
+
+  <div class="mode-toolbar" id="upload-controls" style="display:none;">
+    <span class="toolbar-label">Input File</span>
+    <input type="file" id="upload-file-input" accept=".pcap,.pcapng,.csv" />
+    <span id="upload-file-info" class="toolbar-file-info">No file selected</span>
+    <button id="btn-analyze" class="btn btn-start" disabled>&#9654; ANALYZE FILE</button>
+  </div>
+</div>
+
+<div id="error-banner" class="error-banner" style="display:none;">
+  <span class="error-banner-icon">&#10007;</span>
+  <span class="error-banner-title">ERROR</span>
+  <span id="error-banner-text"></span>
+</div>
+
+<div class="pipeline-strip" id="pipeline-strip">
+  <div class="pipeline-stage" data-stage="capture">
+    <span class="stage-num">01</span>
+    <span class="stage-icon" id="icon-capture">&#9675;</span>
+    <span class="stage-label" id="label-capture">PCAP CAPTURE</span>
+  </div>
+  <div class="pipeline-arrow">&#8594;</div>
+  <div class="pipeline-stage" data-stage="extract">
+    <span class="stage-num">02</span>
+    <span class="stage-icon" id="icon-extract">&#9675;</span>
+    <span class="stage-label">CICFLOWMETER</span>
+  </div>
+  <div class="pipeline-arrow">&#8594;</div>
+  <div class="pipeline-stage" data-stage="predict">
+    <span class="stage-num">03</span>
+    <span class="stage-icon" id="icon-predict">&#9675;</span>
+    <span class="stage-label">STATE PREDICTION</span>
+  </div>
+  <div class="pipeline-arrow">&#8594;</div>
+  <div class="pipeline-stage" data-stage="temporal">
+    <span class="stage-num">04</span>
+    <span class="stage-icon" id="icon-temporal">&#9675;</span>
+    <span class="stage-label">TEMPORAL DATASET</span>
+  </div>
+  <span id="pipeline-error" class="pipeline-error"></span>
+</div>
+
+<main class="workspace">
+  <section class="table-panel">
+    <div class="table-tabs" id="table-tabs">
+      <button class="table-tab table-tab-active" data-table-tab="packets">PACKETS</button>
+      <button class="table-tab" data-table-tab="flows">FLOWS</button>
+      <button class="table-tab" data-table-tab="predictions">PREDICTIONS</button>
+      <button class="table-tab" data-table-tab="temporal">TEMPORAL STATES</button>
+    </div>
+
+    <div class="table-toolbar">
+      <span class="toolbar-label">Filter</span>
+      <input id="table-filter" class="table-input" placeholder="e.g. tcp" />
+      <span class="toolbar-label">Search</span>
+      <input id="table-search" class="table-input" placeholder="e.g. 192.168.1.10" />
+      <button id="btn-filter-apply" class="btn btn-sm">Apply</button>
+      <button id="btn-filter-clear" class="btn btn-sm">Clear</button>
+      <span id="predictions-state-filter-wrap" style="display:none;">
+        <span class="toolbar-label">State</span>
+        <select id="predictions-state-filter">
+          <option value="">ALL</option>
+          <option value="BENIGN">BENIGN</option>
+          <option value="DDoS">DDoS</option>
+          <option value="DoS">DoS</option>
+          <option value="PortScan">PortScan</option>
+        </select>
+      </span>
+      <span class="table-toolbar-spacer"></span>
+      <span id="table-row-count" class="table-row-count">0 rows</span>
+    </div>
+
+    <div class="table-scroll-wrap table-scroll-wrap-paginated" id="tablewrap-packets">
+      <div class="table-scroll-inner">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th class="col-no">No.</th><th class="col-time">Time</th>
+              <th class="col-ip">Source</th><th class="col-ip">Destination</th>
+              <th class="col-proto">Protocol</th><th class="col-port">Src Port</th>
+              <th class="col-port">Dst Port</th><th class="col-len">Length</th><th class="col-info">Info</th>
+            </tr>
+          </thead>
+          <tbody id="packets-tbody"><tr class="empty-row"><td colspan="9">No packets captured yet.</td></tr></tbody>
+        </table>
+      </div>
+      <div class="pagination-bar" id="packets-pagination">
+        <span id="packets-pagination-label">Rows 0-0 of 0</span>
+        <span class="pagination-spacer"></span>
+        <button id="btn-packets-prev" class="btn btn-sm" disabled>&#8592; Previous</button>
+        <span id="packets-page-label">Page 1 of 1</span>
+        <button id="btn-packets-next" class="btn btn-sm" disabled>Next &#8594;</button>
+      </div>
+    </div>
+
+    <div class="table-scroll-wrap" id="tablewrap-flows" style="display:none;">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th class="col-no">#</th><th class="col-time">Timestamp</th>
+            <th class="col-ip">Source</th><th class="col-port">Src Port</th>
+            <th class="col-ip">Destination</th><th class="col-port">Dst Port</th>
+            <th class="col-proto">Protocol</th>
+          </tr>
+        </thead>
+        <tbody id="flows-tbody"><tr class="empty-row"><td colspan="7">No flow data yet — run Feature Extraction / Prediction.</td></tr></tbody>
+      </table>
+    </div>
+
+    <div class="table-scroll-wrap" id="tablewrap-predictions" style="display:none;">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th class="col-no">#</th><th class="col-ip">Source</th>
+            <th class="col-ip">Destination</th><th class="col-proto">Protocol</th>
+            <th class="col-proto">State</th><th class="col-len">Confidence</th>
+          </tr>
+        </thead>
+        <tbody id="predictions-tbody"><tr class="empty-row"><td colspan="6">No predictions yet — run State Prediction.</td></tr></tbody>
+      </table>
+    </div>
+
+    <div class="table-scroll-wrap" id="tablewrap-temporal" style="display:none;">
+      <div class="subtabs" id="temporal-subtabs">
+        <button class="subtab subtab-active" data-temporal-subtab="states">TEMPORAL STATES</button>
+        <button class="subtab" data-temporal-subtab="transitions">TRANSITIONS</button>
+        <button class="subtab" data-temporal-subtab="sequences">SEQUENCES</button>
+        <button class="subtab" data-temporal-subtab="validation">VALIDATION</button>
+      </div>
+      <div id="temporal-subtab-states" class="temporal-subtab-body"></div>
+      <div id="temporal-subtab-transitions" class="temporal-subtab-body" style="display:none;"></div>
+      <div id="temporal-subtab-sequences" class="temporal-subtab-body" style="display:none;"></div>
+      <div id="temporal-subtab-validation" class="temporal-subtab-body" style="display:none;"></div>
+    </div>
+  </section>
+
+  <div class="resizer" id="resizer"></div>
+
+  <section class="detail-panel">
+    <div class="detail-tabs">
+      <button class="detail-tab detail-tab-active" data-detail-tab="capture">CAPTURE</button>
+      <button class="detail-tab" data-detail-tab="extraction">EXTRACTION</button>
+      <button class="detail-tab" data-detail-tab="prediction">STATE PREDICTION</button>
+      <button class="detail-tab" data-detail-tab="temporal">TEMPORAL DATASET</button>
+    </div>
+
+    <div class="detail-body">
+
+      <!-- CAPTURE -->
+      <div class="detail-pane" data-detail-pane="capture">
+        <div class="detail-columns">
+          <div class="detail-col">
+            <div class="detail-col-title">CAPTURE INFORMATION</div>
+            <div class="detail-row"><span>Interface</span><span id="d-interface">N/A</span></div>
+            <div class="detail-row"><span>Capture status</span><span id="d-capture-status">IDLE</span></div>
+            <div class="detail-row"><span>Start time</span><span id="d-start-time">N/A</span></div>
+            <div class="detail-row"><span>Duration</span><span id="d-duration">N/A</span></div>
+            <div class="detail-row"><span>Packet count</span><span id="d-packet-count">N/A</span></div>
+            <div class="detail-row"><span>Capture target</span><span id="d-packet-target">N/A</span></div>
+            <div class="detail-row" id="d-stop-reason-row" style="display:none;"><span>Stop reason</span><span id="d-stop-reason">N/A</span></div>
+            <div class="detail-row"><span>PCAP file</span><span id="d-pcap-file" class="detail-mono">N/A</span></div>
+          </div>
+          <div class="detail-col detail-col-hero">
+            <div class="detail-col-title">CAPTURE STATUS</div>
+            <div class="hero-status">
+              <span id="d-hero-dot" class="status-dot status-idle"></span>
+              <span id="d-hero-status">IDLE</span>
+            </div>
+            <div class="hero-metrics">
+              <div class="hero-metric"><span class="hero-metric-label">Packets</span><span id="d-hero-packets" class="hero-metric-value">N/A</span></div>
+              <div class="hero-metric"><span class="hero-metric-label">Duration</span><span id="d-hero-duration" class="hero-metric-value">N/A</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- EXTRACTION -->
+      <div class="detail-pane" data-detail-pane="extraction" style="display:none;">
+        <div class="detail-columns">
+          <div class="detail-col">
+            <div class="detail-col-title">FEATURE EXTRACTION</div>
+            <div class="detail-row"><span>Engine</span><span>cicflowmeter</span></div>
+            <div class="detail-row"><span>Input</span><span id="e-input" class="detail-mono">N/A</span></div>
+            <div class="detail-row"><span>Output</span><span id="e-output" class="detail-mono">N/A</span></div>
+            <div class="detail-row"><span>Status</span><span id="e-status">IDLE</span></div>
+            <div class="detail-row"><span>Flows extracted</span><span id="e-flows">N/A</span></div>
+            <div class="detail-row"><span>Features (CSV columns)</span><span id="e-features">N/A</span></div>
+            <div class="detail-row"><span>Model features</span><span>77</span></div>
+            <div class="detail-row"><span>Processing time</span><span id="e-time">N/A</span></div>
+            <button id="btn-extract" class="btn btn-action" disabled>Extract Features</button>
+          </div>
+          <div class="detail-col">
+            <div class="detail-col-title">
+              <button class="accordion-toggle" id="feature-space-toggle">&#9656; FEATURE SPACE (77 model features)</button>
+            </div>
+            <div id="feature-space-body" class="feature-space-body" style="display:none;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PREDICTION -->
+      <div class="detail-pane" data-detail-pane="prediction" style="display:none;">
+        <div class="detail-columns">
+          <div class="detail-col detail-col-hero">
+            <div class="detail-col-title">TRAFFIC STATE</div>
+            <div class="state-hero" id="p-state-hero">
+              <span id="p-state-value">N/A</span>
+              <span class="state-hero-label">Overall State</span>
+            </div>
+            <div class="detail-row"><span>Model</span><span id="p-model">N/A</span></div>
+            <div class="detail-row"><span>Flows analyzed</span><span id="p-flows">N/A</span></div>
+            <div class="detail-row"><span>Inference status</span><span id="p-status">IDLE</span></div>
+            <div class="detail-row"><span>Inference time</span><span id="p-time">N/A</span></div>
+            <button id="btn-predict" class="btn btn-action" disabled>Run Prediction</button>
+          </div>
+          <div class="detail-col">
+            <div class="detail-col-title">CLASS DISTRIBUTION</div>
+            <div id="class-distribution" class="class-distribution">
+              <div class="dist-empty">N/A — no prediction yet</div>
+            </div>
+            <div class="detail-col-title" style="margin-top:14px;">OUTPUT</div>
+            <div class="output-flow-diagram">
+              Original Features&nbsp;+&nbsp;<span class="output-plus">Current_State</span>&nbsp;&#8594; Processed CSV
+            </div>
+            <div class="detail-row"><span>Processed file</span><span id="p-output-csv" class="detail-mono">N/A</span></div>
+            <button id="btn-download-csv" class="btn btn-action" disabled>&#8681; Download Processed CSV</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- TEMPORAL -->
+      <div class="detail-pane" data-detail-pane="temporal" style="display:none;">
+        <div class="inner-tabs">
+          <button class="inner-tab inner-tab-active" data-inner-tab="overview">OVERVIEW</button>
+          <button class="inner-tab" data-inner-tab="validation">VALIDATION</button>
+          <button class="inner-tab" data-inner-tab="lstm">LSTM FORECAST</button>
+        </div>
+
+        <div class="inner-pane" data-inner-pane="overview">
+        <div class="detail-columns detail-columns-3">
+          <div class="detail-col">
+            <div class="detail-col-title">TEMPORAL DATASET PREPARATION</div>
+            <p class="detail-desc">Converts Current_State-labelled flow data into time-windowed
+              network states and state transitions for future temporal modelling.</p>
+            <div class="detail-row"><span>Window size</span><span id="t-window-size">10 seconds</span></div>
+            <div class="detail-row"><span>Sequence length</span><span id="t-sequence-length">5</span></div>
+            <div class="detail-row"><span>Split</span><span>Chronological</span></div>
+            <div class="detail-row"><span>Status</span><span id="t-status">IDLE</span></div>
+            <button id="btn-temporal" class="btn btn-action" disabled>Prepare Temporal Dataset</button>
+          </div>
+          <div class="detail-col">
+            <div class="detail-col-title">PIPELINE</div>
+            <div class="temporal-pipeline" id="temporal-pipeline">
+              <div class="temporal-step" data-tstep="csv">Current-State CSV</div>
+              <div class="temporal-step" data-tstep="window">Time Windowing</div>
+              <div class="temporal-step" data-tstep="state">Network State Aggregation</div>
+              <div class="temporal-step" data-tstep="transition">State Transitions</div>
+              <div class="temporal-step" data-tstep="sequence">Sliding Sequences</div>
+              <div class="temporal-step" data-tstep="split">Chronological Split</div>
+            </div>
+            <div class="detail-col-title" style="margin-top:14px;">SUMMARY</div>
+            <div class="detail-row"><span>Time windows</span><span id="t-windows">N/A</span></div>
+            <div class="detail-row"><span>State features</span><span id="t-features">N/A</span></div>
+            <div class="detail-row"><span>Transitions</span><span id="t-transitions">N/A</span></div>
+            <div class="detail-row"><span>Sequences</span><span id="t-sequences">N/A</span></div>
+            <div class="detail-row"><span>Train / Val / Test (windows)</span><span id="t-split-windows">N/A</span></div>
+            <div class="detail-row"><span>Train / Val / Test (sequences)</span><span id="t-split-sequences">N/A</span></div>
+          </div>
+          <div class="detail-col">
+            <div class="detail-col-title">NEXT MODELING STAGE</div>
+            <div class="roadmap-box">
+              <div class="roadmap-title">Next-window LSTM forecaster</div>
+              <div class="roadmap-status">AVAILABLE IN LSTM FORECAST TAB</div>
+              <ul class="roadmap-list">
+                <li>5 × 28 input sequence</li>
+                <li>One 10-second proxy-window horizon</li>
+                <li>Persistence + logistic baselines</li>
+                <li>Rolling-origin evaluation</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        </div><!-- /inner-pane overview -->
+
+        <div class="inner-pane" data-inner-pane="validation" style="display:none;">
+          <div class="validation-summary-box" id="validation-summary-box">
+            <div class="validation-summary-row">
+              <span class="validation-summary-label">Overall Status:</span>
+              <span id="v-overall-status" class="validation-overall-status">NOT VALIDATED</span>
+            </div>
+            <div class="validation-summary-metrics">
+              <span>Rows Checked: <b id="v-rows-checked">N/A</b></span>
+              <span>Windows: <b id="v-windows">N/A</b></span>
+              <span>Sequences: <b id="v-sequences">N/A</b></span>
+              <span>Checks: <b id="v-check-counts">N/A</b></span>
+            </div>
+            <button id="btn-validate" class="btn btn-action" disabled>Validate Temporal Dataset</button>
+            <button id="btn-download-report" class="btn btn-sm" disabled style="margin-left:8px;">&#8681; Download Validation Report</button>
+          </div>
+
+          <div id="leakage-banner" class="leakage-banner" style="display:none;"></div>
+
+          <div class="detail-columns">
+            <div class="detail-col">
+              <div class="detail-col-title">VALIDATION CHECKS</div>
+              <table class="data-table validation-grid" id="validation-grid">
+                <thead><tr><th>Check</th><th>Result</th><th>Details</th></tr></thead>
+                <tbody id="validation-grid-tbody">
+                  <tr class="empty-row"><td colspan="3">Not validated yet.</td></tr>
+                </tbody>
+              </table>
+
+              <div class="detail-col-title" style="margin-top:14px;">TEMPORAL COVERAGE</div>
+              <div class="detail-row"><span>Start</span><span id="v-cov-start">N/A</span></div>
+              <div class="detail-row"><span>End</span><span id="v-cov-end">N/A</span></div>
+              <div class="detail-row"><span>Duration</span><span id="v-cov-duration">N/A</span></div>
+
+              <div class="detail-col-title" style="margin-top:14px;">CURRENT STATE DISTRIBUTION</div>
+              <div id="v-distribution" class="class-distribution"><div class="dist-empty">N/A</div></div>
+            </div>
+
+            <div class="detail-col">
+              <div class="detail-col-title" id="validation-detail-title">CHECK DETAIL</div>
+              <pre id="validation-detail-body" class="validation-detail-body">Click a check above to see its detail.</pre>
+
+              <div class="detail-col-title" style="margin-top:14px;">CHRONOLOGICAL SPLIT</div>
+              <div id="v-split-box" class="split-box">N/A</div>
+
+              <div class="detail-col-title" style="margin-top:14px;">28 TEMPORAL STATE FEATURES</div>
+              <div class="feature-space-body" style="display:block; max-height:180px;" id="v-feature-table"></div>
+            </div>
+          </div>
+        </div><!-- /inner-pane validation -->
+
+        <div class="inner-pane" data-inner-pane="lstm" style="display:none;">
+          <div class="proxy-warning">ROW-ORDER PROXY: one source row is treated as one proxy second. Results are not measured wall-clock forecasting evidence.</div>
+          <div class="detail-columns detail-columns-3">
+            <div class="detail-col">
+              <div class="detail-col-title">TRAINING JOB</div>
+              <div class="detail-row"><span>Stage</span><span id="lstm-stage">IDLE</span></div>
+              <div class="detail-row"><span>Rows processed</span><span id="lstm-rows">0</span></div>
+              <div class="detail-row"><span>Cache</span><span id="lstm-cache">UNKNOWN</span></div>
+              <div class="detail-row"><span>Epoch</span><span id="lstm-epoch">0</span></div>
+              <div class="detail-row"><span>Validation macro-F1</span><span id="lstm-val-f1">N/A</span></div>
+              <button id="btn-lstm-train" class="btn btn-action">Train / Reuse Cache</button>
+              <button id="btn-lstm-report" class="btn btn-sm" disabled>Download Report</button>
+            </div>
+            <div class="detail-col">
+              <div class="detail-col-title">EVALUATION</div>
+              <div id="lstm-evaluation" class="lstm-metrics"><div class="dist-empty">Complete training to view holdout metrics and baselines.</div></div>
+            </div>
+            <div class="detail-col">
+              <div class="detail-col-title">NEXT PROXY WINDOW</div>
+              <div class="detail-row"><span>Current state</span><span id="lstm-current">N/A</span></div>
+              <div class="detail-row"><span>Predicted state</span><span id="lstm-predicted">N/A</span></div>
+              <div class="detail-row"><span>Confidence</span><span id="lstm-confidence">N/A</span></div>
+              <button id="btn-lstm-forecast" class="btn btn-action" disabled>Forecast Next Window</button>
+              <div id="lstm-probabilities" class="class-distribution"><div class="dist-empty">N/A</div></div>
+              <div class="detail-col-title mitre-context-title">MITRE ATT&amp;CK CONTEXT</div>
+              <div class="mitre-context-label">Possible ATT&amp;CK interpretation</div>
+              <div id="lstm-mitre-context" class="mitre-context"><div class="dist-empty">No forecast context available.</div></div>
+            </div>
+          </div>
+          <div id="lstm-error" class="validation-detail-body" style="display:none;"></div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+</main>
+
+<footer class="statusbar">
+  <span id="sb-backend">&#9679; BACKEND CONNECTED</span>
+  <span id="sb-packets">Packets: 0</span>
+  <span id="sb-flows">Flows: &mdash;</span>
+  <span id="sb-state">State: &mdash;</span>
+  <span id="sb-temporal">Temporal: &mdash;</span>
+  <span class="statusbar-spacer"></span>
+  <span class="export-toolbar" id="export-toolbar">
+    <button id="btn-export-pcap" class="btn btn-sm" disabled>Download PCAP</button>
+    <button id="btn-export-features" class="btn btn-sm" disabled>Download Feature CSV</button>
+    <button id="btn-export-prediction" class="btn btn-sm" disabled>Download Prediction CSV</button>
+  </span>
+  <button id="btn-reset" class="btn btn-sm">Reset Pipeline</button>
+</footer>
+
+<div id="help-modal" class="modal-overlay" style="display:none;">
+  <div class="modal-box">
+    <div class="modal-title">NIDS Network Traffic Analyzer</div>
+    <p>Local, offline network intrusion detection: PCAP capture or file upload &#8594;
+      CICFlowMeter feature extraction &#8594; ANN traffic-state prediction (BENIGN / DDoS / DoS / PortScan)
+      &#8594; temporal preparation &#8594; one-window LSTM forecasting with explicit proxy-time limits.</p>
+    <p>All data shown comes from the local backend API. Values the backend hasn't produced yet
+      are shown as <strong>N/A</strong> rather than estimated.</p>
+    <button id="btn-help-close" class="btn btn-sm">Close</button>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

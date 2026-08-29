@@ -1,0 +1,13 @@
+{
+  "stage": "completed",
+  "rows_processed": 1957132,
+  "cache_state": "miss",
+  "epoch": 15,
+  "loss": 0.06090937554836273,
+  "validation_loss": 0.021406453102827072,
+  "validation_macro_f1": 0.4664646693878699,
+  "error": null,
+  "model_version": "v1-3a5264a499ed",
+  "report_path": "artifacts/lstm_forecaster/v1-3a5264a499ed/report.json",
+  "evaluation_status": "benign_only_holdout"
+}
