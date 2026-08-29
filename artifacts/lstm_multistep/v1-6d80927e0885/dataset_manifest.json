@@ -1,0 +1,775 @@
+{
+  "sources_in_official_order": [
+    "Monday-WorkingHours.pcap_ISCX.csv",
+    "Tuesday-WorkingHours.pcap_ISCX.csv",
+    "Wednesday-workingHours.pcap_ISCX.csv",
+    "Thursday-WorkingHours-Morning-WebAttacks.pcap_ISCX.csv",
+    "Thursday-WorkingHours-Afternoon-Infilteration.pcap_ISCX.csv",
+    "Friday-WorkingHours-Morning.pcap_ISCX.csv",
+    "Friday-WorkingHours-Afternoon-PortScan.pcap_ISCX.csv",
+    "Friday-WorkingHours-Afternoon-DDos.pcap_ISCX.csv"
+  ],
+  "source_fingerprints": [
+    {
+      "name": "Monday-WorkingHours.pcap_ISCX.csv",
+      "size_bytes": 176927918,
+      "sha256": "852c4beb34eda186f32561fa79df7a0747e92e1a6535b01270820dd9ffe17f34"
+    },
+    {
+      "name": "Tuesday-WorkingHours.pcap_ISCX.csv",
+      "size_bytes": 135078995,
+      "sha256": "52b8692ae8c7d2ed04671fe2b98335693c0a92c7ab157d8c8b534d6523080851"
+    },
+    {
+      "name": "Wednesday-workingHours.pcap_ISCX.csv",
+      "size_bytes": 225166395,
+      "sha256": "893c27dc968bf7a8adef1689f90be55ca4a4dc3088fb63d6ff247ac56856df2a"
+    },
+    {
+      "name": "Thursday-WorkingHours-Morning-WebAttacks.pcap_ISCX.csv",
+      "size_bytes": 52023263,
+      "sha256": "d67066211fb1689c78406f1506f4c44704ecb92088353d5c96d96d6474eb819d"
+    },
+    {
+      "name": "Thursday-WorkingHours-Afternoon-Infilteration.pcap_ISCX.csv",
+      "size_bytes": 83102436,
+      "sha256": "6bcda3857c2504676034e3ea57762d38393cc734cb377a726bd5cb153961b1b5"
+    },
+    {
+      "name": "Friday-WorkingHours-Morning.pcap_ISCX.csv",
+      "size_bytes": 58316725,
+      "sha256": "53a41c24d570ea83b7ac55b2e94df94e7a8216aeb80a2af0246b6bc8bb543000"
+    },
+    {
+      "name": "Friday-WorkingHours-Afternoon-PortScan.pcap_ISCX.csv",
+      "size_bytes": 76906168,
+      "sha256": "ca1824c51bfbb7b3c72290a11be04366ba8815878c6a1cc5c44cb1cee269e99b"
+    },
+    {
+      "name": "Friday-WorkingHours-Afternoon-DDos.pcap_ISCX.csv",
+      "size_bytes": 77123859,
+      "sha256": "6ff1580f5f81c0ae28a26f7631721018577f5f7c5e0feac28b795fcfe7b411ee"
+    }
+  ],
+  "ann_artifact_fingerprints": {
+    "ann_model_sha256": "c804be8b658e7994f24539a8a427398b8d2f2d760588f7c7903fdf2c8765e434",
+    "ann_scaler_sha256": "7ff533245289db65c0a6d6ec1bbacf5d7def87158b3a791ad5abfa494b844a9f"
+  },
+  "raw_cicids_label_diagnostics": {
+    "Monday-WorkingHours.pcap_ISCX.csv": {
+      "BENIGN": 529918
+    },
+    "Tuesday-WorkingHours.pcap_ISCX.csv": {
+      "BENIGN": 432074,
+      "FTP-Patator": 7938,
+      "SSH-Patator": 5897
+    },
+    "Wednesday-workingHours.pcap_ISCX.csv": {
+      "BENIGN": 440031,
+      "DoS GoldenEye": 10293,
+      "DoS Hulk": 231073,
+      "DoS Slowhttptest": 5499,
+      "DoS slowloris": 5796,
+      "Heartbleed": 11
+    },
+    "Thursday-WorkingHours-Morning-WebAttacks.pcap_ISCX.csv": {
+      "BENIGN": 168186,
+      "Web Attack \ufffd Brute Force": 1507,
+      "Web Attack \ufffd Sql Injection": 21,
+      "Web Attack \ufffd XSS": 652
+    },
+    "Thursday-WorkingHours-Afternoon-Infilteration.pcap_ISCX.csv": {
+      "BENIGN": 288566,
+      "Infiltration": 36
+    },
+    "Friday-WorkingHours-Morning.pcap_ISCX.csv": {
+      "BENIGN": 189067,
+      "Bot": 1966
+    },
+    "Friday-WorkingHours-Afternoon-PortScan.pcap_ISCX.csv": {
+      "BENIGN": 127537,
+      "PortScan": 158930
+    },
+    "Friday-WorkingHours-Afternoon-DDos.pcap_ISCX.csv": {
+      "BENIGN": 97718,
+      "DDoS": 128027
+    }
+  },
+  "target_policy": "Targets are the existing ANN's four-class output; raw CICIDS labels are diagnostics only.",
+  "split": {
+    "train": [
+      "Monday-WorkingHours.pcap_ISCX.csv",
+      "Tuesday-WorkingHours.pcap_ISCX.csv",
+      "Wednesday-workingHours.pcap_ISCX.csv",
+      "Thursday-WorkingHours-Morning-WebAttacks.pcap_ISCX.csv",
+      "Thursday-WorkingHours-Afternoon-Infilteration.pcap_ISCX.csv"
+    ],
+    "validation": [
+      "Friday-WorkingHours-Morning.pcap_ISCX.csv",
+      "Friday-WorkingHours-Afternoon-PortScan.pcap_ISCX.csv"
+    ],
+    "test": [
+      "Friday-WorkingHours-Afternoon-DDos.pcap_ISCX.csv"
+    ]
+  },
+  "shapes": {
+    "history": [
+      5,
+      28
+    ],
+    "targets": [
+      6
+    ]
+  },
+  "feature_order": [
+    "flow_count",
+    "unique_src_ip_count",
+    "unique_dst_ip_count",
+    "unique_src_port_count",
+    "unique_dst_port_count",
+    "total_fwd_packets",
+    "total_bwd_packets",
+    "total_packets",
+    "total_fwd_bytes",
+    "total_bwd_bytes",
+    "total_bytes",
+    "packets_per_second",
+    "bytes_per_second",
+    "flows_per_second",
+    "syn_count",
+    "ack_count",
+    "fin_count",
+    "rst_count",
+    "psh_count",
+    "urg_count",
+    "mean_iat",
+    "iat_variance",
+    "min_iat",
+    "max_iat",
+    "mean_flow_duration",
+    "max_flow_duration",
+    "mean_packet_size",
+    "max_packet_size"
+  ],
+  "label_order": [
+    "BENIGN",
+    "DDoS",
+    "DoS",
+    "PortScan"
+  ],
+  "timestamp_policy": "row_order_proxy; one source row per proxy unit; horizons are windows, not seconds",
+  "invalid_features_policy": "exclude any non-contiguous sample or history/target label outside the four ANN states",
+  "sample_identity": "session_id:first_history_window:last_target_window",
+  "cache": [
+    {
+      "cache_key": "27d21cbe8eaa049664c7576412be35b220e98041513a9b4ae2b4c8fa25d22469",
+      "identity": {
+        "source": {
+          "name": "Monday-WorkingHours.pcap_ISCX.csv",
+          "size_bytes": 176927918,
+          "sha256": "852c4beb34eda186f32561fa79df7a0747e92e1a6535b01270820dd9ffe17f34"
+        },
+        "ann_artifacts": {
+          "ann_model_sha256": "c804be8b658e7994f24539a8a427398b8d2f2d760588f7c7903fdf2c8765e434",
+          "ann_scaler_sha256": "7ff533245289db65c0a6d6ec1bbacf5d7def87158b3a791ad5abfa494b844a9f"
+        },
+        "schema_version": "row-order-proxy/v2",
+        "window_size_seconds": 10,
+        "sequence_length": 5,
+        "proxy_cadence_seconds": 1,
+        "state_feature_names": [
+          "flow_count",
+          "unique_src_ip_count",
+          "unique_dst_ip_count",
+          "unique_src_port_count",
+          "unique_dst_port_count",
+          "total_fwd_packets",
+          "total_bwd_packets",
+          "total_packets",
+          "total_fwd_bytes",
+          "total_bwd_bytes",
+          "total_bytes",
+          "packets_per_second",
+          "bytes_per_second",
+          "flows_per_second",
+          "syn_count",
+          "ack_count",
+          "fin_count",
+          "rst_count",
+          "psh_count",
+          "urg_count",
+          "mean_iat",
+          "iat_variance",
+          "min_iat",
+          "max_iat",
+          "mean_flow_duration",
+          "max_flow_duration",
+          "mean_packet_size",
+          "max_packet_size"
+        ]
+      },
+      "session_id": "Monday-WorkingHours.pcap_ISCX",
+      "source_path": "Monday-WorkingHours.pcap_ISCX.csv",
+      "rows": 529918,
+      "invalid_rows": 437,
+      "windows": 52992,
+      "dropped_empty_scoreable_windows": 0,
+      "feature_availability": {
+        "unique_src_ip_count": "unavailable_zero",
+        "unique_dst_ip_count": "unavailable_zero",
+        "unique_src_port_count": "unavailable_zero"
+      },
+      "elapsed_seconds": 5.554
+    },
+    {
+      "cache_key": "59cbaf602b5513f97f2c70a940339e8c874997dc7ba0da08e0037555b01a2fbf",
+      "identity": {
+        "source": {
+          "name": "Tuesday-WorkingHours.pcap_ISCX.csv",
+          "size_bytes": 135078995,
+          "sha256": "52b8692ae8c7d2ed04671fe2b98335693c0a92c7ab157d8c8b534d6523080851"
+        },
+        "ann_artifacts": {
+          "ann_model_sha256": "c804be8b658e7994f24539a8a427398b8d2f2d760588f7c7903fdf2c8765e434",
+          "ann_scaler_sha256": "7ff533245289db65c0a6d6ec1bbacf5d7def87158b3a791ad5abfa494b844a9f"
+        },
+        "schema_version": "row-order-proxy/v2",
+        "window_size_seconds": 10,
+        "sequence_length": 5,
+        "proxy_cadence_seconds": 1,
+        "state_feature_names": [
+          "flow_count",
+          "unique_src_ip_count",
+          "unique_dst_ip_count",
+          "unique_src_port_count",
+          "unique_dst_port_count",
+          "total_fwd_packets",
+          "total_bwd_packets",
+          "total_packets",
+          "total_fwd_bytes",
+          "total_bwd_bytes",
+          "total_bytes",
+          "packets_per_second",
+          "bytes_per_second",
+          "flows_per_second",
+          "syn_count",
+          "ack_count",
+          "fin_count",
+          "rst_count",
+          "psh_count",
+          "urg_count",
+          "mean_iat",
+          "iat_variance",
+          "min_iat",
+          "max_iat",
+          "mean_flow_duration",
+          "max_flow_duration",
+          "mean_packet_size",
+          "max_packet_size"
+        ]
+      },
+      "session_id": "Tuesday-WorkingHours.pcap_ISCX",
+      "source_path": "Tuesday-WorkingHours.pcap_ISCX.csv",
+      "rows": 445909,
+      "invalid_rows": 264,
+      "windows": 44591,
+      "dropped_empty_scoreable_windows": 0,
+      "feature_availability": {
+        "unique_src_ip_count": "unavailable_zero",
+        "unique_dst_ip_count": "unavailable_zero",
+        "unique_src_port_count": "unavailable_zero"
+      },
+      "elapsed_seconds": 4.558
+    },
+    {
+      "cache_key": "b42eccb16cc228ef645638e1278daaf1b33ce9b0bba0dee3d1d1f8346c2a35bb",
+      "identity": {
+        "source": {
+          "name": "Wednesday-workingHours.pcap_ISCX.csv",
+          "size_bytes": 225166395,
+          "sha256": "893c27dc968bf7a8adef1689f90be55ca4a4dc3088fb63d6ff247ac56856df2a"
+        },
+        "ann_artifacts": {
+          "ann_model_sha256": "c804be8b658e7994f24539a8a427398b8d2f2d760588f7c7903fdf2c8765e434",
+          "ann_scaler_sha256": "7ff533245289db65c0a6d6ec1bbacf5d7def87158b3a791ad5abfa494b844a9f"
+        },
+        "schema_version": "row-order-proxy/v2",
+        "window_size_seconds": 10,
+        "sequence_length": 5,
+        "proxy_cadence_seconds": 1,
+        "state_feature_names": [
+          "flow_count",
+          "unique_src_ip_count",
+          "unique_dst_ip_count",
+          "unique_src_port_count",
+          "unique_dst_port_count",
+          "total_fwd_packets",
+          "total_bwd_packets",
+          "total_packets",
+          "total_fwd_bytes",
+          "total_bwd_bytes",
+          "total_bytes",
+          "packets_per_second",
+          "bytes_per_second",
+          "flows_per_second",
+          "syn_count",
+          "ack_count",
+          "fin_count",
+          "rst_count",
+          "psh_count",
+          "urg_count",
+          "mean_iat",
+          "iat_variance",
+          "min_iat",
+          "max_iat",
+          "mean_flow_duration",
+          "max_flow_duration",
+          "mean_packet_size",
+          "max_packet_size"
+        ]
+      },
+      "session_id": "Wednesday-workingHours.pcap_ISCX",
+      "source_path": "Wednesday-workingHours.pcap_ISCX.csv",
+      "rows": 692703,
+      "invalid_rows": 1297,
+      "windows": 69271,
+      "dropped_empty_scoreable_windows": 0,
+      "feature_availability": {
+        "unique_src_ip_count": "unavailable_zero",
+        "unique_dst_ip_count": "unavailable_zero",
+        "unique_src_port_count": "unavailable_zero"
+      },
+      "elapsed_seconds": 6.919
+    },
+    {
+      "cache_key": "6d72ee79bd1586a89e7a907e1a19f3ce4f562792e25cb3a4b968ff6f4058018e",
+      "identity": {
+        "source": {
+          "name": "Thursday-WorkingHours-Morning-WebAttacks.pcap_ISCX.csv",
+          "size_bytes": 52023263,
+          "sha256": "d67066211fb1689c78406f1506f4c44704ecb92088353d5c96d96d6474eb819d"
+        },
+        "ann_artifacts": {
+          "ann_model_sha256": "c804be8b658e7994f24539a8a427398b8d2f2d760588f7c7903fdf2c8765e434",
+          "ann_scaler_sha256": "7ff533245289db65c0a6d6ec1bbacf5d7def87158b3a791ad5abfa494b844a9f"
+        },
+        "schema_version": "row-order-proxy/v2",
+        "window_size_seconds": 10,
+        "sequence_length": 5,
+        "proxy_cadence_seconds": 1,
+        "state_feature_names": [
+          "flow_count",
+          "unique_src_ip_count",
+          "unique_dst_ip_count",
+          "unique_src_port_count",
+          "unique_dst_port_count",
+          "total_fwd_packets",
+          "total_bwd_packets",
+          "total_packets",
+          "total_fwd_bytes",
+          "total_bwd_bytes",
+          "total_bytes",
+          "packets_per_second",
+          "bytes_per_second",
+          "flows_per_second",
+          "syn_count",
+          "ack_count",
+          "fin_count",
+          "rst_count",
+          "psh_count",
+          "urg_count",
+          "mean_iat",
+          "iat_variance",
+          "min_iat",
+          "max_iat",
+          "mean_flow_duration",
+          "max_flow_duration",
+          "mean_packet_size",
+          "max_packet_size"
+        ]
+      },
+      "session_id": "Thursday-WorkingHours-Morning-WebAttacks.pcap_ISCX",
+      "source_path": "Thursday-WorkingHours-Morning-WebAttacks.pcap_ISCX.csv",
+      "rows": 170366,
+      "invalid_rows": 135,
+      "windows": 17037,
+      "dropped_empty_scoreable_windows": 0,
+      "feature_availability": {
+        "unique_src_ip_count": "unavailable_zero",
+        "unique_dst_ip_count": "unavailable_zero",
+        "unique_src_port_count": "unavailable_zero"
+      },
+      "elapsed_seconds": 1.451
+    },
+    {
+      "cache_key": "93aaea020c0e64c8240f8a8e0425f79a9fdc3552ad5005c9c73f77a946cb7d83",
+      "identity": {
+        "source": {
+          "name": "Thursday-WorkingHours-Afternoon-Infilteration.pcap_ISCX.csv",
+          "size_bytes": 83102436,
+          "sha256": "6bcda3857c2504676034e3ea57762d38393cc734cb377a726bd5cb153961b1b5"
+        },
+        "ann_artifacts": {
+          "ann_model_sha256": "c804be8b658e7994f24539a8a427398b8d2f2d760588f7c7903fdf2c8765e434",
+          "ann_scaler_sha256": "7ff533245289db65c0a6d6ec1bbacf5d7def87158b3a791ad5abfa494b844a9f"
+        },
+        "schema_version": "row-order-proxy/v2",
+        "window_size_seconds": 10,
+        "sequence_length": 5,
+        "proxy_cadence_seconds": 1,
+        "state_feature_names": [
+          "flow_count",
+          "unique_src_ip_count",
+          "unique_dst_ip_count",
+          "unique_src_port_count",
+          "unique_dst_port_count",
+          "total_fwd_packets",
+          "total_bwd_packets",
+          "total_packets",
+          "total_fwd_bytes",
+          "total_bwd_bytes",
+          "total_bytes",
+          "packets_per_second",
+          "bytes_per_second",
+          "flows_per_second",
+          "syn_count",
+          "ack_count",
+          "fin_count",
+          "rst_count",
+          "psh_count",
+          "urg_count",
+          "mean_iat",
+          "iat_variance",
+          "min_iat",
+          "max_iat",
+          "mean_flow_duration",
+          "max_flow_duration",
+          "mean_packet_size",
+          "max_packet_size"
+        ]
+      },
+      "session_id": "Thursday-WorkingHours-Afternoon-Infilteration.pcap_ISCX",
+      "source_path": "Thursday-WorkingHours-Afternoon-Infilteration.pcap_ISCX.csv",
+      "rows": 288602,
+      "invalid_rows": 207,
+      "windows": 28861,
+      "dropped_empty_scoreable_windows": 0,
+      "feature_availability": {
+        "unique_src_ip_count": "unavailable_zero",
+        "unique_dst_ip_count": "unavailable_zero",
+        "unique_src_port_count": "unavailable_zero"
+      },
+      "elapsed_seconds": 2.801
+    },
+    {
+      "cache_key": "801f46f8706b3a474cb1b95e5a288ecf8c0ece2642dedd3fe121203b99bf60a7",
+      "identity": {
+        "source": {
+          "name": "Friday-WorkingHours-Morning.pcap_ISCX.csv",
+          "size_bytes": 58316725,
+          "sha256": "53a41c24d570ea83b7ac55b2e94df94e7a8216aeb80a2af0246b6bc8bb543000"
+        },
+        "ann_artifacts": {
+          "ann_model_sha256": "c804be8b658e7994f24539a8a427398b8d2f2d760588f7c7903fdf2c8765e434",
+          "ann_scaler_sha256": "7ff533245289db65c0a6d6ec1bbacf5d7def87158b3a791ad5abfa494b844a9f"
+        },
+        "schema_version": "row-order-proxy/v2",
+        "window_size_seconds": 10,
+        "sequence_length": 5,
+        "proxy_cadence_seconds": 1,
+        "state_feature_names": [
+          "flow_count",
+          "unique_src_ip_count",
+          "unique_dst_ip_count",
+          "unique_src_port_count",
+          "unique_dst_port_count",
+          "total_fwd_packets",
+          "total_bwd_packets",
+          "total_packets",
+          "total_fwd_bytes",
+          "total_bwd_bytes",
+          "total_bytes",
+          "packets_per_second",
+          "bytes_per_second",
+          "flows_per_second",
+          "syn_count",
+          "ack_count",
+          "fin_count",
+          "rst_count",
+          "psh_count",
+          "urg_count",
+          "mean_iat",
+          "iat_variance",
+          "min_iat",
+          "max_iat",
+          "mean_flow_duration",
+          "max_flow_duration",
+          "mean_packet_size",
+          "max_packet_size"
+        ]
+      },
+      "session_id": "Friday-WorkingHours-Morning.pcap_ISCX",
+      "source_path": "Friday-WorkingHours-Morning.pcap_ISCX.csv",
+      "rows": 191033,
+      "invalid_rows": 122,
+      "windows": 19104,
+      "dropped_empty_scoreable_windows": 0,
+      "feature_availability": {
+        "unique_src_ip_count": "unavailable_zero",
+        "unique_dst_ip_count": "unavailable_zero",
+        "unique_src_port_count": "unavailable_zero"
+      },
+      "elapsed_seconds": 1.948
+    },
+    {
+      "cache_key": "4f4478df206beb69195888fb86de3a2fabb15b980d906908cf0a58b08b969396",
+      "identity": {
+        "source": {
+          "name": "Friday-WorkingHours-Afternoon-PortScan.pcap_ISCX.csv",
+          "size_bytes": 76906168,
+          "sha256": "ca1824c51bfbb7b3c72290a11be04366ba8815878c6a1cc5c44cb1cee269e99b"
+        },
+        "ann_artifacts": {
+          "ann_model_sha256": "c804be8b658e7994f24539a8a427398b8d2f2d760588f7c7903fdf2c8765e434",
+          "ann_scaler_sha256": "7ff533245289db65c0a6d6ec1bbacf5d7def87158b3a791ad5abfa494b844a9f"
+        },
+        "schema_version": "row-order-proxy/v2",
+        "window_size_seconds": 10,
+        "sequence_length": 5,
+        "proxy_cadence_seconds": 1,
+        "state_feature_names": [
+          "flow_count",
+          "unique_src_ip_count",
+          "unique_dst_ip_count",
+          "unique_src_port_count",
+          "unique_dst_port_count",
+          "total_fwd_packets",
+          "total_bwd_packets",
+          "total_packets",
+          "total_fwd_bytes",
+          "total_bwd_bytes",
+          "total_bytes",
+          "packets_per_second",
+          "bytes_per_second",
+          "flows_per_second",
+          "syn_count",
+          "ack_count",
+          "fin_count",
+          "rst_count",
+          "psh_count",
+          "urg_count",
+          "mean_iat",
+          "iat_variance",
+          "min_iat",
+          "max_iat",
+          "mean_flow_duration",
+          "max_flow_duration",
+          "mean_packet_size",
+          "max_packet_size"
+        ]
+      },
+      "session_id": "Friday-WorkingHours-Afternoon-PortScan.pcap_ISCX",
+      "source_path": "Friday-WorkingHours-Afternoon-PortScan.pcap_ISCX.csv",
+      "rows": 286467,
+      "invalid_rows": 371,
+      "windows": 28647,
+      "dropped_empty_scoreable_windows": 0,
+      "feature_availability": {
+        "unique_src_ip_count": "unavailable_zero",
+        "unique_dst_ip_count": "unavailable_zero",
+        "unique_src_port_count": "unavailable_zero"
+      },
+      "elapsed_seconds": 2.454
+    },
+    {
+      "cache_key": "ad48967824cbff595af973dfbc3df57b2081c1a038264d7d598bf781549c9fdf",
+      "identity": {
+        "source": {
+          "name": "Friday-WorkingHours-Afternoon-DDos.pcap_ISCX.csv",
+          "size_bytes": 77123859,
+          "sha256": "6ff1580f5f81c0ae28a26f7631721018577f5f7c5e0feac28b795fcfe7b411ee"
+        },
+        "ann_artifacts": {
+          "ann_model_sha256": "c804be8b658e7994f24539a8a427398b8d2f2d760588f7c7903fdf2c8765e434",
+          "ann_scaler_sha256": "7ff533245289db65c0a6d6ec1bbacf5d7def87158b3a791ad5abfa494b844a9f"
+        },
+        "schema_version": "row-order-proxy/v2",
+        "window_size_seconds": 10,
+        "sequence_length": 5,
+        "proxy_cadence_seconds": 1,
+        "state_feature_names": [
+          "flow_count",
+          "unique_src_ip_count",
+          "unique_dst_ip_count",
+          "unique_src_port_count",
+          "unique_dst_port_count",
+          "total_fwd_packets",
+          "total_bwd_packets",
+          "total_packets",
+          "total_fwd_bytes",
+          "total_bwd_bytes",
+          "total_bytes",
+          "packets_per_second",
+          "bytes_per_second",
+          "flows_per_second",
+          "syn_count",
+          "ack_count",
+          "fin_count",
+          "rst_count",
+          "psh_count",
+          "urg_count",
+          "mean_iat",
+          "iat_variance",
+          "min_iat",
+          "max_iat",
+          "mean_flow_duration",
+          "max_flow_duration",
+          "mean_packet_size",
+          "max_packet_size"
+        ]
+      },
+      "session_id": "Friday-WorkingHours-Afternoon-DDos.pcap_ISCX",
+      "source_path": "Friday-WorkingHours-Afternoon-DDos.pcap_ISCX.csv",
+      "rows": 225745,
+      "invalid_rows": 34,
+      "windows": 22575,
+      "dropped_empty_scoreable_windows": 0,
+      "feature_availability": {
+        "unique_src_ip_count": "unavailable_zero",
+        "unique_dst_ip_count": "unavailable_zero",
+        "unique_src_port_count": "unavailable_zero"
+      },
+      "elapsed_seconds": 2.268
+    }
+  ],
+  "splits": {
+    "train": {
+      "samples": 212702,
+      "sessions": [
+        "Monday-WorkingHours.pcap_ISCX",
+        "Thursday-WorkingHours-Afternoon-Infilteration.pcap_ISCX",
+        "Thursday-WorkingHours-Morning-WebAttacks.pcap_ISCX",
+        "Tuesday-WorkingHours.pcap_ISCX",
+        "Wednesday-workingHours.pcap_ISCX"
+      ],
+      "sample_ids_sha256": "532e351e57471f86cdd68b7113e942c1612e3c6fa2e971d029ef47aa6f71fe8a",
+      "class_distribution_by_horizon": {
+        "BENIGN": [
+          183015,
+          183015,
+          183015,
+          183015,
+          183015,
+          183015
+        ],
+        "DDoS": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "DoS": [
+          23149,
+          23149,
+          23149,
+          23149,
+          23149,
+          23149
+        ],
+        "PortScan": [
+          6538,
+          6538,
+          6538,
+          6538,
+          6538,
+          6538
+        ]
+      }
+    },
+    "validation": {
+      "samples": 47731,
+      "sessions": [
+        "Friday-WorkingHours-Afternoon-PortScan.pcap_ISCX",
+        "Friday-WorkingHours-Morning.pcap_ISCX"
+      ],
+      "sample_ids_sha256": "512a4b63479513af89ca3ffea64f9c13e3a982271c231ccc79c78f976f0eeb7d",
+      "class_distribution_by_horizon": {
+        "BENIGN": [
+          31685,
+          31685,
+          31685,
+          31685,
+          31685,
+          31685
+        ],
+        "DDoS": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "DoS": [
+          12,
+          12,
+          12,
+          12,
+          12,
+          12
+        ],
+        "PortScan": [
+          16034,
+          16034,
+          16034,
+          16034,
+          16034,
+          16034
+        ]
+      }
+    },
+    "test": {
+      "samples": 22565,
+      "sessions": [
+        "Friday-WorkingHours-Afternoon-DDos.pcap_ISCX"
+      ],
+      "sample_ids_sha256": "4a77cbaac73c8980ebb411d2e32b9271c26916f54772c2fe0a116d77636aa7ba",
+      "class_distribution_by_horizon": {
+        "BENIGN": [
+          9910,
+          9910,
+          9910,
+          9910,
+          9910,
+          9910
+        ],
+        "DDoS": [
+          12653,
+          12653,
+          12653,
+          12653,
+          12653,
+          12653
+        ],
+        "DoS": [
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "PortScan": [
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "session_isolation": "PASS",
+  "chronological_split": "PASS",
+  "train_only_scaler": "PASS",
+  "invalid_feature_exclusion": "PASS",
+  "target_alignment": "PASS"
+}

@@ -1,0 +1,31 @@
+{
+  "selected_threshold": 0.6,
+  "candidates": [
+    {
+      "threshold": 0.5,
+      "attack_f1": 0.9813317029445443,
+      "false_positive_rate": 0.010656988059544474
+    },
+    {
+      "threshold": 0.6,
+      "attack_f1": 0.9814844580405984,
+      "false_positive_rate": 0.010215138603966126
+    },
+    {
+      "threshold": 0.7,
+      "attack_f1": 0.9812436765507043,
+      "false_positive_rate": 0.009988953763610541
+    },
+    {
+      "threshold": 0.8,
+      "attack_f1": 0.980786312000374,
+      "false_positive_rate": 0.009641786334227553
+    },
+    {
+      "threshold": 0.9,
+      "attack_f1": 0.9788059576953565,
+      "false_positive_rate": 0.008584503708379359
+    }
+  ],
+  "selection_rule": "maximum validation attack F1 subject to FPR <= 5%; ties prefer lower threshold"
+}

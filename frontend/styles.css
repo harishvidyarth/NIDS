@@ -367,6 +367,15 @@ input[type="file"]::file-selector-button {
 .mitre-copy li { margin: 2px 0; }
 .split-box { font-family: var(--mono); font-size: 11px; color: var(--text-dim); line-height: 1.6; }
 .split-block-title { color: var(--accent); font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 6px; }
+.multistep-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.multistep-warning { margin: 10px 0; padding: 8px 10px; border: 1px solid var(--border); color: var(--text-dim); font: 11px var(--mono); }
+.multistep-warning.warning-active { border-color: var(--amber); color: var(--amber); background: rgba(251,191,36,0.08); }
+.multistep-chart { color: var(--text-faint); max-width: 760px; }
+.multistep-chart svg { width: 100%; min-height: 170px; font: 10px var(--mono); }
+.multistep-horizons { display: grid; gap: 6px; }
+.multistep-horizon { border: 1px solid var(--border-soft); background: var(--bg-alt); padding: 7px 10px; font: 11px var(--mono); }
+.multistep-horizon summary { display: grid; grid-template-columns: 42px 1fr 90px 110px; gap: 10px; cursor: pointer; }
+.multistep-horizon > div { padding: 8px 0 0 42px; color: var(--text-dim); }
 
 /* ================= Modal ================= */
 .modal-overlay {

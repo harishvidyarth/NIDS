@@ -1,0 +1,3134 @@
+{
+  "model_version": "v1-6d80927e0885",
+  "architecture": "LSTM(64) -> Dropout(0.3) -> Dense(32, ReLU) -> Dense(24) -> Reshape(6,4) -> horizon-wise softmax",
+  "input_shape": [
+    5,
+    28
+  ],
+  "output_shape": [
+    6,
+    4
+  ],
+  "epochs": 11,
+  "training_seconds": 32.9475358339987,
+  "total_seconds": 46.344654000000446,
+  "model_gates": {
+    "passed": true,
+    "checks": {
+      "finite_loss": true,
+      "finite_probabilities": true,
+      "probability_sums": true,
+      "prediction_diversity": true,
+      "validation_performance": true,
+      "save_load_parity": true
+    },
+    "validation": [
+      {
+        "samples": 47731,
+        "accuracy": 0.9909073767572437,
+        "balanced_accuracy": 0.6604403376242979,
+        "macro_precision": 0.4946805321550363,
+        "macro_recall": 0.49533025321822344,
+        "macro_f1": 0.49500384681740806,
+        "weighted_f1": 0.990787397399122,
+        "class_support": {
+          "BENIGN": 31685,
+          "DDoS": 0,
+          "DoS": 12,
+          "PortScan": 16034
+        },
+        "per_class": {
+          "BENIGN": {
+            "precision": 0.99411820510388,
+            "recall": 0.9921729525011835,
+            "f1": 0.9931446262715613,
+            "support": 31685
+          },
+          "DDoS": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 0
+          },
+          "DoS": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 12
+          },
+          "PortScan": {
+            "precision": 0.9846039235162652,
+            "recall": 0.9891480603717101,
+            "f1": 0.986870760998071,
+            "support": 16034
+          }
+        },
+        "confusion_matrix": [
+          [
+            31437,
+            0,
+            0,
+            248
+          ],
+          [
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            12,
+            0,
+            0,
+            0
+          ],
+          [
+            174,
+            0,
+            0,
+            15860
+          ]
+        ],
+        "roc_auc": {
+          "BENIGN": 0.9962514459818664,
+          "DDoS": "N/A \u2014 class absent from evaluation set",
+          "DoS": 0.7620706636769421,
+          "PortScan": 0.9967988962345133
+        },
+        "pr_auc": {
+          "BENIGN": 0.9972072693015157,
+          "DDoS": "N/A \u2014 class absent from evaluation set",
+          "DoS": 0.0037812204354483302,
+          "PortScan": 0.993879449415909
+        },
+        "multiclass_roc_auc": "N/A \u2014 class absent from evaluation set",
+        "multiclass_pr_auc": "N/A \u2014 class absent from evaluation set",
+        "probability_quality": {
+          "average_confidence": 0.9759903170553704,
+          "confidence_correct": 0.9766635289622935,
+          "confidence_incorrect": 0.9026241798163351,
+          "multiclass_log_loss": 0.05321539643053071,
+          "multiclass_brier_score": 0.01762995581417973,
+          "expected_calibration_error_10_bin": 0.014917059701873259,
+          "calibration_bins": [
+            {
+              "lower": 0.0,
+              "upper": 0.1,
+              "count": 0,
+              "mean_confidence": null,
+              "observed_accuracy": null
+            },
+            {
+              "lower": 0.1,
+              "upper": 0.2,
+              "count": 0,
+              "mean_confidence": null,
+              "observed_accuracy": null
+            },
+            {
+              "lower": 0.2,
+              "upper": 0.30000000000000004,
+              "count": 0,
+              "mean_confidence": null,
+              "observed_accuracy": null
+            },
+            {
+              "lower": 0.30000000000000004,
+              "upper": 0.4,
+              "count": 0,
+              "mean_confidence": null,
+              "observed_accuracy": null
+            },
+            {
+              "lower": 0.4,
+              "upper": 0.5,
+              "count": 14,
+              "mean_confidence": 0.4629942288657653,
+              "observed_accuracy": 0.7142857142857143
+            },
+            {
+              "lower": 0.5,
+              "upper": 0.6000000000000001,
+              "count": 46,
+              "mean_confidence": 0.5507116122839147,
+              "observed_accuracy": 0.782608695652174
+            },
+            {
+              "lower": 0.6000000000000001,
+              "upper": 0.7000000000000001,
+              "count": 89,
+              "mean_confidence": 0.6521428917700502,
+              "observed_accuracy": 0.6966292134831461
+            },
+            {
+              "lower": 0.7000000000000001,
+              "upper": 0.8,
+              "count": 183,
+              "mean_confidence": 0.753159040632012,
+              "observed_accuracy": 0.8524590163934426
+            },
+            {
+              "lower": 0.8,
+              "upper": 0.9,
+              "count": 476,
+              "mean_confidence": 0.8618426034807813,
+              "observed_accuracy": 0.8949579831932774
+            },
+            {
+              "lower": 0.9,
+              "upper": 1.0,
+              "count": 46923,
+              "mean_confidence": 0.9792015273733704,
+              "observed_accuracy": 0.9932655627304307
+            }
+          ]
+        },
+        "attack_forecasting": {
+          "precision": 0.9846039235162652,
+          "recall": 0.9884083260625701,
+          "f1": 0.9865024569260434,
+          "false_positive_rate": 0.007827047498816474,
+          "false_negative_rate": 0.01159167393742989,
+          "confusion": {
+            "tp": 15860,
+            "tn": 31437,
+            "fp": 248,
+            "fn": 186
+          }
+        },
+        "transitions": [],
+        "evaluation_status": "limited_attack_support",
+        "limitations": [
+          "Evaluation does not support every attack class; unsupported AUC values are marked N/A and results are not complete attack-performance evidence."
+        ],
+        "horizon": 1,
+        "class_distribution": {
+          "BENIGN": 31685,
+          "DDoS": 0,
+          "DoS": 12,
+          "PortScan": 16034
+        },
+        "low_support_classes": [
+          "DDoS",
+          "DoS"
+        ]
+      },
+      {
+        "samples": 47731,
+        "accuracy": 0.9892732186629235,
+        "balanced_accuracy": 0.6592295406766958,
+        "macro_precision": 0.4937597512720049,
+        "macro_recall": 0.4944221555075219,
+        "macro_f1": 0.49408932412584905,
+        "weighted_f1": 0.9891544757843399,
+        "class_support": {
+          "BENIGN": 31685,
+          "DDoS": 0,
+          "DoS": 12,
+          "PortScan": 16034
+        },
+        "per_class": {
+          "BENIGN": {
+            "precision": 0.9929161000600867,
+            "recall": 0.9909105254852454,
+            "f1": 0.9919122989921967,
+            "support": 31685
+          },
+          "DDoS": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 0
+          },
+          "DoS": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 12
+          },
+          "PortScan": {
+            "precision": 0.982122905027933,
+            "recall": 0.9867780965448422,
+            "f1": 0.9844449975111996,
+            "support": 16034
+          }
+        },
+        "confusion_matrix": [
+          [
+            31397,
+            0,
+            0,
+            288
+          ],
+          [
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            12,
+            0,
+            0,
+            0
+          ],
+          [
+            212,
+            0,
+            0,
+            15822
+          ]
+        ],
+        "roc_auc": {
+          "BENIGN": 0.994275506954904,
+          "DDoS": "N/A \u2014 class absent from evaluation set",
+          "DoS": 0.7756781016646059,
+          "PortScan": 0.9948290674269098
+        },
+        "pr_auc": {
+          "BENIGN": 0.9956341642682507,
+          "DDoS": "N/A \u2014 class absent from evaluation set",
+          "DoS": 0.0020843197620970815,
+          "PortScan": 0.9896060051076192
+        },
+        "multiclass_roc_auc": "N/A \u2014 class absent from evaluation set",
+        "multiclass_pr_auc": "N/A \u2014 class absent from evaluation set",
+        "probability_quality": {
+          "average_confidence": 0.9691244893811914,
+          "confidence_correct": 0.9698590323672482,
+          "confidence_incorrect": 0.9013815494229553,
+          "multiclass_log_loss": 0.06444384081156883,
+          "multiclass_brier_score": 0.021343546873980296,
+          "expected_calibration_error_10_bin": 0.020148729281731864,
+          "calibration_bins": [
+            {
+              "lower": 0.0,
+              "upper": 0.1,
+              "count": 0,
+              "mean_confidence": null,
+              "observed_accuracy": null
+            },
+            {
+              "lower": 0.1,
+              "upper": 0.2,
+              "count": 0,
+              "mean_confidence": null,
+              "observed_accuracy": null
+            },
+            {
+              "lower": 0.2,
+              "upper": 0.30000000000000004,
+              "count": 0,
+              "mean_confidence": null,
+              "observed_accuracy": null
+            },
+            {
+              "lower": 0.30000000000000004,
+              "upper": 0.4,
+              "count": 0,
+              "mean_confidence": null,
+              "observed_accuracy": null
+            },
+            {
+              "lower": 0.4,
+              "upper": 0.5,
+              "count": 9,
+              "mean_confidence": 0.4695824413567435,
+              "observed_accuracy": 0.8888888888888888
+            },
+            {
+              "lower": 0.5,
+              "upper": 0.6000000000000001,
+              "count": 66,
+              "mean_confidence": 0.5553227924974101,
+              "observed_accuracy": 0.6666666666666666
+            },
+            {
+              "lower": 0.6000000000000001,
+              "upper": 0.7000000000000001,
+              "count": 104,
+              "mean_confidence": 0.6557515666554997,
+              "observed_accuracy": 0.7980769230769231
+            },
+            {
+              "lower": 0.7000000000000001,
+              "upper": 0.8,
+              "count": 244,
+              "mean_confidence": 0.7542337154224168,
+              "observed_accuracy": 0.8729508196721312
+            },
+            {
+              "lower": 0.8,
+              "upper": 0.9,
+              "count": 687,
+              "mean_confidence": 0.8628731220118934,
+              "observed_accuracy": 0.9155749636098981
+            },
+            {
+              "lower": 0.9,
+              "upper": 1.0,
+              "count": 46621,
+              "mean_confidence": 0.9731961655060853,
+              "observed_accuracy": 0.9918706162458978
+            }
+          ]
+        },
+        "attack_forecasting": {
+          "precision": 0.982122905027933,
+          "recall": 0.9860401346129877,
+          "f1": 0.9840776215947258,
+          "false_positive_rate": 0.009089474514754616,
+          "false_negative_rate": 0.013959865387012339,
+          "confusion": {
+            "tp": 15822,
+            "tn": 31397,
+            "fp": 288,
+            "fn": 224
+          }
+        },
+        "transitions": [],
+        "evaluation_status": "limited_attack_support",
+        "limitations": [
+          "Evaluation does not support every attack class; unsupported AUC values are marked N/A and results are not complete attack-performance evidence."
+        ],
+        "horizon": 2,
+        "class_distribution": {
+          "BENIGN": 31685,
+          "DDoS": 0,
+          "DoS": 12,
+          "PortScan": 16034
+        },
+        "low_support_classes": [
+          "DDoS",
+          "DoS"
+        ]
+      },
+      {
+        "samples": 47731,
+        "accuracy": 0.9880161739749848,
+        "balanced_accuracy": 0.6583313349564032,
+        "macro_precision": 0.49302854905515314,
+        "macro_recall": 0.4937485012173024,
+        "macro_f1": 0.4933865278981365,
+        "weighted_f1": 0.9878989798436979,
+        "class_support": {
+          "BENIGN": 31685,
+          "DDoS": 0,
+          "DoS": 12,
+          "PortScan": 16034
+        },
+        "per_class": {
+          "BENIGN": {
+            "precision": 0.9920918609432828,
+            "recall": 0.989837462521698,
+            "f1": 0.9909633795696546,
+            "support": 31685
+          },
+          "DDoS": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 0
+          },
+          "DoS": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 12
+          },
+          "PortScan": {
+            "precision": 0.9800223352773297,
+            "recall": 0.9851565423475115,
+            "f1": 0.9825827320228913,
+            "support": 16034
+          }
+        },
+        "confusion_matrix": [
+          [
+            31363,
+            0,
+            0,
+            322
+          ],
+          [
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            12,
+            0,
+            0,
+            0
+          ],
+          [
+            238,
+            0,
+            0,
+            15796
+          ]
+        ],
+        "roc_auc": {
+          "BENIGN": 0.9925008709869179,
+          "DDoS": "N/A \u2014 class absent from evaluation set",
+          "DoS": 0.7719584092988816,
+          "PortScan": 0.9931050654580206
+        },
+        "pr_auc": {
+          "BENIGN": 0.9944170596984732,
+          "DDoS": "N/A \u2014 class absent from evaluation set",
+          "DoS": 0.004042342032510779,
+          "PortScan": 0.9848153588204959
+        },
+        "multiclass_roc_auc": "N/A \u2014 class absent from evaluation set",
+        "multiclass_pr_auc": "N/A \u2014 class absent from evaluation set",
+        "probability_quality": {
+          "average_confidence": 0.9661459087324765,
+          "confidence_correct": 0.9668778061479238,
+          "confidence_incorrect": 0.9058040377270766,
+          "multiclass_log_loss": 0.07225472807025088,
+          "multiclass_brier_score": 0.024468582380025316,
+          "expected_calibration_error_10_bin": 0.021870265242508312,
+          "calibration_bins": [
+            {
+              "lower": 0.0,
+              "upper": 0.1,
+              "count": 0,
+              "mean_confidence": null,
+              "observed_accuracy": null
+            },
+            {
+              "lower": 0.1,
+              "upper": 0.2,
+              "count": 0,
+              "mean_confidence": null,
+              "observed_accuracy": null
+            },
+            {
+              "lower": 0.2,
+              "upper": 0.30000000000000004,
+              "count": 0,
+              "mean_confidence": null,
+              "observed_accuracy": null
+            },
+            {
+              "lower": 0.30000000000000004,
+              "upper": 0.4,
+              "count": 0,
+              "mean_confidence": null,
+              "observed_accuracy": null
+            },
+            {
+              "lower": 0.4,
+              "upper": 0.5,
+              "count": 13,
+              "mean_confidence": 0.4640532815935586,
+              "observed_accuracy": 0.9230769230769231
+            },
+            {
+              "lower": 0.5,
+              "upper": 0.6000000000000001,
+              "count": 73,
+              "mean_confidence": 0.5528018830061432,
+              "observed_accuracy": 0.6575342465753424
+            },
+            {
+              "lower": 0.6000000000000001,
+              "upper": 0.7000000000000001,
+              "count": 118,
+              "mean_confidence": 0.6636822621705366,
+              "observed_accuracy": 0.8220338983050848
+            },
+            {
+              "lower": 0.7000000000000001,
+              "upper": 0.8,
+              "count": 221,
+              "mean_confidence": 0.7536123897257644,
+              "observed_accuracy": 0.9004524886877828
+            },
+            {
+              "lower": 0.8,
+              "upper": 0.9,
+              "count": 690,
+              "mean_confidence": 0.8613396408785224,
+              "observed_accuracy": 0.9057971014492754
+            },
+            {
+              "lower": 0.9,
+              "upper": 1.0,
+              "count": 46616,
+              "mean_confidence": 0.970257764336665,
+              "observed_accuracy": 0.990604084434529
+            }
+          ]
+        },
+        "attack_forecasting": {
+          "precision": 0.9800223352773297,
+          "recall": 0.9844197930948523,
+          "f1": 0.9822161422708618,
+          "false_positive_rate": 0.010162537478302036,
+          "false_negative_rate": 0.0155802069051477,
+          "confusion": {
+            "tp": 15796,
+            "tn": 31363,
+            "fp": 322,
+            "fn": 250
+          }
+        },
+        "transitions": [],
+        "evaluation_status": "limited_attack_support",
+        "limitations": [
+          "Evaluation does not support every attack class; unsupported AUC values are marked N/A and results are not complete attack-performance evidence."
+        ],
+        "horizon": 3,
+        "class_distribution": {
+          "BENIGN": 31685,
+          "DDoS": 0,
+          "DoS": 12,
+          "PortScan": 16034
+        },
+        "low_support_classes": [
+          "DDoS",
+          "DoS"
+        ]
+      },
+      {
+        "samples": 47731,
+        "accuracy": 0.9867172277974482,
+        "balanced_accuracy": 0.6573196684046559,
+        "macro_precision": 0.49233085982606184,
+        "macro_recall": 0.49298975130349193,
+        "macro_f1": 0.4926586820975908,
+        "weighted_f1": 0.9866002145550107,
+        "class_support": {
+          "BENIGN": 31685,
+          "DDoS": 0,
+          "DoS": 12,
+          "PortScan": 16034
+        },
+        "per_class": {
+          "BENIGN": {
+            "precision": 0.9909870023085924,
+            "recall": 0.9889853242859398,
+            "f1": 0.989985151486431,
+            "support": 31685
+          },
+          "DDoS": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 0
+          },
+          "DoS": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 12
+          },
+          "PortScan": {
+            "precision": 0.9783364369956549,
+            "recall": 0.982973680928028,
+            "f1": 0.9806495769039323,
+            "support": 16034
+          }
+        },
+        "confusion_matrix": [
+          [
+            31336,
+            0,
+            0,
+            349
+          ],
+          [
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            12,
+            0,
+            0,
+            0
+          ],
+          [
+            273,
+            0,
+            0,
+            15761
+          ]
+        ],
+        "roc_auc": {
+          "BENIGN": 0.9903153610897469,
+          "DDoS": "N/A \u2014 class absent from evaluation set",
+          "DoS": 0.5741161801378905,
+          "PortScan": 0.9910683092352466
+        },
+        "pr_auc": {
+          "BENIGN": 0.992941431039718,
+          "DDoS": "N/A \u2014 class absent from evaluation set",
+          "DoS": 0.0062377603008057165,
+          "PortScan": 0.9784861307443685
+        },
+        "multiclass_roc_auc": "N/A \u2014 class absent from evaluation set",
+        "multiclass_pr_auc": "N/A \u2014 class absent from evaluation set",
+        "probability_quality": {
+          "average_confidence": 0.9691429134666697,
+          "confidence_correct": 0.9697898940941929,
+          "confidence_incorrect": 0.9210816412041202,
+          "multiclass_log_loss": 0.07595480471760264,
+          "multiclass_brier_score": 0.02638800583944999,
+          "expected_calibration_error_10_bin": 0.01757431433077852,
+          "calibration_bins": [
+            {
+              "lower": 0.0,
+              "upper": 0.1,
+              "count": 0,
+              "mean_confidence": null,
+              "observed_accuracy": null
+            },
+            {
+              "lower": 0.1,
+              "upper": 0.2,
+              "count": 0,
+              "mean_confidence": null,
+              "observed_accuracy": null
+            },
+            {
+              "lower": 0.2,
+              "upper": 0.30000000000000004,
+              "count": 0,
+              "mean_confidence": null,
+              "observed_accuracy": null
+            },
+            {
+              "lower": 0.30000000000000004,
+              "upper": 0.4,
+              "count": 0,
+              "mean_confidence": null,
+              "observed_accuracy": null
+            },
+            {
+              "lower": 0.4,
+              "upper": 0.5,
+              "count": 10,
+              "mean_confidence": 0.4601769755103121,
+              "observed_accuracy": 0.8
+            },
+            {
+              "lower": 0.5,
+              "upper": 0.6000000000000001,
+              "count": 52,
+              "mean_confidence": 0.5532532212112616,
+              "observed_accuracy": 0.75
+            },
+            {
+              "lower": 0.6000000000000001,
+              "upper": 0.7000000000000001,
+              "count": 108,
+              "mean_confidence": 0.6591700374868213,
+              "observed_accuracy": 0.7222222222222222
+            },
+            {
+              "lower": 0.7000000000000001,
+              "upper": 0.8,
+              "count": 205,
+              "mean_confidence": 0.7541072695027904,
+              "observed_accuracy": 0.8926829268292683
+            },
+            {
+              "lower": 0.8,
+              "upper": 0.9,
+              "count": 622,
+              "mean_confidence": 0.8629801423579375,
+              "observed_accuracy": 0.9340836012861736
+            },
+            {
+              "lower": 0.9,
+              "upper": 1.0,
+              "count": 46734,
+              "mean_confidence": 0.972787124204567,
+              "observed_accuracy": 0.9887448110583301
+            }
+          ]
+        },
+        "attack_forecasting": {
+          "precision": 0.9783364369956549,
+          "recall": 0.9822385641281316,
+          "f1": 0.980283617365344,
+          "false_positive_rate": 0.011014675714060281,
+          "false_negative_rate": 0.01776143587186838,
+          "confusion": {
+            "tp": 15761,
+            "tn": 31336,
+            "fp": 349,
+            "fn": 285
+          }
+        },
+        "transitions": [],
+        "evaluation_status": "limited_attack_support",
+        "limitations": [
+          "Evaluation does not support every attack class; unsupported AUC values are marked N/A and results are not complete attack-performance evidence."
+        ],
+        "horizon": 4,
+        "class_distribution": {
+          "BENIGN": 31685,
+          "DDoS": 0,
+          "DoS": 12,
+          "PortScan": 16034
+        },
+        "low_support_classes": [
+          "DDoS",
+          "DoS"
+        ]
+      },
+      {
+        "samples": 47731,
+        "accuracy": 0.9857953950262932,
+        "balanced_accuracy": 0.6566513998739475,
+        "macro_precision": 0.4918014293531332,
+        "macro_recall": 0.49248854990546065,
+        "macro_f1": 0.49214318815052593,
+        "weighted_f1": 0.9856794223524108,
+        "class_support": {
+          "BENIGN": 31685,
+          "DDoS": 0,
+          "DoS": 12,
+          "PortScan": 16034
+        },
+        "per_class": {
+          "BENIGN": {
+            "precision": 0.9903532909510706,
+            "recall": 0.9882278680763769,
+            "f1": 0.9892894379324508,
+            "support": 31685
+          },
+          "DDoS": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 0
+          },
+          "DoS": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 12
+          },
+          "PortScan": {
+            "precision": 0.9768524264614621,
+            "recall": 0.9817263315454658,
+            "f1": 0.9792833146696529,
+            "support": 16034
+          }
+        },
+        "confusion_matrix": [
+          [
+            31312,
+            0,
+            0,
+            373
+          ],
+          [
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            12,
+            0,
+            0,
+            0
+          ],
+          [
+            293,
+            0,
+            0,
+            15741
+          ]
+        ],
+        "roc_auc": {
+          "BENIGN": 0.9896851556115759,
+          "DDoS": "N/A \u2014 class absent from evaluation set",
+          "DoS": 0.7587438965611182,
+          "PortScan": 0.9903213930249312
+        },
+        "pr_auc": {
+          "BENIGN": 0.9924908004494832,
+          "DDoS": "N/A \u2014 class absent from evaluation set",
+          "DoS": 0.009329982178185628,
+          "PortScan": 0.9776401631096034
+        },
+        "multiclass_roc_auc": "N/A \u2014 class absent from evaluation set",
+        "multiclass_pr_auc": "N/A \u2014 class absent from evaluation set",
+        "probability_quality": {
+          "average_confidence": 0.9595362751429858,
+          "confidence_correct": 0.9602658095769582,
+          "confidence_incorrect": 0.9089068006272129,
+          "multiclass_log_loss": 0.08512542423868749,
+          "multiclass_brier_score": 0.029011553277164162,
+          "expected_calibration_error_10_bin": 0.026259119883307466,
+          "calibration_bins": [
+            {
+              "lower": 0.0,
+              "upper": 0.1,
+              "count": 0,
+              "mean_confidence": null,
+              "observed_accuracy": null
+            },
+            {
+              "lower": 0.1,
+              "upper": 0.2,
+              "count": 0,
+              "mean_confidence": null,
+              "observed_accuracy": null
+            },
+            {
+              "lower": 0.2,
+              "upper": 0.30000000000000004,
+              "count": 0,
+              "mean_confidence": null,
+              "observed_accuracy": null
+            },
+            {
+              "lower": 0.30000000000000004,
+              "upper": 0.4,
+              "count": 0,
+              "mean_confidence": null,
+              "observed_accuracy": null
+            },
+            {
+              "lower": 0.4,
+              "upper": 0.5,
+              "count": 11,
+              "mean_confidence": 0.48333028547652485,
+              "observed_accuracy": 0.8181818181818182
+            },
+            {
+              "lower": 0.5,
+              "upper": 0.6000000000000001,
+              "count": 64,
+              "mean_confidence": 0.5540939461642943,
+              "observed_accuracy": 0.609375
+            },
+            {
+              "lower": 0.6000000000000001,
+              "upper": 0.7000000000000001,
+              "count": 119,
+              "mean_confidence": 0.6598605678825181,
+              "observed_accuracy": 0.8151260504201681
+            },
+            {
+              "lower": 0.7000000000000001,
+              "upper": 0.8,
+              "count": 265,
+              "mean_confidence": 0.7548169768054461,
+              "observed_accuracy": 0.909433962264151
+            },
+            {
+              "lower": 0.8,
+              "upper": 0.9,
+              "count": 990,
+              "mean_confidence": 0.8622062921535394,
+              "observed_accuracy": 0.9343434343434344
+            },
+            {
+              "lower": 0.9,
+              "upper": 1.0,
+              "count": 46282,
+              "mean_confidence": 0.9642347601117417,
+              "observed_accuracy": 0.9883323970442073
+            }
+          ]
+        },
+        "attack_forecasting": {
+          "precision": 0.9768524264614621,
+          "recall": 0.9809921475757198,
+          "f1": 0.9789179104477612,
+          "false_positive_rate": 0.011772131923623166,
+          "false_negative_rate": 0.019007852424280193,
+          "confusion": {
+            "tp": 15741,
+            "tn": 31312,
+            "fp": 373,
+            "fn": 305
+          }
+        },
+        "transitions": [],
+        "evaluation_status": "limited_attack_support",
+        "limitations": [
+          "Evaluation does not support every attack class; unsupported AUC values are marked N/A and results are not complete attack-performance evidence."
+        ],
+        "horizon": 5,
+        "class_distribution": {
+          "BENIGN": 31685,
+          "DDoS": 0,
+          "DoS": 12,
+          "PortScan": 16034
+        },
+        "low_support_classes": [
+          "DDoS",
+          "DoS"
+        ]
+      },
+      {
+        "samples": 47731,
+        "accuracy": 0.9846850055519474,
+        "balanced_accuracy": 0.655796028935855,
+        "macro_precision": 0.49119828115495473,
+        "macro_recall": 0.4918470217018912,
+        "macro_f1": 0.49152107604567086,
+        "weighted_f1": 0.9845692548250681,
+        "class_support": {
+          "BENIGN": 31685,
+          "DDoS": 0,
+          "DoS": 12,
+          "PortScan": 16034
+        },
+        "per_class": {
+          "BENIGN": {
+            "precision": 0.989437733223705,
+            "recall": 0.987470411866814,
+            "f1": 0.9884530936547301,
+            "support": 31685
+          },
+          "DDoS": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 0
+          },
+          "DoS": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 12
+          },
+          "PortScan": {
+            "precision": 0.9753553913961139,
+            "recall": 0.9799176749407509,
+            "f1": 0.9776312105279532,
+            "support": 16034
+          }
+        },
+        "confusion_matrix": [
+          [
+            31288,
+            0,
+            0,
+            397
+          ],
+          [
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            12,
+            0,
+            0,
+            0
+          ],
+          [
+            322,
+            0,
+            0,
+            15712
+          ]
+        ],
+        "roc_auc": {
+          "BENIGN": 0.9885944309825206,
+          "DDoS": "N/A \u2014 class absent from evaluation set",
+          "DoS": 0.8437938766529055,
+          "PortScan": 0.9892048034154824
+        },
+        "pr_auc": {
+          "BENIGN": 0.9917212356795958,
+          "DDoS": "N/A \u2014 class absent from evaluation set",
+          "DoS": 0.014074145406171256,
+          "PortScan": 0.9755587563042354
+        },
+        "multiclass_roc_auc": "N/A \u2014 class absent from evaluation set",
+        "multiclass_pr_auc": "N/A \u2014 class absent from evaluation set",
+        "probability_quality": {
+          "average_confidence": 0.9574902266696702,
+          "confidence_correct": 0.9582970667117973,
+          "confidence_incorrect": 0.905614054330453,
+          "multiclass_log_loss": 0.08888033566778973,
+          "multiclass_brier_score": 0.031814174148962975,
+          "expected_calibration_error_10_bin": 0.02719477888227699,
+          "calibration_bins": [
+            {
+              "lower": 0.0,
+              "upper": 0.1,
+              "count": 0,
+              "mean_confidence": null,
+              "observed_accuracy": null
+            },
+            {
+              "lower": 0.1,
+              "upper": 0.2,
+              "count": 0,
+              "mean_confidence": null,
+              "observed_accuracy": null
+            },
+            {
+              "lower": 0.2,
+              "upper": 0.30000000000000004,
+              "count": 0,
+              "mean_confidence": null,
+              "observed_accuracy": null
+            },
+            {
+              "lower": 0.30000000000000004,
+              "upper": 0.4,
+              "count": 0,
+              "mean_confidence": null,
+              "observed_accuracy": null
+            },
+            {
+              "lower": 0.4,
+              "upper": 0.5,
+              "count": 10,
+              "mean_confidence": 0.4825247995862604,
+              "observed_accuracy": 0.8
+            },
+            {
+              "lower": 0.5,
+              "upper": 0.6000000000000001,
+              "count": 64,
+              "mean_confidence": 0.5593827309794559,
+              "observed_accuracy": 0.671875
+            },
+            {
+              "lower": 0.6000000000000001,
+              "upper": 0.7000000000000001,
+              "count": 135,
+              "mean_confidence": 0.6601059195638463,
+              "observed_accuracy": 0.8074074074074075
+            },
+            {
+              "lower": 0.7000000000000001,
+              "upper": 0.8,
+              "count": 242,
+              "mean_confidence": 0.7567140643359127,
+              "observed_accuracy": 0.8760330578512396
+            },
+            {
+              "lower": 0.8,
+              "upper": 0.9,
+              "count": 858,
+              "mean_confidence": 0.8629450981452809,
+              "observed_accuracy": 0.9184149184149184
+            },
+            {
+              "lower": 0.9,
+              "upper": 1.0,
+              "count": 46422,
+              "mean_confidence": 0.9618003160025942,
+              "observed_accuracy": 0.9874628408944035
+            }
+          ]
+        },
+        "attack_forecasting": {
+          "precision": 0.9753553913961139,
+          "recall": 0.9791848435747227,
+          "f1": 0.9772663660394961,
+          "false_positive_rate": 0.01252958813318605,
+          "false_negative_rate": 0.02081515642527733,
+          "confusion": {
+            "tp": 15712,
+            "tn": 31288,
+            "fp": 397,
+            "fn": 334
+          }
+        },
+        "transitions": [],
+        "evaluation_status": "limited_attack_support",
+        "limitations": [
+          "Evaluation does not support every attack class; unsupported AUC values are marked N/A and results are not complete attack-performance evidence."
+        ],
+        "horizon": 6,
+        "class_distribution": {
+          "BENIGN": 31685,
+          "DDoS": 0,
+          "DoS": 12,
+          "PortScan": 16034
+        },
+        "low_support_classes": [
+          "DDoS",
+          "DoS"
+        ]
+      }
+    ]
+  },
+  "activation": {
+    "active": true,
+    "gates": {
+      "passed": true,
+      "checks": {
+        "finite_loss": true,
+        "finite_probabilities": true,
+        "probability_sums": true,
+        "prediction_diversity": true,
+        "validation_performance": true,
+        "save_load_parity": true
+      },
+      "validation": [
+        {
+          "samples": 47731,
+          "accuracy": 0.9909073767572437,
+          "balanced_accuracy": 0.6604403376242979,
+          "macro_precision": 0.4946805321550363,
+          "macro_recall": 0.49533025321822344,
+          "macro_f1": 0.49500384681740806,
+          "weighted_f1": 0.990787397399122,
+          "class_support": {
+            "BENIGN": 31685,
+            "DDoS": 0,
+            "DoS": 12,
+            "PortScan": 16034
+          },
+          "per_class": {
+            "BENIGN": {
+              "precision": 0.99411820510388,
+              "recall": 0.9921729525011835,
+              "f1": 0.9931446262715613,
+              "support": 31685
+            },
+            "DDoS": {
+              "precision": 0.0,
+              "recall": 0.0,
+              "f1": 0.0,
+              "support": 0
+            },
+            "DoS": {
+              "precision": 0.0,
+              "recall": 0.0,
+              "f1": 0.0,
+              "support": 12
+            },
+            "PortScan": {
+              "precision": 0.9846039235162652,
+              "recall": 0.9891480603717101,
+              "f1": 0.986870760998071,
+              "support": 16034
+            }
+          },
+          "confusion_matrix": [
+            [
+              31437,
+              0,
+              0,
+              248
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              12,
+              0,
+              0,
+              0
+            ],
+            [
+              174,
+              0,
+              0,
+              15860
+            ]
+          ],
+          "roc_auc": {
+            "BENIGN": 0.9962514459818664,
+            "DDoS": "N/A \u2014 class absent from evaluation set",
+            "DoS": 0.7620706636769421,
+            "PortScan": 0.9967988962345133
+          },
+          "pr_auc": {
+            "BENIGN": 0.9972072693015157,
+            "DDoS": "N/A \u2014 class absent from evaluation set",
+            "DoS": 0.0037812204354483302,
+            "PortScan": 0.993879449415909
+          },
+          "multiclass_roc_auc": "N/A \u2014 class absent from evaluation set",
+          "multiclass_pr_auc": "N/A \u2014 class absent from evaluation set",
+          "probability_quality": {
+            "average_confidence": 0.9759903170553704,
+            "confidence_correct": 0.9766635289622935,
+            "confidence_incorrect": 0.9026241798163351,
+            "multiclass_log_loss": 0.05321539643053071,
+            "multiclass_brier_score": 0.01762995581417973,
+            "expected_calibration_error_10_bin": 0.014917059701873259,
+            "calibration_bins": [
+              {
+                "lower": 0.0,
+                "upper": 0.1,
+                "count": 0,
+                "mean_confidence": null,
+                "observed_accuracy": null
+              },
+              {
+                "lower": 0.1,
+                "upper": 0.2,
+                "count": 0,
+                "mean_confidence": null,
+                "observed_accuracy": null
+              },
+              {
+                "lower": 0.2,
+                "upper": 0.30000000000000004,
+                "count": 0,
+                "mean_confidence": null,
+                "observed_accuracy": null
+              },
+              {
+                "lower": 0.30000000000000004,
+                "upper": 0.4,
+                "count": 0,
+                "mean_confidence": null,
+                "observed_accuracy": null
+              },
+              {
+                "lower": 0.4,
+                "upper": 0.5,
+                "count": 14,
+                "mean_confidence": 0.4629942288657653,
+                "observed_accuracy": 0.7142857142857143
+              },
+              {
+                "lower": 0.5,
+                "upper": 0.6000000000000001,
+                "count": 46,
+                "mean_confidence": 0.5507116122839147,
+                "observed_accuracy": 0.782608695652174
+              },
+              {
+                "lower": 0.6000000000000001,
+                "upper": 0.7000000000000001,
+                "count": 89,
+                "mean_confidence": 0.6521428917700502,
+                "observed_accuracy": 0.6966292134831461
+              },
+              {
+                "lower": 0.7000000000000001,
+                "upper": 0.8,
+                "count": 183,
+                "mean_confidence": 0.753159040632012,
+                "observed_accuracy": 0.8524590163934426
+              },
+              {
+                "lower": 0.8,
+                "upper": 0.9,
+                "count": 476,
+                "mean_confidence": 0.8618426034807813,
+                "observed_accuracy": 0.8949579831932774
+              },
+              {
+                "lower": 0.9,
+                "upper": 1.0,
+                "count": 46923,
+                "mean_confidence": 0.9792015273733704,
+                "observed_accuracy": 0.9932655627304307
+              }
+            ]
+          },
+          "attack_forecasting": {
+            "precision": 0.9846039235162652,
+            "recall": 0.9884083260625701,
+            "f1": 0.9865024569260434,
+            "false_positive_rate": 0.007827047498816474,
+            "false_negative_rate": 0.01159167393742989,
+            "confusion": {
+              "tp": 15860,
+              "tn": 31437,
+              "fp": 248,
+              "fn": 186
+            }
+          },
+          "transitions": [],
+          "evaluation_status": "limited_attack_support",
+          "limitations": [
+            "Evaluation does not support every attack class; unsupported AUC values are marked N/A and results are not complete attack-performance evidence."
+          ],
+          "horizon": 1,
+          "class_distribution": {
+            "BENIGN": 31685,
+            "DDoS": 0,
+            "DoS": 12,
+            "PortScan": 16034
+          },
+          "low_support_classes": [
+            "DDoS",
+            "DoS"
+          ]
+        },
+        {
+          "samples": 47731,
+          "accuracy": 0.9892732186629235,
+          "balanced_accuracy": 0.6592295406766958,
+          "macro_precision": 0.4937597512720049,
+          "macro_recall": 0.4944221555075219,
+          "macro_f1": 0.49408932412584905,
+          "weighted_f1": 0.9891544757843399,
+          "class_support": {
+            "BENIGN": 31685,
+            "DDoS": 0,
+            "DoS": 12,
+            "PortScan": 16034
+          },
+          "per_class": {
+            "BENIGN": {
+              "precision": 0.9929161000600867,
+              "recall": 0.9909105254852454,
+              "f1": 0.9919122989921967,
+              "support": 31685
+            },
+            "DDoS": {
+              "precision": 0.0,
+              "recall": 0.0,
+              "f1": 0.0,
+              "support": 0
+            },
+            "DoS": {
+              "precision": 0.0,
+              "recall": 0.0,
+              "f1": 0.0,
+              "support": 12
+            },
+            "PortScan": {
+              "precision": 0.982122905027933,
+              "recall": 0.9867780965448422,
+              "f1": 0.9844449975111996,
+              "support": 16034
+            }
+          },
+          "confusion_matrix": [
+            [
+              31397,
+              0,
+              0,
+              288
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              12,
+              0,
+              0,
+              0
+            ],
+            [
+              212,
+              0,
+              0,
+              15822
+            ]
+          ],
+          "roc_auc": {
+            "BENIGN": 0.994275506954904,
+            "DDoS": "N/A \u2014 class absent from evaluation set",
+            "DoS": 0.7756781016646059,
+            "PortScan": 0.9948290674269098
+          },
+          "pr_auc": {
+            "BENIGN": 0.9956341642682507,
+            "DDoS": "N/A \u2014 class absent from evaluation set",
+            "DoS": 0.0020843197620970815,
+            "PortScan": 0.9896060051076192
+          },
+          "multiclass_roc_auc": "N/A \u2014 class absent from evaluation set",
+          "multiclass_pr_auc": "N/A \u2014 class absent from evaluation set",
+          "probability_quality": {
+            "average_confidence": 0.9691244893811914,
+            "confidence_correct": 0.9698590323672482,
+            "confidence_incorrect": 0.9013815494229553,
+            "multiclass_log_loss": 0.06444384081156883,
+            "multiclass_brier_score": 0.021343546873980296,
+            "expected_calibration_error_10_bin": 0.020148729281731864,
+            "calibration_bins": [
+              {
+                "lower": 0.0,
+                "upper": 0.1,
+                "count": 0,
+                "mean_confidence": null,
+                "observed_accuracy": null
+              },
+              {
+                "lower": 0.1,
+                "upper": 0.2,
+                "count": 0,
+                "mean_confidence": null,
+                "observed_accuracy": null
+              },
+              {
+                "lower": 0.2,
+                "upper": 0.30000000000000004,
+                "count": 0,
+                "mean_confidence": null,
+                "observed_accuracy": null
+              },
+              {
+                "lower": 0.30000000000000004,
+                "upper": 0.4,
+                "count": 0,
+                "mean_confidence": null,
+                "observed_accuracy": null
+              },
+              {
+                "lower": 0.4,
+                "upper": 0.5,
+                "count": 9,
+                "mean_confidence": 0.4695824413567435,
+                "observed_accuracy": 0.8888888888888888
+              },
+              {
+                "lower": 0.5,
+                "upper": 0.6000000000000001,
+                "count": 66,
+                "mean_confidence": 0.5553227924974101,
+                "observed_accuracy": 0.6666666666666666
+              },
+              {
+                "lower": 0.6000000000000001,
+                "upper": 0.7000000000000001,
+                "count": 104,
+                "mean_confidence": 0.6557515666554997,
+                "observed_accuracy": 0.7980769230769231
+              },
+              {
+                "lower": 0.7000000000000001,
+                "upper": 0.8,
+                "count": 244,
+                "mean_confidence": 0.7542337154224168,
+                "observed_accuracy": 0.8729508196721312
+              },
+              {
+                "lower": 0.8,
+                "upper": 0.9,
+                "count": 687,
+                "mean_confidence": 0.8628731220118934,
+                "observed_accuracy": 0.9155749636098981
+              },
+              {
+                "lower": 0.9,
+                "upper": 1.0,
+                "count": 46621,
+                "mean_confidence": 0.9731961655060853,
+                "observed_accuracy": 0.9918706162458978
+              }
+            ]
+          },
+          "attack_forecasting": {
+            "precision": 0.982122905027933,
+            "recall": 0.9860401346129877,
+            "f1": 0.9840776215947258,
+            "false_positive_rate": 0.009089474514754616,
+            "false_negative_rate": 0.013959865387012339,
+            "confusion": {
+              "tp": 15822,
+              "tn": 31397,
+              "fp": 288,
+              "fn": 224
+            }
+          },
+          "transitions": [],
+          "evaluation_status": "limited_attack_support",
+          "limitations": [
+            "Evaluation does not support every attack class; unsupported AUC values are marked N/A and results are not complete attack-performance evidence."
+          ],
+          "horizon": 2,
+          "class_distribution": {
+            "BENIGN": 31685,
+            "DDoS": 0,
+            "DoS": 12,
+            "PortScan": 16034
+          },
+          "low_support_classes": [
+            "DDoS",
+            "DoS"
+          ]
+        },
+        {
+          "samples": 47731,
+          "accuracy": 0.9880161739749848,
+          "balanced_accuracy": 0.6583313349564032,
+          "macro_precision": 0.49302854905515314,
+          "macro_recall": 0.4937485012173024,
+          "macro_f1": 0.4933865278981365,
+          "weighted_f1": 0.9878989798436979,
+          "class_support": {
+            "BENIGN": 31685,
+            "DDoS": 0,
+            "DoS": 12,
+            "PortScan": 16034
+          },
+          "per_class": {
+            "BENIGN": {
+              "precision": 0.9920918609432828,
+              "recall": 0.989837462521698,
+              "f1": 0.9909633795696546,
+              "support": 31685
+            },
+            "DDoS": {
+              "precision": 0.0,
+              "recall": 0.0,
+              "f1": 0.0,
+              "support": 0
+            },
+            "DoS": {
+              "precision": 0.0,
+              "recall": 0.0,
+              "f1": 0.0,
+              "support": 12
+            },
+            "PortScan": {
+              "precision": 0.9800223352773297,
+              "recall": 0.9851565423475115,
+              "f1": 0.9825827320228913,
+              "support": 16034
+            }
+          },
+          "confusion_matrix": [
+            [
+              31363,
+              0,
+              0,
+              322
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              12,
+              0,
+              0,
+              0
+            ],
+            [
+              238,
+              0,
+              0,
+              15796
+            ]
+          ],
+          "roc_auc": {
+            "BENIGN": 0.9925008709869179,
+            "DDoS": "N/A \u2014 class absent from evaluation set",
+            "DoS": 0.7719584092988816,
+            "PortScan": 0.9931050654580206
+          },
+          "pr_auc": {
+            "BENIGN": 0.9944170596984732,
+            "DDoS": "N/A \u2014 class absent from evaluation set",
+            "DoS": 0.004042342032510779,
+            "PortScan": 0.9848153588204959
+          },
+          "multiclass_roc_auc": "N/A \u2014 class absent from evaluation set",
+          "multiclass_pr_auc": "N/A \u2014 class absent from evaluation set",
+          "probability_quality": {
+            "average_confidence": 0.9661459087324765,
+            "confidence_correct": 0.9668778061479238,
+            "confidence_incorrect": 0.9058040377270766,
+            "multiclass_log_loss": 0.07225472807025088,
+            "multiclass_brier_score": 0.024468582380025316,
+            "expected_calibration_error_10_bin": 0.021870265242508312,
+            "calibration_bins": [
+              {
+                "lower": 0.0,
+                "upper": 0.1,
+                "count": 0,
+                "mean_confidence": null,
+                "observed_accuracy": null
+              },
+              {
+                "lower": 0.1,
+                "upper": 0.2,
+                "count": 0,
+                "mean_confidence": null,
+                "observed_accuracy": null
+              },
+              {
+                "lower": 0.2,
+                "upper": 0.30000000000000004,
+                "count": 0,
+                "mean_confidence": null,
+                "observed_accuracy": null
+              },
+              {
+                "lower": 0.30000000000000004,
+                "upper": 0.4,
+                "count": 0,
+                "mean_confidence": null,
+                "observed_accuracy": null
+              },
+              {
+                "lower": 0.4,
+                "upper": 0.5,
+                "count": 13,
+                "mean_confidence": 0.4640532815935586,
+                "observed_accuracy": 0.9230769230769231
+              },
+              {
+                "lower": 0.5,
+                "upper": 0.6000000000000001,
+                "count": 73,
+                "mean_confidence": 0.5528018830061432,
+                "observed_accuracy": 0.6575342465753424
+              },
+              {
+                "lower": 0.6000000000000001,
+                "upper": 0.7000000000000001,
+                "count": 118,
+                "mean_confidence": 0.6636822621705366,
+                "observed_accuracy": 0.8220338983050848
+              },
+              {
+                "lower": 0.7000000000000001,
+                "upper": 0.8,
+                "count": 221,
+                "mean_confidence": 0.7536123897257644,
+                "observed_accuracy": 0.9004524886877828
+              },
+              {
+                "lower": 0.8,
+                "upper": 0.9,
+                "count": 690,
+                "mean_confidence": 0.8613396408785224,
+                "observed_accuracy": 0.9057971014492754
+              },
+              {
+                "lower": 0.9,
+                "upper": 1.0,
+                "count": 46616,
+                "mean_confidence": 0.970257764336665,
+                "observed_accuracy": 0.990604084434529
+              }
+            ]
+          },
+          "attack_forecasting": {
+            "precision": 0.9800223352773297,
+            "recall": 0.9844197930948523,
+            "f1": 0.9822161422708618,
+            "false_positive_rate": 0.010162537478302036,
+            "false_negative_rate": 0.0155802069051477,
+            "confusion": {
+              "tp": 15796,
+              "tn": 31363,
+              "fp": 322,
+              "fn": 250
+            }
+          },
+          "transitions": [],
+          "evaluation_status": "limited_attack_support",
+          "limitations": [
+            "Evaluation does not support every attack class; unsupported AUC values are marked N/A and results are not complete attack-performance evidence."
+          ],
+          "horizon": 3,
+          "class_distribution": {
+            "BENIGN": 31685,
+            "DDoS": 0,
+            "DoS": 12,
+            "PortScan": 16034
+          },
+          "low_support_classes": [
+            "DDoS",
+            "DoS"
+          ]
+        },
+        {
+          "samples": 47731,
+          "accuracy": 0.9867172277974482,
+          "balanced_accuracy": 0.6573196684046559,
+          "macro_precision": 0.49233085982606184,
+          "macro_recall": 0.49298975130349193,
+          "macro_f1": 0.4926586820975908,
+          "weighted_f1": 0.9866002145550107,
+          "class_support": {
+            "BENIGN": 31685,
+            "DDoS": 0,
+            "DoS": 12,
+            "PortScan": 16034
+          },
+          "per_class": {
+            "BENIGN": {
+              "precision": 0.9909870023085924,
+              "recall": 0.9889853242859398,
+              "f1": 0.989985151486431,
+              "support": 31685
+            },
+            "DDoS": {
+              "precision": 0.0,
+              "recall": 0.0,
+              "f1": 0.0,
+              "support": 0
+            },
+            "DoS": {
+              "precision": 0.0,
+              "recall": 0.0,
+              "f1": 0.0,
+              "support": 12
+            },
+            "PortScan": {
+              "precision": 0.9783364369956549,
+              "recall": 0.982973680928028,
+              "f1": 0.9806495769039323,
+              "support": 16034
+            }
+          },
+          "confusion_matrix": [
+            [
+              31336,
+              0,
+              0,
+              349
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              12,
+              0,
+              0,
+              0
+            ],
+            [
+              273,
+              0,
+              0,
+              15761
+            ]
+          ],
+          "roc_auc": {
+            "BENIGN": 0.9903153610897469,
+            "DDoS": "N/A \u2014 class absent from evaluation set",
+            "DoS": 0.5741161801378905,
+            "PortScan": 0.9910683092352466
+          },
+          "pr_auc": {
+            "BENIGN": 0.992941431039718,
+            "DDoS": "N/A \u2014 class absent from evaluation set",
+            "DoS": 0.0062377603008057165,
+            "PortScan": 0.9784861307443685
+          },
+          "multiclass_roc_auc": "N/A \u2014 class absent from evaluation set",
+          "multiclass_pr_auc": "N/A \u2014 class absent from evaluation set",
+          "probability_quality": {
+            "average_confidence": 0.9691429134666697,
+            "confidence_correct": 0.9697898940941929,
+            "confidence_incorrect": 0.9210816412041202,
+            "multiclass_log_loss": 0.07595480471760264,
+            "multiclass_brier_score": 0.02638800583944999,
+            "expected_calibration_error_10_bin": 0.01757431433077852,
+            "calibration_bins": [
+              {
+                "lower": 0.0,
+                "upper": 0.1,
+                "count": 0,
+                "mean_confidence": null,
+                "observed_accuracy": null
+              },
+              {
+                "lower": 0.1,
+                "upper": 0.2,
+                "count": 0,
+                "mean_confidence": null,
+                "observed_accuracy": null
+              },
+              {
+                "lower": 0.2,
+                "upper": 0.30000000000000004,
+                "count": 0,
+                "mean_confidence": null,
+                "observed_accuracy": null
+              },
+              {
+                "lower": 0.30000000000000004,
+                "upper": 0.4,
+                "count": 0,
+                "mean_confidence": null,
+                "observed_accuracy": null
+              },
+              {
+                "lower": 0.4,
+                "upper": 0.5,
+                "count": 10,
+                "mean_confidence": 0.4601769755103121,
+                "observed_accuracy": 0.8
+              },
+              {
+                "lower": 0.5,
+                "upper": 0.6000000000000001,
+                "count": 52,
+                "mean_confidence": 0.5532532212112616,
+                "observed_accuracy": 0.75
+              },
+              {
+                "lower": 0.6000000000000001,
+                "upper": 0.7000000000000001,
+                "count": 108,
+                "mean_confidence": 0.6591700374868213,
+                "observed_accuracy": 0.7222222222222222
+              },
+              {
+                "lower": 0.7000000000000001,
+                "upper": 0.8,
+                "count": 205,
+                "mean_confidence": 0.7541072695027904,
+                "observed_accuracy": 0.8926829268292683
+              },
+              {
+                "lower": 0.8,
+                "upper": 0.9,
+                "count": 622,
+                "mean_confidence": 0.8629801423579375,
+                "observed_accuracy": 0.9340836012861736
+              },
+              {
+                "lower": 0.9,
+                "upper": 1.0,
+                "count": 46734,
+                "mean_confidence": 0.972787124204567,
+                "observed_accuracy": 0.9887448110583301
+              }
+            ]
+          },
+          "attack_forecasting": {
+            "precision": 0.9783364369956549,
+            "recall": 0.9822385641281316,
+            "f1": 0.980283617365344,
+            "false_positive_rate": 0.011014675714060281,
+            "false_negative_rate": 0.01776143587186838,
+            "confusion": {
+              "tp": 15761,
+              "tn": 31336,
+              "fp": 349,
+              "fn": 285
+            }
+          },
+          "transitions": [],
+          "evaluation_status": "limited_attack_support",
+          "limitations": [
+            "Evaluation does not support every attack class; unsupported AUC values are marked N/A and results are not complete attack-performance evidence."
+          ],
+          "horizon": 4,
+          "class_distribution": {
+            "BENIGN": 31685,
+            "DDoS": 0,
+            "DoS": 12,
+            "PortScan": 16034
+          },
+          "low_support_classes": [
+            "DDoS",
+            "DoS"
+          ]
+        },
+        {
+          "samples": 47731,
+          "accuracy": 0.9857953950262932,
+          "balanced_accuracy": 0.6566513998739475,
+          "macro_precision": 0.4918014293531332,
+          "macro_recall": 0.49248854990546065,
+          "macro_f1": 0.49214318815052593,
+          "weighted_f1": 0.9856794223524108,
+          "class_support": {
+            "BENIGN": 31685,
+            "DDoS": 0,
+            "DoS": 12,
+            "PortScan": 16034
+          },
+          "per_class": {
+            "BENIGN": {
+              "precision": 0.9903532909510706,
+              "recall": 0.9882278680763769,
+              "f1": 0.9892894379324508,
+              "support": 31685
+            },
+            "DDoS": {
+              "precision": 0.0,
+              "recall": 0.0,
+              "f1": 0.0,
+              "support": 0
+            },
+            "DoS": {
+              "precision": 0.0,
+              "recall": 0.0,
+              "f1": 0.0,
+              "support": 12
+            },
+            "PortScan": {
+              "precision": 0.9768524264614621,
+              "recall": 0.9817263315454658,
+              "f1": 0.9792833146696529,
+              "support": 16034
+            }
+          },
+          "confusion_matrix": [
+            [
+              31312,
+              0,
+              0,
+              373
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              12,
+              0,
+              0,
+              0
+            ],
+            [
+              293,
+              0,
+              0,
+              15741
+            ]
+          ],
+          "roc_auc": {
+            "BENIGN": 0.9896851556115759,
+            "DDoS": "N/A \u2014 class absent from evaluation set",
+            "DoS": 0.7587438965611182,
+            "PortScan": 0.9903213930249312
+          },
+          "pr_auc": {
+            "BENIGN": 0.9924908004494832,
+            "DDoS": "N/A \u2014 class absent from evaluation set",
+            "DoS": 0.009329982178185628,
+            "PortScan": 0.9776401631096034
+          },
+          "multiclass_roc_auc": "N/A \u2014 class absent from evaluation set",
+          "multiclass_pr_auc": "N/A \u2014 class absent from evaluation set",
+          "probability_quality": {
+            "average_confidence": 0.9595362751429858,
+            "confidence_correct": 0.9602658095769582,
+            "confidence_incorrect": 0.9089068006272129,
+            "multiclass_log_loss": 0.08512542423868749,
+            "multiclass_brier_score": 0.029011553277164162,
+            "expected_calibration_error_10_bin": 0.026259119883307466,
+            "calibration_bins": [
+              {
+                "lower": 0.0,
+                "upper": 0.1,
+                "count": 0,
+                "mean_confidence": null,
+                "observed_accuracy": null
+              },
+              {
+                "lower": 0.1,
+                "upper": 0.2,
+                "count": 0,
+                "mean_confidence": null,
+                "observed_accuracy": null
+              },
+              {
+                "lower": 0.2,
+                "upper": 0.30000000000000004,
+                "count": 0,
+                "mean_confidence": null,
+                "observed_accuracy": null
+              },
+              {
+                "lower": 0.30000000000000004,
+                "upper": 0.4,
+                "count": 0,
+                "mean_confidence": null,
+                "observed_accuracy": null
+              },
+              {
+                "lower": 0.4,
+                "upper": 0.5,
+                "count": 11,
+                "mean_confidence": 0.48333028547652485,
+                "observed_accuracy": 0.8181818181818182
+              },
+              {
+                "lower": 0.5,
+                "upper": 0.6000000000000001,
+                "count": 64,
+                "mean_confidence": 0.5540939461642943,
+                "observed_accuracy": 0.609375
+              },
+              {
+                "lower": 0.6000000000000001,
+                "upper": 0.7000000000000001,
+                "count": 119,
+                "mean_confidence": 0.6598605678825181,
+                "observed_accuracy": 0.8151260504201681
+              },
+              {
+                "lower": 0.7000000000000001,
+                "upper": 0.8,
+                "count": 265,
+                "mean_confidence": 0.7548169768054461,
+                "observed_accuracy": 0.909433962264151
+              },
+              {
+                "lower": 0.8,
+                "upper": 0.9,
+                "count": 990,
+                "mean_confidence": 0.8622062921535394,
+                "observed_accuracy": 0.9343434343434344
+              },
+              {
+                "lower": 0.9,
+                "upper": 1.0,
+                "count": 46282,
+                "mean_confidence": 0.9642347601117417,
+                "observed_accuracy": 0.9883323970442073
+              }
+            ]
+          },
+          "attack_forecasting": {
+            "precision": 0.9768524264614621,
+            "recall": 0.9809921475757198,
+            "f1": 0.9789179104477612,
+            "false_positive_rate": 0.011772131923623166,
+            "false_negative_rate": 0.019007852424280193,
+            "confusion": {
+              "tp": 15741,
+              "tn": 31312,
+              "fp": 373,
+              "fn": 305
+            }
+          },
+          "transitions": [],
+          "evaluation_status": "limited_attack_support",
+          "limitations": [
+            "Evaluation does not support every attack class; unsupported AUC values are marked N/A and results are not complete attack-performance evidence."
+          ],
+          "horizon": 5,
+          "class_distribution": {
+            "BENIGN": 31685,
+            "DDoS": 0,
+            "DoS": 12,
+            "PortScan": 16034
+          },
+          "low_support_classes": [
+            "DDoS",
+            "DoS"
+          ]
+        },
+        {
+          "samples": 47731,
+          "accuracy": 0.9846850055519474,
+          "balanced_accuracy": 0.655796028935855,
+          "macro_precision": 0.49119828115495473,
+          "macro_recall": 0.4918470217018912,
+          "macro_f1": 0.49152107604567086,
+          "weighted_f1": 0.9845692548250681,
+          "class_support": {
+            "BENIGN": 31685,
+            "DDoS": 0,
+            "DoS": 12,
+            "PortScan": 16034
+          },
+          "per_class": {
+            "BENIGN": {
+              "precision": 0.989437733223705,
+              "recall": 0.987470411866814,
+              "f1": 0.9884530936547301,
+              "support": 31685
+            },
+            "DDoS": {
+              "precision": 0.0,
+              "recall": 0.0,
+              "f1": 0.0,
+              "support": 0
+            },
+            "DoS": {
+              "precision": 0.0,
+              "recall": 0.0,
+              "f1": 0.0,
+              "support": 12
+            },
+            "PortScan": {
+              "precision": 0.9753553913961139,
+              "recall": 0.9799176749407509,
+              "f1": 0.9776312105279532,
+              "support": 16034
+            }
+          },
+          "confusion_matrix": [
+            [
+              31288,
+              0,
+              0,
+              397
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              12,
+              0,
+              0,
+              0
+            ],
+            [
+              322,
+              0,
+              0,
+              15712
+            ]
+          ],
+          "roc_auc": {
+            "BENIGN": 0.9885944309825206,
+            "DDoS": "N/A \u2014 class absent from evaluation set",
+            "DoS": 0.8437938766529055,
+            "PortScan": 0.9892048034154824
+          },
+          "pr_auc": {
+            "BENIGN": 0.9917212356795958,
+            "DDoS": "N/A \u2014 class absent from evaluation set",
+            "DoS": 0.014074145406171256,
+            "PortScan": 0.9755587563042354
+          },
+          "multiclass_roc_auc": "N/A \u2014 class absent from evaluation set",
+          "multiclass_pr_auc": "N/A \u2014 class absent from evaluation set",
+          "probability_quality": {
+            "average_confidence": 0.9574902266696702,
+            "confidence_correct": 0.9582970667117973,
+            "confidence_incorrect": 0.905614054330453,
+            "multiclass_log_loss": 0.08888033566778973,
+            "multiclass_brier_score": 0.031814174148962975,
+            "expected_calibration_error_10_bin": 0.02719477888227699,
+            "calibration_bins": [
+              {
+                "lower": 0.0,
+                "upper": 0.1,
+                "count": 0,
+                "mean_confidence": null,
+                "observed_accuracy": null
+              },
+              {
+                "lower": 0.1,
+                "upper": 0.2,
+                "count": 0,
+                "mean_confidence": null,
+                "observed_accuracy": null
+              },
+              {
+                "lower": 0.2,
+                "upper": 0.30000000000000004,
+                "count": 0,
+                "mean_confidence": null,
+                "observed_accuracy": null
+              },
+              {
+                "lower": 0.30000000000000004,
+                "upper": 0.4,
+                "count": 0,
+                "mean_confidence": null,
+                "observed_accuracy": null
+              },
+              {
+                "lower": 0.4,
+                "upper": 0.5,
+                "count": 10,
+                "mean_confidence": 0.4825247995862604,
+                "observed_accuracy": 0.8
+              },
+              {
+                "lower": 0.5,
+                "upper": 0.6000000000000001,
+                "count": 64,
+                "mean_confidence": 0.5593827309794559,
+                "observed_accuracy": 0.671875
+              },
+              {
+                "lower": 0.6000000000000001,
+                "upper": 0.7000000000000001,
+                "count": 135,
+                "mean_confidence": 0.6601059195638463,
+                "observed_accuracy": 0.8074074074074075
+              },
+              {
+                "lower": 0.7000000000000001,
+                "upper": 0.8,
+                "count": 242,
+                "mean_confidence": 0.7567140643359127,
+                "observed_accuracy": 0.8760330578512396
+              },
+              {
+                "lower": 0.8,
+                "upper": 0.9,
+                "count": 858,
+                "mean_confidence": 0.8629450981452809,
+                "observed_accuracy": 0.9184149184149184
+              },
+              {
+                "lower": 0.9,
+                "upper": 1.0,
+                "count": 46422,
+                "mean_confidence": 0.9618003160025942,
+                "observed_accuracy": 0.9874628408944035
+              }
+            ]
+          },
+          "attack_forecasting": {
+            "precision": 0.9753553913961139,
+            "recall": 0.9791848435747227,
+            "f1": 0.9772663660394961,
+            "false_positive_rate": 0.01252958813318605,
+            "false_negative_rate": 0.02081515642527733,
+            "confusion": {
+              "tp": 15712,
+              "tn": 31288,
+              "fp": 397,
+              "fn": 334
+            }
+          },
+          "transitions": [],
+          "evaluation_status": "limited_attack_support",
+          "limitations": [
+            "Evaluation does not support every attack class; unsupported AUC values are marked N/A and results are not complete attack-performance evidence."
+          ],
+          "horizon": 6,
+          "class_distribution": {
+            "BENIGN": 31685,
+            "DDoS": 0,
+            "DoS": 12,
+            "PortScan": 16034
+          },
+          "low_support_classes": [
+            "DDoS",
+            "DoS"
+          ]
+        }
+      ]
+    },
+    "selected_threshold": 0.6
+  },
+  "scaler_identity": {
+    "sha256": "238363bb25f89ecc0886b4dff93bacdcef0ee892727235e77b4815816387340a",
+    "fit_scope": "training sessions only",
+    "feature_order": [
+      "flow_count",
+      "unique_src_ip_count",
+      "unique_dst_ip_count",
+      "unique_src_port_count",
+      "unique_dst_port_count",
+      "total_fwd_packets",
+      "total_bwd_packets",
+      "total_packets",
+      "total_fwd_bytes",
+      "total_bwd_bytes",
+      "total_bytes",
+      "packets_per_second",
+      "bytes_per_second",
+      "flows_per_second",
+      "syn_count",
+      "ack_count",
+      "fin_count",
+      "rst_count",
+      "psh_count",
+      "urg_count",
+      "mean_iat",
+      "iat_variance",
+      "min_iat",
+      "max_iat",
+      "mean_flow_duration",
+      "max_flow_duration",
+      "mean_packet_size",
+      "max_packet_size"
+    ]
+  },
+  "dataset": {
+    "sources_in_official_order": [
+      "Monday-WorkingHours.pcap_ISCX.csv",
+      "Tuesday-WorkingHours.pcap_ISCX.csv",
+      "Wednesday-workingHours.pcap_ISCX.csv",
+      "Thursday-WorkingHours-Morning-WebAttacks.pcap_ISCX.csv",
+      "Thursday-WorkingHours-Afternoon-Infilteration.pcap_ISCX.csv",
+      "Friday-WorkingHours-Morning.pcap_ISCX.csv",
+      "Friday-WorkingHours-Afternoon-PortScan.pcap_ISCX.csv",
+      "Friday-WorkingHours-Afternoon-DDos.pcap_ISCX.csv"
+    ],
+    "source_fingerprints": [
+      {
+        "name": "Monday-WorkingHours.pcap_ISCX.csv",
+        "size_bytes": 176927918,
+        "sha256": "852c4beb34eda186f32561fa79df7a0747e92e1a6535b01270820dd9ffe17f34"
+      },
+      {
+        "name": "Tuesday-WorkingHours.pcap_ISCX.csv",
+        "size_bytes": 135078995,
+        "sha256": "52b8692ae8c7d2ed04671fe2b98335693c0a92c7ab157d8c8b534d6523080851"
+      },
+      {
+        "name": "Wednesday-workingHours.pcap_ISCX.csv",
+        "size_bytes": 225166395,
+        "sha256": "893c27dc968bf7a8adef1689f90be55ca4a4dc3088fb63d6ff247ac56856df2a"
+      },
+      {
+        "name": "Thursday-WorkingHours-Morning-WebAttacks.pcap_ISCX.csv",
+        "size_bytes": 52023263,
+        "sha256": "d67066211fb1689c78406f1506f4c44704ecb92088353d5c96d96d6474eb819d"
+      },
+      {
+        "name": "Thursday-WorkingHours-Afternoon-Infilteration.pcap_ISCX.csv",
+        "size_bytes": 83102436,
+        "sha256": "6bcda3857c2504676034e3ea57762d38393cc734cb377a726bd5cb153961b1b5"
+      },
+      {
+        "name": "Friday-WorkingHours-Morning.pcap_ISCX.csv",
+        "size_bytes": 58316725,
+        "sha256": "53a41c24d570ea83b7ac55b2e94df94e7a8216aeb80a2af0246b6bc8bb543000"
+      },
+      {
+        "name": "Friday-WorkingHours-Afternoon-PortScan.pcap_ISCX.csv",
+        "size_bytes": 76906168,
+        "sha256": "ca1824c51bfbb7b3c72290a11be04366ba8815878c6a1cc5c44cb1cee269e99b"
+      },
+      {
+        "name": "Friday-WorkingHours-Afternoon-DDos.pcap_ISCX.csv",
+        "size_bytes": 77123859,
+        "sha256": "6ff1580f5f81c0ae28a26f7631721018577f5f7c5e0feac28b795fcfe7b411ee"
+      }
+    ],
+    "ann_artifact_fingerprints": {
+      "ann_model_sha256": "c804be8b658e7994f24539a8a427398b8d2f2d760588f7c7903fdf2c8765e434",
+      "ann_scaler_sha256": "7ff533245289db65c0a6d6ec1bbacf5d7def87158b3a791ad5abfa494b844a9f"
+    },
+    "raw_cicids_label_diagnostics": {
+      "Monday-WorkingHours.pcap_ISCX.csv": {
+        "BENIGN": 529918
+      },
+      "Tuesday-WorkingHours.pcap_ISCX.csv": {
+        "BENIGN": 432074,
+        "FTP-Patator": 7938,
+        "SSH-Patator": 5897
+      },
+      "Wednesday-workingHours.pcap_ISCX.csv": {
+        "BENIGN": 440031,
+        "DoS GoldenEye": 10293,
+        "DoS Hulk": 231073,
+        "DoS Slowhttptest": 5499,
+        "DoS slowloris": 5796,
+        "Heartbleed": 11
+      },
+      "Thursday-WorkingHours-Morning-WebAttacks.pcap_ISCX.csv": {
+        "BENIGN": 168186,
+        "Web Attack \ufffd Brute Force": 1507,
+        "Web Attack \ufffd Sql Injection": 21,
+        "Web Attack \ufffd XSS": 652
+      },
+      "Thursday-WorkingHours-Afternoon-Infilteration.pcap_ISCX.csv": {
+        "BENIGN": 288566,
+        "Infiltration": 36
+      },
+      "Friday-WorkingHours-Morning.pcap_ISCX.csv": {
+        "BENIGN": 189067,
+        "Bot": 1966
+      },
+      "Friday-WorkingHours-Afternoon-PortScan.pcap_ISCX.csv": {
+        "BENIGN": 127537,
+        "PortScan": 158930
+      },
+      "Friday-WorkingHours-Afternoon-DDos.pcap_ISCX.csv": {
+        "BENIGN": 97718,
+        "DDoS": 128027
+      }
+    },
+    "target_policy": "Targets are the existing ANN's four-class output; raw CICIDS labels are diagnostics only.",
+    "split": {
+      "train": [
+        "Monday-WorkingHours.pcap_ISCX.csv",
+        "Tuesday-WorkingHours.pcap_ISCX.csv",
+        "Wednesday-workingHours.pcap_ISCX.csv",
+        "Thursday-WorkingHours-Morning-WebAttacks.pcap_ISCX.csv",
+        "Thursday-WorkingHours-Afternoon-Infilteration.pcap_ISCX.csv"
+      ],
+      "validation": [
+        "Friday-WorkingHours-Morning.pcap_ISCX.csv",
+        "Friday-WorkingHours-Afternoon-PortScan.pcap_ISCX.csv"
+      ],
+      "test": [
+        "Friday-WorkingHours-Afternoon-DDos.pcap_ISCX.csv"
+      ]
+    },
+    "shapes": {
+      "history": [
+        5,
+        28
+      ],
+      "targets": [
+        6
+      ]
+    },
+    "feature_order": [
+      "flow_count",
+      "unique_src_ip_count",
+      "unique_dst_ip_count",
+      "unique_src_port_count",
+      "unique_dst_port_count",
+      "total_fwd_packets",
+      "total_bwd_packets",
+      "total_packets",
+      "total_fwd_bytes",
+      "total_bwd_bytes",
+      "total_bytes",
+      "packets_per_second",
+      "bytes_per_second",
+      "flows_per_second",
+      "syn_count",
+      "ack_count",
+      "fin_count",
+      "rst_count",
+      "psh_count",
+      "urg_count",
+      "mean_iat",
+      "iat_variance",
+      "min_iat",
+      "max_iat",
+      "mean_flow_duration",
+      "max_flow_duration",
+      "mean_packet_size",
+      "max_packet_size"
+    ],
+    "label_order": [
+      "BENIGN",
+      "DDoS",
+      "DoS",
+      "PortScan"
+    ],
+    "timestamp_policy": "row_order_proxy; one source row per proxy unit; horizons are windows, not seconds",
+    "invalid_features_policy": "exclude any non-contiguous sample or history/target label outside the four ANN states",
+    "sample_identity": "session_id:first_history_window:last_target_window",
+    "cache": [
+      {
+        "cache_key": "27d21cbe8eaa049664c7576412be35b220e98041513a9b4ae2b4c8fa25d22469",
+        "identity": {
+          "source": {
+            "name": "Monday-WorkingHours.pcap_ISCX.csv",
+            "size_bytes": 176927918,
+            "sha256": "852c4beb34eda186f32561fa79df7a0747e92e1a6535b01270820dd9ffe17f34"
+          },
+          "ann_artifacts": {
+            "ann_model_sha256": "c804be8b658e7994f24539a8a427398b8d2f2d760588f7c7903fdf2c8765e434",
+            "ann_scaler_sha256": "7ff533245289db65c0a6d6ec1bbacf5d7def87158b3a791ad5abfa494b844a9f"
+          },
+          "schema_version": "row-order-proxy/v2",
+          "window_size_seconds": 10,
+          "sequence_length": 5,
+          "proxy_cadence_seconds": 1,
+          "state_feature_names": [
+            "flow_count",
+            "unique_src_ip_count",
+            "unique_dst_ip_count",
+            "unique_src_port_count",
+            "unique_dst_port_count",
+            "total_fwd_packets",
+            "total_bwd_packets",
+            "total_packets",
+            "total_fwd_bytes",
+            "total_bwd_bytes",
+            "total_bytes",
+            "packets_per_second",
+            "bytes_per_second",
+            "flows_per_second",
+            "syn_count",
+            "ack_count",
+            "fin_count",
+            "rst_count",
+            "psh_count",
+            "urg_count",
+            "mean_iat",
+            "iat_variance",
+            "min_iat",
+            "max_iat",
+            "mean_flow_duration",
+            "max_flow_duration",
+            "mean_packet_size",
+            "max_packet_size"
+          ]
+        },
+        "session_id": "Monday-WorkingHours.pcap_ISCX",
+        "source_path": "Monday-WorkingHours.pcap_ISCX.csv",
+        "rows": 529918,
+        "invalid_rows": 437,
+        "windows": 52992,
+        "dropped_empty_scoreable_windows": 0,
+        "feature_availability": {
+          "unique_src_ip_count": "unavailable_zero",
+          "unique_dst_ip_count": "unavailable_zero",
+          "unique_src_port_count": "unavailable_zero"
+        },
+        "elapsed_seconds": 5.554
+      },
+      {
+        "cache_key": "59cbaf602b5513f97f2c70a940339e8c874997dc7ba0da08e0037555b01a2fbf",
+        "identity": {
+          "source": {
+            "name": "Tuesday-WorkingHours.pcap_ISCX.csv",
+            "size_bytes": 135078995,
+            "sha256": "52b8692ae8c7d2ed04671fe2b98335693c0a92c7ab157d8c8b534d6523080851"
+          },
+          "ann_artifacts": {
+            "ann_model_sha256": "c804be8b658e7994f24539a8a427398b8d2f2d760588f7c7903fdf2c8765e434",
+            "ann_scaler_sha256": "7ff533245289db65c0a6d6ec1bbacf5d7def87158b3a791ad5abfa494b844a9f"
+          },
+          "schema_version": "row-order-proxy/v2",
+          "window_size_seconds": 10,
+          "sequence_length": 5,
+          "proxy_cadence_seconds": 1,
+          "state_feature_names": [
+            "flow_count",
+            "unique_src_ip_count",
+            "unique_dst_ip_count",
+            "unique_src_port_count",
+            "unique_dst_port_count",
+            "total_fwd_packets",
+            "total_bwd_packets",
+            "total_packets",
+            "total_fwd_bytes",
+            "total_bwd_bytes",
+            "total_bytes",
+            "packets_per_second",
+            "bytes_per_second",
+            "flows_per_second",
+            "syn_count",
+            "ack_count",
+            "fin_count",
+            "rst_count",
+            "psh_count",
+            "urg_count",
+            "mean_iat",
+            "iat_variance",
+            "min_iat",
+            "max_iat",
+            "mean_flow_duration",
+            "max_flow_duration",
+            "mean_packet_size",
+            "max_packet_size"
+          ]
+        },
+        "session_id": "Tuesday-WorkingHours.pcap_ISCX",
+        "source_path": "Tuesday-WorkingHours.pcap_ISCX.csv",
+        "rows": 445909,
+        "invalid_rows": 264,
+        "windows": 44591,
+        "dropped_empty_scoreable_windows": 0,
+        "feature_availability": {
+          "unique_src_ip_count": "unavailable_zero",
+          "unique_dst_ip_count": "unavailable_zero",
+          "unique_src_port_count": "unavailable_zero"
+        },
+        "elapsed_seconds": 4.558
+      },
+      {
+        "cache_key": "b42eccb16cc228ef645638e1278daaf1b33ce9b0bba0dee3d1d1f8346c2a35bb",
+        "identity": {
+          "source": {
+            "name": "Wednesday-workingHours.pcap_ISCX.csv",
+            "size_bytes": 225166395,
+            "sha256": "893c27dc968bf7a8adef1689f90be55ca4a4dc3088fb63d6ff247ac56856df2a"
+          },
+          "ann_artifacts": {
+            "ann_model_sha256": "c804be8b658e7994f24539a8a427398b8d2f2d760588f7c7903fdf2c8765e434",
+            "ann_scaler_sha256": "7ff533245289db65c0a6d6ec1bbacf5d7def87158b3a791ad5abfa494b844a9f"
+          },
+          "schema_version": "row-order-proxy/v2",
+          "window_size_seconds": 10,
+          "sequence_length": 5,
+          "proxy_cadence_seconds": 1,
+          "state_feature_names": [
+            "flow_count",
+            "unique_src_ip_count",
+            "unique_dst_ip_count",
+            "unique_src_port_count",
+            "unique_dst_port_count",
+            "total_fwd_packets",
+            "total_bwd_packets",
+            "total_packets",
+            "total_fwd_bytes",
+            "total_bwd_bytes",
+            "total_bytes",
+            "packets_per_second",
+            "bytes_per_second",
+            "flows_per_second",
+            "syn_count",
+            "ack_count",
+            "fin_count",
+            "rst_count",
+            "psh_count",
+            "urg_count",
+            "mean_iat",
+            "iat_variance",
+            "min_iat",
+            "max_iat",
+            "mean_flow_duration",
+            "max_flow_duration",
+            "mean_packet_size",
+            "max_packet_size"
+          ]
+        },
+        "session_id": "Wednesday-workingHours.pcap_ISCX",
+        "source_path": "Wednesday-workingHours.pcap_ISCX.csv",
+        "rows": 692703,
+        "invalid_rows": 1297,
+        "windows": 69271,
+        "dropped_empty_scoreable_windows": 0,
+        "feature_availability": {
+          "unique_src_ip_count": "unavailable_zero",
+          "unique_dst_ip_count": "unavailable_zero",
+          "unique_src_port_count": "unavailable_zero"
+        },
+        "elapsed_seconds": 6.919
+      },
+      {
+        "cache_key": "6d72ee79bd1586a89e7a907e1a19f3ce4f562792e25cb3a4b968ff6f4058018e",
+        "identity": {
+          "source": {
+            "name": "Thursday-WorkingHours-Morning-WebAttacks.pcap_ISCX.csv",
+            "size_bytes": 52023263,
+            "sha256": "d67066211fb1689c78406f1506f4c44704ecb92088353d5c96d96d6474eb819d"
+          },
+          "ann_artifacts": {
+            "ann_model_sha256": "c804be8b658e7994f24539a8a427398b8d2f2d760588f7c7903fdf2c8765e434",
+            "ann_scaler_sha256": "7ff533245289db65c0a6d6ec1bbacf5d7def87158b3a791ad5abfa494b844a9f"
+          },
+          "schema_version": "row-order-proxy/v2",
+          "window_size_seconds": 10,
+          "sequence_length": 5,
+          "proxy_cadence_seconds": 1,
+          "state_feature_names": [
+            "flow_count",
+            "unique_src_ip_count",
+            "unique_dst_ip_count",
+            "unique_src_port_count",
+            "unique_dst_port_count",
+            "total_fwd_packets",
+            "total_bwd_packets",
+            "total_packets",
+            "total_fwd_bytes",
+            "total_bwd_bytes",
+            "total_bytes",
+            "packets_per_second",
+            "bytes_per_second",
+            "flows_per_second",
+            "syn_count",
+            "ack_count",
+            "fin_count",
+            "rst_count",
+            "psh_count",
+            "urg_count",
+            "mean_iat",
+            "iat_variance",
+            "min_iat",
+            "max_iat",
+            "mean_flow_duration",
+            "max_flow_duration",
+            "mean_packet_size",
+            "max_packet_size"
+          ]
+        },
+        "session_id": "Thursday-WorkingHours-Morning-WebAttacks.pcap_ISCX",
+        "source_path": "Thursday-WorkingHours-Morning-WebAttacks.pcap_ISCX.csv",
+        "rows": 170366,
+        "invalid_rows": 135,
+        "windows": 17037,
+        "dropped_empty_scoreable_windows": 0,
+        "feature_availability": {
+          "unique_src_ip_count": "unavailable_zero",
+          "unique_dst_ip_count": "unavailable_zero",
+          "unique_src_port_count": "unavailable_zero"
+        },
+        "elapsed_seconds": 1.451
+      },
+      {
+        "cache_key": "93aaea020c0e64c8240f8a8e0425f79a9fdc3552ad5005c9c73f77a946cb7d83",
+        "identity": {
+          "source": {
+            "name": "Thursday-WorkingHours-Afternoon-Infilteration.pcap_ISCX.csv",
+            "size_bytes": 83102436,
+            "sha256": "6bcda3857c2504676034e3ea57762d38393cc734cb377a726bd5cb153961b1b5"
+          },
+          "ann_artifacts": {
+            "ann_model_sha256": "c804be8b658e7994f24539a8a427398b8d2f2d760588f7c7903fdf2c8765e434",
+            "ann_scaler_sha256": "7ff533245289db65c0a6d6ec1bbacf5d7def87158b3a791ad5abfa494b844a9f"
+          },
+          "schema_version": "row-order-proxy/v2",
+          "window_size_seconds": 10,
+          "sequence_length": 5,
+          "proxy_cadence_seconds": 1,
+          "state_feature_names": [
+            "flow_count",
+            "unique_src_ip_count",
+            "unique_dst_ip_count",
+            "unique_src_port_count",
+            "unique_dst_port_count",
+            "total_fwd_packets",
+            "total_bwd_packets",
+            "total_packets",
+            "total_fwd_bytes",
+            "total_bwd_bytes",
+            "total_bytes",
+            "packets_per_second",
+            "bytes_per_second",
+            "flows_per_second",
+            "syn_count",
+            "ack_count",
+            "fin_count",
+            "rst_count",
+            "psh_count",
+            "urg_count",
+            "mean_iat",
+            "iat_variance",
+            "min_iat",
+            "max_iat",
+            "mean_flow_duration",
+            "max_flow_duration",
+            "mean_packet_size",
+            "max_packet_size"
+          ]
+        },
+        "session_id": "Thursday-WorkingHours-Afternoon-Infilteration.pcap_ISCX",
+        "source_path": "Thursday-WorkingHours-Afternoon-Infilteration.pcap_ISCX.csv",
+        "rows": 288602,
+        "invalid_rows": 207,
+        "windows": 28861,
+        "dropped_empty_scoreable_windows": 0,
+        "feature_availability": {
+          "unique_src_ip_count": "unavailable_zero",
+          "unique_dst_ip_count": "unavailable_zero",
+          "unique_src_port_count": "unavailable_zero"
+        },
+        "elapsed_seconds": 2.801
+      },
+      {
+        "cache_key": "801f46f8706b3a474cb1b95e5a288ecf8c0ece2642dedd3fe121203b99bf60a7",
+        "identity": {
+          "source": {
+            "name": "Friday-WorkingHours-Morning.pcap_ISCX.csv",
+            "size_bytes": 58316725,
+            "sha256": "53a41c24d570ea83b7ac55b2e94df94e7a8216aeb80a2af0246b6bc8bb543000"
+          },
+          "ann_artifacts": {
+            "ann_model_sha256": "c804be8b658e7994f24539a8a427398b8d2f2d760588f7c7903fdf2c8765e434",
+            "ann_scaler_sha256": "7ff533245289db65c0a6d6ec1bbacf5d7def87158b3a791ad5abfa494b844a9f"
+          },
+          "schema_version": "row-order-proxy/v2",
+          "window_size_seconds": 10,
+          "sequence_length": 5,
+          "proxy_cadence_seconds": 1,
+          "state_feature_names": [
+            "flow_count",
+            "unique_src_ip_count",
+            "unique_dst_ip_count",
+            "unique_src_port_count",
+            "unique_dst_port_count",
+            "total_fwd_packets",
+            "total_bwd_packets",
+            "total_packets",
+            "total_fwd_bytes",
+            "total_bwd_bytes",
+            "total_bytes",
+            "packets_per_second",
+            "bytes_per_second",
+            "flows_per_second",
+            "syn_count",
+            "ack_count",
+            "fin_count",
+            "rst_count",
+            "psh_count",
+            "urg_count",
+            "mean_iat",
+            "iat_variance",
+            "min_iat",
+            "max_iat",
+            "mean_flow_duration",
+            "max_flow_duration",
+            "mean_packet_size",
+            "max_packet_size"
+          ]
+        },
+        "session_id": "Friday-WorkingHours-Morning.pcap_ISCX",
+        "source_path": "Friday-WorkingHours-Morning.pcap_ISCX.csv",
+        "rows": 191033,
+        "invalid_rows": 122,
+        "windows": 19104,
+        "dropped_empty_scoreable_windows": 0,
+        "feature_availability": {
+          "unique_src_ip_count": "unavailable_zero",
+          "unique_dst_ip_count": "unavailable_zero",
+          "unique_src_port_count": "unavailable_zero"
+        },
+        "elapsed_seconds": 1.948
+      },
+      {
+        "cache_key": "4f4478df206beb69195888fb86de3a2fabb15b980d906908cf0a58b08b969396",
+        "identity": {
+          "source": {
+            "name": "Friday-WorkingHours-Afternoon-PortScan.pcap_ISCX.csv",
+            "size_bytes": 76906168,
+            "sha256": "ca1824c51bfbb7b3c72290a11be04366ba8815878c6a1cc5c44cb1cee269e99b"
+          },
+          "ann_artifacts": {
+            "ann_model_sha256": "c804be8b658e7994f24539a8a427398b8d2f2d760588f7c7903fdf2c8765e434",
+            "ann_scaler_sha256": "7ff533245289db65c0a6d6ec1bbacf5d7def87158b3a791ad5abfa494b844a9f"
+          },
+          "schema_version": "row-order-proxy/v2",
+          "window_size_seconds": 10,
+          "sequence_length": 5,
+          "proxy_cadence_seconds": 1,
+          "state_feature_names": [
+            "flow_count",
+            "unique_src_ip_count",
+            "unique_dst_ip_count",
+            "unique_src_port_count",
+            "unique_dst_port_count",
+            "total_fwd_packets",
+            "total_bwd_packets",
+            "total_packets",
+            "total_fwd_bytes",
+            "total_bwd_bytes",
+            "total_bytes",
+            "packets_per_second",
+            "bytes_per_second",
+            "flows_per_second",
+            "syn_count",
+            "ack_count",
+            "fin_count",
+            "rst_count",
+            "psh_count",
+            "urg_count",
+            "mean_iat",
+            "iat_variance",
+            "min_iat",
+            "max_iat",
+            "mean_flow_duration",
+            "max_flow_duration",
+            "mean_packet_size",
+            "max_packet_size"
+          ]
+        },
+        "session_id": "Friday-WorkingHours-Afternoon-PortScan.pcap_ISCX",
+        "source_path": "Friday-WorkingHours-Afternoon-PortScan.pcap_ISCX.csv",
+        "rows": 286467,
+        "invalid_rows": 371,
+        "windows": 28647,
+        "dropped_empty_scoreable_windows": 0,
+        "feature_availability": {
+          "unique_src_ip_count": "unavailable_zero",
+          "unique_dst_ip_count": "unavailable_zero",
+          "unique_src_port_count": "unavailable_zero"
+        },
+        "elapsed_seconds": 2.454
+      },
+      {
+        "cache_key": "ad48967824cbff595af973dfbc3df57b2081c1a038264d7d598bf781549c9fdf",
+        "identity": {
+          "source": {
+            "name": "Friday-WorkingHours-Afternoon-DDos.pcap_ISCX.csv",
+            "size_bytes": 77123859,
+            "sha256": "6ff1580f5f81c0ae28a26f7631721018577f5f7c5e0feac28b795fcfe7b411ee"
+          },
+          "ann_artifacts": {
+            "ann_model_sha256": "c804be8b658e7994f24539a8a427398b8d2f2d760588f7c7903fdf2c8765e434",
+            "ann_scaler_sha256": "7ff533245289db65c0a6d6ec1bbacf5d7def87158b3a791ad5abfa494b844a9f"
+          },
+          "schema_version": "row-order-proxy/v2",
+          "window_size_seconds": 10,
+          "sequence_length": 5,
+          "proxy_cadence_seconds": 1,
+          "state_feature_names": [
+            "flow_count",
+            "unique_src_ip_count",
+            "unique_dst_ip_count",
+            "unique_src_port_count",
+            "unique_dst_port_count",
+            "total_fwd_packets",
+            "total_bwd_packets",
+            "total_packets",
+            "total_fwd_bytes",
+            "total_bwd_bytes",
+            "total_bytes",
+            "packets_per_second",
+            "bytes_per_second",
+            "flows_per_second",
+            "syn_count",
+            "ack_count",
+            "fin_count",
+            "rst_count",
+            "psh_count",
+            "urg_count",
+            "mean_iat",
+            "iat_variance",
+            "min_iat",
+            "max_iat",
+            "mean_flow_duration",
+            "max_flow_duration",
+            "mean_packet_size",
+            "max_packet_size"
+          ]
+        },
+        "session_id": "Friday-WorkingHours-Afternoon-DDos.pcap_ISCX",
+        "source_path": "Friday-WorkingHours-Afternoon-DDos.pcap_ISCX.csv",
+        "rows": 225745,
+        "invalid_rows": 34,
+        "windows": 22575,
+        "dropped_empty_scoreable_windows": 0,
+        "feature_availability": {
+          "unique_src_ip_count": "unavailable_zero",
+          "unique_dst_ip_count": "unavailable_zero",
+          "unique_src_port_count": "unavailable_zero"
+        },
+        "elapsed_seconds": 2.268
+      }
+    ],
+    "splits": {
+      "train": {
+        "samples": 212702,
+        "sessions": [
+          "Monday-WorkingHours.pcap_ISCX",
+          "Thursday-WorkingHours-Afternoon-Infilteration.pcap_ISCX",
+          "Thursday-WorkingHours-Morning-WebAttacks.pcap_ISCX",
+          "Tuesday-WorkingHours.pcap_ISCX",
+          "Wednesday-workingHours.pcap_ISCX"
+        ],
+        "sample_ids_sha256": "532e351e57471f86cdd68b7113e942c1612e3c6fa2e971d029ef47aa6f71fe8a",
+        "class_distribution_by_horizon": {
+          "BENIGN": [
+            183015,
+            183015,
+            183015,
+            183015,
+            183015,
+            183015
+          ],
+          "DDoS": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "DoS": [
+            23149,
+            23149,
+            23149,
+            23149,
+            23149,
+            23149
+          ],
+          "PortScan": [
+            6538,
+            6538,
+            6538,
+            6538,
+            6538,
+            6538
+          ]
+        }
+      },
+      "validation": {
+        "samples": 47731,
+        "sessions": [
+          "Friday-WorkingHours-Afternoon-PortScan.pcap_ISCX",
+          "Friday-WorkingHours-Morning.pcap_ISCX"
+        ],
+        "sample_ids_sha256": "512a4b63479513af89ca3ffea64f9c13e3a982271c231ccc79c78f976f0eeb7d",
+        "class_distribution_by_horizon": {
+          "BENIGN": [
+            31685,
+            31685,
+            31685,
+            31685,
+            31685,
+            31685
+          ],
+          "DDoS": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "DoS": [
+            12,
+            12,
+            12,
+            12,
+            12,
+            12
+          ],
+          "PortScan": [
+            16034,
+            16034,
+            16034,
+            16034,
+            16034,
+            16034
+          ]
+        }
+      },
+      "test": {
+        "samples": 22565,
+        "sessions": [
+          "Friday-WorkingHours-Afternoon-DDos.pcap_ISCX"
+        ],
+        "sample_ids_sha256": "4a77cbaac73c8980ebb411d2e32b9271c26916f54772c2fe0a116d77636aa7ba",
+        "class_distribution_by_horizon": {
+          "BENIGN": [
+            9910,
+            9910,
+            9910,
+            9910,
+            9910,
+            9910
+          ],
+          "DDoS": [
+            12653,
+            12653,
+            12653,
+            12653,
+            12653,
+            12653
+          ],
+          "DoS": [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          "PortScan": [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ]
+        }
+      }
+    }
+  }
+}

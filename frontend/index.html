@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <title>NIDS Network Traffic Analyzer</title>
-<link rel="stylesheet" href="styles.css" />
+<link rel="stylesheet" href="styles.css?v=phase4" />
 </head>
 <body>
 
@@ -33,7 +33,7 @@
 
   <div class="mode-toolbar" id="live-controls">
     <span class="toolbar-label">Interface</span>
-    <select id="iface-select"></select>
+    <select id="iface-select" disabled><option value="">Loading interfaces…</option></select>
     <button id="btn-start" class="btn btn-start">&#9654; START CAPTURE</button>
     <button id="btn-stop" class="btn btn-stop" disabled>&#9632; STOP</button>
     <span class="toolbar-sep"></span>
@@ -277,6 +277,7 @@
           <button class="inner-tab inner-tab-active" data-inner-tab="overview">OVERVIEW</button>
           <button class="inner-tab" data-inner-tab="validation">VALIDATION</button>
           <button class="inner-tab" data-inner-tab="lstm">LSTM FORECAST</button>
+          <button class="inner-tab" data-inner-tab="multistep">MULTI-STEP FORECAST</button>
         </div>
 
         <div class="inner-pane" data-inner-pane="overview">
@@ -406,6 +407,18 @@
           </div>
           <div id="lstm-error" class="validation-detail-body" style="display:none;"></div>
         </div>
+
+        <div class="inner-pane" data-inner-pane="multistep" style="display:none;">
+          <div class="proxy-warning">TIMING LIMITATION: H1–H6 are row-order proxy windows. They are not validated seconds-ahead forecasts.</div>
+          <div class="multistep-header">
+            <div><div class="detail-col-title">DIRECT H1–H6 FORECAST</div><div class="detail-row"><span>Current state</span><strong id="multi-current">N/A</strong></div></div>
+            <button id="btn-multistep-forecast" class="btn btn-action">Run Multi-Step Forecast</button>
+          </div>
+          <div id="multi-warning" class="multistep-warning">No multi-step forecast available.</div>
+          <div id="multi-chart" class="multistep-chart"></div>
+          <div id="multi-horizons" class="multistep-horizons"><div class="dist-empty">Run the activated direct model to view H1–H6.</div></div>
+          <div id="multi-error" class="validation-detail-body" style="display:none;"></div>
+        </div>
       </div>
 
     </div>
@@ -439,6 +452,6 @@
   </div>
 </div>
 
-<script src="app.js"></script>
+<script src="app.js?v=phase4"></script>
 </body>
 </html>

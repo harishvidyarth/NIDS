@@ -117,6 +117,44 @@ bounded totals, progress, holdout/baseline metrics, a one-window forecast,
 probabilities, evaluation status, and the row-order proxy warning. Tests:
 `pytest tests/test_lstm_forecasting.py`.
 
+## Phase 4 direct H1–H6 forecasting
+
+Phase 4 is separate from the active Phase 3 one-step model. It consumes the
+same observed `5 × 28` histories but directly predicts six four-class targets
+with `LSTM(64) → Dropout(0.3) → Dense(32, ReLU) → Dense(24) → Reshape(6,4)`.
+No predicted class vector is recursively substituted for a future 28-feature
+state. Artifacts live under `artifacts/lstm_multistep/<version>/`; Phase 3 files
+under `artifacts/lstm_forecaster/` are unchanged.
+
+The locked whole-session split follows official CICIDS2017 chronology: Monday
+through Thursday afternoon for training, Friday morning plus Friday PortScan
+for validation, and Friday DDoS as the untouched test. The validation-selected
+warning threshold is frozen before test scoring. Since the CSVs have no usable
+timestamps here, outputs are labelled `+1 window` through `+6 windows` and the
+API returns `seconds_ahead: null`.
+
+Commands:
+
+```bash
+python scripts/multistep.py dataset
+python scripts/multistep.py train
+python scripts/multistep.py evaluate
+python scripts/multistep.py benchmark
+```
+
+API: `POST /api/lstm/forecast/multistep`. The **MULTI-STEP FORECAST** tab shows
+H1–H6 state probabilities, the frozen early-warning decision, separate MITRE
+mapping confidence, and an inline trajectory chart. Reports are under
+`reports/multistep_*`; tests are in `tests/test_lstm_multistep.py` and
+`tests/test_multistep_api.py`.
+
+Measured limitation: the strict training and validation sessions contain no
+ANN-derived DDoS targets, while Friday DDoS is dominated by them. This is the
+intended untouched generalization test, not a representative four-class fit;
+unsupported validation metrics are `N/A`, test classes with fewer than 30
+samples are flagged low-support, and the reports must be read alongside the
+binary attack metrics and onset misses.
+
 ## Temporal dataset validation
 
 `backend/temporal/validate.py` re-inspects an already-prepared temporal
@@ -191,9 +229,9 @@ notebook.
 ## Installation
 
 **Requires:** Python 3.11 or 3.12 (TensorFlow 2.18 does not yet support
-3.13+ — this project's venv was built with 3.12), Windows or Linux. Java
-is **not** required (the Java CICFlowMeter path was abandoned — see
-above).
+3.13+ — this project's venv was built with 3.12), Windows, Linux, or
+macOS. Java is **not** required (the Java CICFlowMeter path was abandoned
+— see above).
 
 ### Windows
 
@@ -217,6 +255,36 @@ above).
    ```
 3. From the repo root: `bash scripts/run_backend.sh`
 
+### macOS
+
+macOS has `tcpdump` built in but `/dev/bpf*` is root-only and there is no
+`setcap`, so an unprivileged backend cannot capture until Wireshark's
+**ChmodBPF** daemon makes `/dev/bpf*` group-`admin` readable at boot.
+
+1. One-time setup (installs the Wireshark cask — which also provides
+   `tshark`/`capinfos`, needed for the packet table, packet-count/duration,
+   and `.pcap` upload — and loads ChmodBPF):
+   ```
+   bash scripts/macos_setup.sh
+   ```
+   Then **log out and back in** (or reboot) so the `admin` group grant
+   takes effect. Verify with `ls -l /dev/bpf0` (group should be `admin`,
+   with a read bit) and `tcpdump -c1 -i en0` (should succeed with no
+   `sudo`).
+2. From the repo root: `bash scripts/run_backend.sh` (the same script the
+   Linux path uses — `python3 -m venv` + `uvicorn`).
+
+Without step 1, live capture fails with
+`(cannot open BPF device) /dev/bpf0: Permission denied` and `.pcap`
+uploads fail on a missing `capinfos`. As a last resort you can skip
+Wireshark and either run `sudo chmod +r /dev/bpf*` after every boot or
+start the backend under `sudo`.
+
+The toolbar interface dropdown shows friendly names on macOS
+(`en0 — Wi-Fi`, `en7 — USB 10/100/1000 LAN`, `lo0 — Loopback`, …), mapped
+from `networksetup -listallhardwareports`; devices macOS has no name for
+(`utun*`, `awdl0`, `llw0`, …) keep the raw `tcpdump -D` flag text.
+
 ### Common (either OS)
 
 Backend deps: `fastapi`, `uvicorn`, `pandas`, `numpy`, `scikit-learn`,
@@ -228,7 +296,7 @@ served by the backend.
 
 ```
 scripts\run_backend.ps1      # Windows
-bash scripts/run_backend.sh  # Linux
+bash scripts/run_backend.sh  # Linux and macOS
 ```
 
 Then open **http://127.0.0.1:8765** — the backend serves the UI directly.
@@ -295,5 +363,8 @@ nonexistent PCAP (real "PCAP not found" error, pipeline → `ERROR`).
   live stream: it re-reads the PCAP via `tshark` on each poll
   (~1.5s interval) rather than tailing packets as they arrive.
 - **Windows-only auto packet-count/duration** via `capinfos.exe`; the
-  Linux path calls the same tool name from `PATH` and needs the
-  `tshark`/`wireshark-common` package installed.
+  Linux and macOS paths call the same tool name from `PATH` and need
+  `tshark`/`capinfos` installed (Linux: `wireshark-common`/`tshark`;
+  macOS: the Wireshark cask — see `scripts/macos_setup.sh`). Without them
+  the packet table stays empty and packet count/duration show `N/A`, and
+  the FILE ANALYSIS `.pcap` path fails its `capinfos` validation.

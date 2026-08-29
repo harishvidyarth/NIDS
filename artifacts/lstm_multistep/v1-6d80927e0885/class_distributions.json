@@ -1,0 +1,130 @@
+{
+  "train": {
+    "samples": 212702,
+    "sessions": [
+      "Monday-WorkingHours.pcap_ISCX",
+      "Thursday-WorkingHours-Afternoon-Infilteration.pcap_ISCX",
+      "Thursday-WorkingHours-Morning-WebAttacks.pcap_ISCX",
+      "Tuesday-WorkingHours.pcap_ISCX",
+      "Wednesday-workingHours.pcap_ISCX"
+    ],
+    "sample_ids_sha256": "532e351e57471f86cdd68b7113e942c1612e3c6fa2e971d029ef47aa6f71fe8a",
+    "class_distribution_by_horizon": {
+      "BENIGN": [
+        183015,
+        183015,
+        183015,
+        183015,
+        183015,
+        183015
+      ],
+      "DDoS": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "DoS": [
+        23149,
+        23149,
+        23149,
+        23149,
+        23149,
+        23149
+      ],
+      "PortScan": [
+        6538,
+        6538,
+        6538,
+        6538,
+        6538,
+        6538
+      ]
+    }
+  },
+  "validation": {
+    "samples": 47731,
+    "sessions": [
+      "Friday-WorkingHours-Afternoon-PortScan.pcap_ISCX",
+      "Friday-WorkingHours-Morning.pcap_ISCX"
+    ],
+    "sample_ids_sha256": "512a4b63479513af89ca3ffea64f9c13e3a982271c231ccc79c78f976f0eeb7d",
+    "class_distribution_by_horizon": {
+      "BENIGN": [
+        31685,
+        31685,
+        31685,
+        31685,
+        31685,
+        31685
+      ],
+      "DDoS": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "DoS": [
+        12,
+        12,
+        12,
+        12,
+        12,
+        12
+      ],
+      "PortScan": [
+        16034,
+        16034,
+        16034,
+        16034,
+        16034,
+        16034
+      ]
+    }
+  },
+  "test": {
+    "samples": 22565,
+    "sessions": [
+      "Friday-WorkingHours-Afternoon-DDos.pcap_ISCX"
+    ],
+    "sample_ids_sha256": "4a77cbaac73c8980ebb411d2e32b9271c26916f54772c2fe0a116d77636aa7ba",
+    "class_distribution_by_horizon": {
+      "BENIGN": [
+        9910,
+        9910,
+        9910,
+        9910,
+        9910,
+        9910
+      ],
+      "DDoS": [
+        12653,
+        12653,
+        12653,
+        12653,
+        12653,
+        12653
+      ],
+      "DoS": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "PortScan": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ]
+    }
+  }
+}

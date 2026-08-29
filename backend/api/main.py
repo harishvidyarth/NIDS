@@ -33,6 +33,7 @@ from ..temporal.config import DEFAULT_SEQUENCE_LENGTH, DEFAULT_WINDOW_SIZE_SECON
 from ..temporal.validate import validate_temporal_dataset, ValidationError
 from ..lstm.config import LATEST_PATH
 from ..lstm.jobs import forecast_latest, read_status as read_lstm_status, start_training
+from ..lstm_multistep.training import forecast_latest as forecast_multistep_latest
 
 app = FastAPI(title="NIDS Pipeline API")
 app.add_middleware(
@@ -542,6 +543,14 @@ def lstm_status():
 def lstm_forecast():
     try:
         return forecast_latest()
+    except RuntimeError as error:
+        raise HTTPException(status_code=409, detail=str(error))
+
+
+@app.post("/api/lstm/forecast/multistep")
+def lstm_forecast_multistep():
+    try:
+        return forecast_multistep_latest()
     except RuntimeError as error:
         raise HTTPException(status_code=409, detail=str(error))
 

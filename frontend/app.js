@@ -95,6 +95,7 @@ let validationPolling = false;
 let lstmStatus = { stage: "idle", rows_processed: 0, cache_state: "unknown", epoch: 0 };
 let lstmReport = null;
 let lstmForecast = null;
+let multistepForecast = null;
 let lstmPolling = false;
 let activeInnerTab = "overview";
 let activeTemporalSubtab = "states";
@@ -169,20 +170,25 @@ function switchMode(newMode) {
 /* ==================== Live capture (unchanged API calls) ==================== */
 async function loadInterfaces() {
   const sel = el("iface-select");
+  sel.disabled = true;
+  sel.innerHTML = '<option value="">Loading interfaces…</option>';
   try {
     const data = await api("/api/interfaces");
     sel.innerHTML = "";
     for (const iface of data.interfaces) {
       const opt = document.createElement("option");
       opt.value = iface.device;
-      opt.textContent = iface.name;
+      const description = iface.description || iface.name || iface.device;
+      opt.textContent = `${iface.device} — ${description}`;
       sel.appendChild(opt);
     }
     if (data.interfaces.length === 0) {
-      sel.innerHTML = "<option>No interfaces found</option>";
+      sel.innerHTML = '<option value="">No capture interfaces found</option>';
+    } else {
+      sel.disabled = false;
     }
   } catch (e) {
-    sel.innerHTML = `<option>Error: ${e.message}</option>`;
+    sel.innerHTML = `<option value="">Interface API error: ${escapeHtml(e.message)}</option>`;
   }
 }
 
@@ -483,6 +489,18 @@ async function runLstmForecast() {
   try { lstmForecast = await api("/api/lstm/forecast", { method: "POST" }); }
   catch (e) { lstmStatus.error = e.message; }
   renderAll();
+}
+async function runMultistepForecast() {
+  el("btn-multistep-forecast").disabled = true;
+  try {
+    multistepForecast = await api("/api/lstm/forecast/multistep", { method: "POST" });
+    el("multi-error").style.display = "none";
+  } catch (e) {
+    el("multi-error").style.display = "";
+    el("multi-error").textContent = e.message;
+  }
+  el("btn-multistep-forecast").disabled = false;
+  renderMultistepTab();
 }
 function downloadLstmReport() { window.location.href = `${API}/api/lstm/report`; }
 
@@ -1054,6 +1072,32 @@ function renderLstmTab() {
   }
 }
 
+function renderMultistepTab() {
+  const forecast = multistepForecast;
+  el("multi-current").textContent = forecast ? forecast.current_state : "N/A";
+  if (!forecast) return;
+  const earliest = forecast.earliest_predicted_attack_horizon;
+  el("multi-warning").textContent = earliest
+    ? `EARLY WARNING: attack probability reaches ${(forecast.early_warning_threshold * 100).toFixed(0)}% at H${earliest}.`
+    : `NO EARLY WARNING at the frozen ${(forecast.early_warning_threshold * 100).toFixed(0)}% threshold.`;
+  el("multi-warning").className = "multistep-warning " + (earliest ? "warning-active" : "");
+  const width = 640, height = 170, left = 38, top = 16, plotW = 580, plotH = 120;
+  const points = (label) => forecast.horizons.map((item, index) => {
+    const x = left + index * (plotW / 5);
+    const y = top + (1 - item.probabilities[label]) * plotH;
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(" ");
+  const lines = forecast.classes.map((label) => `<polyline points="${points(label)}" fill="none" stroke="${CLASS_COLORS[label]}" stroke-width="2"/>`).join("");
+  const labels = forecast.horizons.map((item, index) => `<text x="${left + index * (plotW / 5)}" y="${top + plotH + 18}" text-anchor="middle">H${item.horizon}</text>`).join("");
+  el("multi-chart").innerHTML = `<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="H1 to H6 class probability trajectories"><line x1="${left}" y1="${top + plotH}" x2="${left + plotW}" y2="${top + plotH}" stroke="currentColor"/>${lines}${labels}</svg>`;
+  el("multi-horizons").innerHTML = forecast.horizons.map((item) => {
+    const candidates = item.mitre_candidates || [];
+    const probabilities = Object.entries(item.probabilities).map(([label, value]) => `<li>${escapeHtml(label)}: ${(value * 100).toFixed(2)}%</li>`).join("");
+    const mitre = candidates.length ? candidates.map((candidate) => `<li>${escapeHtml(candidate.technique_id)} — ${escapeHtml(candidate.technique_name)} (${(candidate.mapping_confidence * 100).toFixed(0)}% mapping confidence)</li>`).join("") : "<li>No supported network-only ATT&amp;CK candidate.</li>";
+    return `<details class="multistep-horizon"><summary><strong>H${item.horizon}</strong><span>${escapeHtml(item.predicted_state)}</span><span>${(item.forecast_probability * 100).toFixed(2)}%</span><span>attack ${(item.attack_probability * 100).toFixed(2)}%</span></summary><div><strong>Four-class probabilities</strong><ul>${probabilities}</ul><strong>MITRE context</strong><ul>${mitre}</ul></div></details>`;
+  }).join("");
+}
+
 const VALIDATION_STAGE_LABEL = {
   NOT_VALIDATED: "NOT VALIDATED", VALIDATING: "VALIDATING…",
   VALIDATED: "VALIDATED", VALIDATED_WITH_WARNINGS: "VALIDATED WITH WARNINGS",
@@ -1238,6 +1282,7 @@ function renderAll() {
   renderExtractionTab();
   renderPredictionTab();
   renderTemporalTab();
+  renderMultistepTab();
   renderActiveTable();
   renderStatusBar();
 }
@@ -1282,6 +1327,7 @@ el("btn-download-report").addEventListener("click", downloadValidationReport);
 el("btn-lstm-train").addEventListener("click", startLstmTraining);
 el("btn-lstm-forecast").addEventListener("click", runLstmForecast);
 el("btn-lstm-report").addEventListener("click", downloadLstmReport);
+el("btn-multistep-forecast").addEventListener("click", runMultistepForecast);
 el("btn-packets-prev").addEventListener("click", () => goToPacketsPage(-1));
 el("btn-packets-next").addEventListener("click", () => goToPacketsPage(1));
 

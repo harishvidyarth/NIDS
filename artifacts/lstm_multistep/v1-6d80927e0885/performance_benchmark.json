@@ -1,0 +1,15 @@
+{
+  "cold_model_load_seconds": 0.03945433300395962,
+  "warm_single_inference_seconds": 0.028139042013208382,
+  "batches": {
+    "100": {
+      "seconds": 0.083729707999737,
+      "throughput_samples_per_second": 1194.3192253855
+    },
+    "1000": {
+      "seconds": 0.03921383399574552,
+      "throughput_samples_per_second": 25501.204501158812
+    }
+  },
+  "peak_rss_mb": 1861.4375
+}

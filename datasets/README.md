@@ -25,3 +25,12 @@ the repository root after copying or extracting the four CSV files into
 The archive includes only the public CICIDS2017 source CSVs used by Phase 3.
 Local packet captures, uploads, runtime logs, virtual environments, and personal
 traffic-derived files are not included.
+
+## Phase 4 expansion
+
+Phase 4 uses all eight official weekday sessions in chronological order. The
+four added sources are Thursday morning Web Attacks, Friday morning, Friday
+PortScan, and Friday DDoS. They are published as the versioned release asset
+`nids-cicids2017-phase4-added-source-csvs.tar.gz`; repository hashes are listed
+in `datasets/SHA256SUMS`. Friday PortScan is ordered before Friday DDoS per the
+official CICIDS2017 schedule.
