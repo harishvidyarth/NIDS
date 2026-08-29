@@ -4,7 +4,11 @@
 \usepackage{xcolor}
 \usepackage{booktabs}
 \usepackage{titlesec}
+\PassOptionsToPackage{hyphens}{url}
 \usepackage[hidelinks]{hyperref}
+\sloppy
+\emergencystretch=3em
+\Urlmuskip=0mu plus 3mu\relax
 
 \definecolor{accent}{HTML}{1F6FB2}
 \titleformat{\section}{\large\bfseries\color{accent}}{\thesection}{0.6em}{}
@@ -112,10 +116,10 @@ $P(S_{t+1}\mid S_t)$, and rolls it forward.
 \section{Platform support}
 
 \begin{itemize}
-  \item \textbf{Windows} --- install Wireshark; run \texttt{scripts\textbackslash
-  run\_backend.ps1}.
+  \item \textbf{Windows} --- install Wireshark; run the PowerShell script
+  \texttt{run\_backend.ps1}.
   \item \textbf{Linux} --- \texttt{setcap} on \texttt{tcpdump}; run
-  \texttt{scripts/run\_backend.sh}.
+  \texttt{run\_backend.sh}.
   \item \textbf{macOS} --- \texttt{scripts/macos\_setup.sh} installs the
   Wireshark CLI tools and loads the ChmodBPF helper (macOS has no
   \texttt{setcap}); the interface picker shows friendly names
@@ -123,6 +127,72 @@ $P(S_{t+1}\mid S_t)$, and rolls it forward.
 \end{itemize}
 
 Open the dashboard at \texttt{http://127.0.0.1:8765}.
+
+\section{Provenance and attribution}
+
+\subsection*{Base repository}
+
+Cloned from the original \texttt{NIDS} repository (commits by Manigandan
+Ramadasan, \texttt{453a5a1}\,--\,\texttt{39316cb}; audited in
+\texttt{PIPELINE.md} as of \texttt{main @ 39316cb}). Pre-existing content:
+\texttt{models/ISAA\_ANN.h5} (the trained Keras ANN), \texttt{models/minmax.bin}
+(its scikit-learn MinMaxScaler), three Jupyter notebooks
+(\texttt{NIDS -- ANN.ipynb}, \texttt{NIDS -- ML.ipynb},
+\texttt{NIDS (Prediction).ipynb}), \texttt{scripts/packetsniff.sh}, and a report
+PDF. The prediction notebook's hardcoded \texttt{O:\textbackslash VIT\ldots} and
+\texttt{C:\textbackslash Users\textbackslash varun\ldots} paths indicate a
+Vellore Institute of Technology student project; ``ISAA\_ANN'' is the original
+team's model name. Everything from commit \texttt{945f9ad} onward --- the
+end-to-end pipeline, FastAPI backend, dashboard, Phase 3/4 LSTM forecasting,
+MITRE layer, gradient\,$\times$\,input explainability, packet-level features, and
+cross-platform capture --- was added on top.
+
+\subsection*{Feature extraction}
+
+\texttt{cicflowmeter} 0.5.0 (PyPI, MIT-licensed, Scapy-based) --- a drop-in for
+the Java \texttt{ahlashkari/CICFlowMeter}, which was abandoned here because its
+\texttt{jnetpcap} dependency has no working modern 64-bit build path. Two
+upstream bugs are patched idempotently by \texttt{scripts/patch\_cicflowmeter.py}.
+
+\subsection*{Training and evaluation dataset}
+
+CICIDS2017, produced by the Canadian Institute for Cybersecurity, University of
+New Brunswick --- \url{https://www.unb.ca/cic/datasets/ids-2017.html}. Eight
+official weekday session flow CSVs are used: Phase 3 trains on Monday, Tuesday,
+Wednesday and Thursday-Afternoon-Infiltration; Phase 4 adds Thursday-morning Web
+Attacks, Friday morning, Friday PortScan and Friday DDoS. The raw CSVs are not
+vendored in Git --- they are published as GitHub Release assets
+(\texttt{phase3-datasets},
+\texttt{nids-cicids2017-phase4-added-source-csvs.tar.gz}) with per-file SHA-256
+hashes in \texttt{datasets/SHA256SUMS} and the archive hash in
+\texttt{datasets/README.md}. The ANN was trained by the original team on the
+classic CICIDS2017 78-column export (77 numeric features after dropping the
+duplicate header column and the label).
+
+\subsection*{MITRE ATT\&CK}
+
+Enterprise ATT\&CK v19.1 (MITRE Corporation), distributed as STIX~2.1 via
+\url{https://github.com/mitre-attack/attack-stix-data}. A pinned, verified subset
+--- techniques T1595, T1046, T1498, T1499; tactics Reconnaissance, Discovery,
+Impact --- is committed at
+\texttt{backend/mitre/data/enterprise\_attack\_v19\_1\_subset.json} and loaded
+with publisher and bundle-SHA-256 provenance checks
+(\texttt{backend/mitre/mapper.py}). Used entirely offline; no network calls.
+
+\subsection*{Demonstration captures}
+
+\texttt{captures.zip} is the community ``DDoS Packet Capture Collection'' (mirror
+\url{https://wqrld.net/captures.zip}) --- anonymized real-world and lab DDoS
+captures, free to use for building DDoS-protection systems, with attribution
+appreciated but not required. Members are named \texttt{amp.*} (amplification) or
+\texttt{pkt.*} (spoofed / direct). It is not part of the repository; four small
+members are copied into \texttt{pcaps/} locally for demos.
+
+\subsection*{Core libraries}
+
+FastAPI and Uvicorn, TensorFlow~2.18 / Keras, scikit-learn~1.5.2, Scapy~2.6.1,
+pandas / NumPy, joblib, python-multipart, and pytest --- all pinned in
+\texttt{backend/requirements.txt}.
 
 \section{Known limitations}
 
