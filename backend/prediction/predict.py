@@ -454,6 +454,20 @@ def predict_csv(csv_path: Path) -> dict:
     logger.info(f"[Prediction] Added {CURRENT_STATE_COLUMN} column")
     logger.info(f"[Prediction] Updated CSV: {csv_path}")
 
+    explanation_jobs = []
+    try:
+        from .explanation_runtime import submit_explanation
+        attack_scores = 1.0 - valid_probabilities[:, 0]
+        selected = [int(np.argmax(attack_scores))]
+        benign = np.flatnonzero(np.asarray(valid_labels) == "BENIGN")
+        if len(benign):
+            selected.append(int(benign[len(benign) // 2]))
+        for sample_index in dict.fromkeys(selected):
+            class_name = CLASS_NAMES[int(valid_idx[sample_index])]
+            explanation_jobs.append(submit_explanation("ann", scaled[sample_index:sample_index + 1], class_name))
+    except Exception as exc:
+        logger.info(f"[Prediction] Asynchronous SHAP unavailable: {exc}")
+
     return {
         "model": "ISAA_ANN (Keras Sequential MLP, 4-class softmax)",
         "flows_analyzed": n_scored,
@@ -462,6 +476,8 @@ def predict_csv(csv_path: Path) -> dict:
         "class_counts": counts,
         "overall_traffic_state": overall_state,
         "dominant_state": dominant_state,
+        "attack_alert": effective_summary["attack_class"] or "NONE",
+        "attack_ratio": effective_summary["malicious_flow_ratio"],
         # Headline the UI shows: "ATTACK — DDoS" whenever any non-BENIGN
         # flow is present, so a DDoS in a mostly-benign capture is never
         # silently swallowed by the dominant-by-count rule.
@@ -481,6 +497,12 @@ def predict_csv(csv_path: Path) -> dict:
         "signature_hits": sig_hits,
         "signature_class_counts": sig.get("counts", {}),
         "port_scan_signature": sig.get("port_scan"),
+        "distribution_evidence": sig.get("distribution_evidence", []),
+        "signature_evidence": {
+            "rate_method": sig.get("rate_method", "unavailable"),
+            "rolling_window_seconds": 1,
+            "capture_wide_flow_rate_sum_used": False,
+        },
         # ANN verdict escalated by the signature layer where they disagree.
         "effective_verdict": effective_summary["verdict"],
         "effective_confidence": effective_summary["confidence"],
@@ -491,6 +513,9 @@ def predict_csv(csv_path: Path) -> dict:
         "current_state_column": CURRENT_STATE_COLUMN,
         "output_csv": str(csv_path),
         "driving_features": driving_features(valid_attribution),
+        "attribution_method": "gradient_x_input_fallback",
+        "attribution_is_shap": False,
+        "explanation_jobs": explanation_jobs,
         "flows": flows,
     }
 

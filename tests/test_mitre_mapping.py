@@ -59,6 +59,9 @@ def test_benign_produces_no_forced_mapping(mapper):
     assert result["attack_mapping"] is None
     assert result["mitre_candidates"] == []
     assert result["reason"] == "no attack evidence"
+    assert result["operator_guidance"]
+    assert result["evidence_needed"]
+    assert result["severity"] == "informational"
 
 
 def test_low_evidence_is_not_asserted(mapper):
@@ -102,6 +105,21 @@ def test_mapper_supports_multiple_possible_techniques(mapper):
     assert {item["technique_id"] for item in result["mitre_candidates"]} == {"T1046", "T1595", "T1499"}
 
 
+def test_ddos_guidance_and_offline_flood_metadata(mapper):
+    result = mapper.map_forecast(
+        "DDoS",
+        {"BENIGN": 0.05, "DDoS": 0.90, "DoS": 0.03, "PortScan": 0.02},
+        {"flows_per_second": 50, "packets_per_second": 500, "syn_count": 200,
+         "unique_src_ip_count": 30, "unique_dst_ip_count": 1},
+    )
+    assert result["severity"] == "high"
+    assert any("upstream" in action.lower() for action in result["operator_guidance"])
+    assert {"T1498", "T1498.001", "T1498.002"}.issubset(
+        {item["technique_id"] for item in result["mitre_candidates"]}
+    )
+    assert "M1037" in result["action_provenance"]["mitigations"]
+
+
 def test_mapper_operates_without_network_calls(monkeypatch, mapper):
     def fail(*args, **kwargs):
         raise AssertionError("network access attempted")
@@ -130,6 +148,8 @@ def test_api_and_frontend_expose_mitre_context():
     html = Path("frontend/index.html").read_text()
     script = Path("frontend/app.js").read_text()
     assert "mitre_mapping" in api_source
-    assert "MITRE ATT&amp;CK CONTEXT" in html
-    assert "Possible ATT&amp;CK interpretation" in html
+    assert "DECISION SUPPORT" in html
+    assert "Supported ATT&amp;CK Context" in script
+    assert "Evidence Needed" in script
+    assert "Recommended Actions" in script
     assert "mapping_confidence" in script

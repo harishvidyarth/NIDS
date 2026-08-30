@@ -14,6 +14,21 @@
     "id": "x-mitre-collection--1f5f1533-f617-4ca8-9ab4-6a02367fa019",
     "name": "Enterprise ATT&CK"
   },
+  "detection_strategies": [
+    {
+      "id": "DET0518",
+      "name": "Behavioral Detection of T1498 – Network Denial of Service Across Platforms",
+      "analytics": ["AN1434", "AN1435"],
+      "url": "https://attack.mitre.org/detectionstrategies/DET0518"
+    }
+  ],
+  "mitigations": [
+    {
+      "id": "M1037",
+      "name": "Filter Network Traffic",
+      "url": "https://attack.mitre.org/mitigations/M1037"
+    }
+  ],
   "techniques": [
     {
       "stix_id": "attack-pattern--e3a12395-188d-4051-9a16-ea8e14d07b88",
@@ -41,6 +56,24 @@
       "url": "https://attack.mitre.org/techniques/T1498",
       "object_version": "1.2",
       "modified": "2025-10-24T17:49:28.162Z"
+    },
+    {
+      "stix_id": "attack-pattern--0bda01d5-4c1d-4062-8ee2-6872334383c3",
+      "technique_id": "T1498.001",
+      "technique_name": "Direct Network Flood",
+      "tactics": ["Impact"],
+      "url": "https://attack.mitre.org/techniques/T1498/001",
+      "object_version": "1.4",
+      "modified": "2025-10-24T17:48:22.567Z"
+    },
+    {
+      "stix_id": "attack-pattern--36b2a1d7-e09e-49bf-b45e-477076c2ec01",
+      "technique_id": "T1498.002",
+      "technique_name": "Reflection Amplification",
+      "tactics": ["Impact"],
+      "url": "https://attack.mitre.org/techniques/T1498/002",
+      "object_version": "1.4",
+      "modified": "2025-10-24T17:48:38.890Z"
     },
     {
       "stix_id": "attack-pattern--c675646d-e204-4aa8-978d-e3d6d65885c4",

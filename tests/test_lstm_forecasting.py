@@ -97,7 +97,8 @@ def test_cache_key_invalidates_on_source_or_artifact_change():
     artifacts = {"ann_model_sha256": "m", "ann_scaler_sha256": "s"}
     original = cache_key(cache_identity(source, artifacts))
     assert cache_key(cache_identity({**source, "sha256": "two"}, artifacts)) != original
-    assert cache_key(cache_identity(source, {**artifacts, "ann_model_sha256": "other"})) != original
+    assert cache_key(cache_identity(source, {**artifacts, "ann_model_sha256": "other"})) == original
+    assert cache_identity(source, artifacts)["target_provenance"] == "cicids2017_ground_truth_label"
 
 
 def test_repository_artifact_pointers_are_portable_and_legacy_compatible():
@@ -171,8 +172,11 @@ def test_model_save_load_and_batch_inference(tmp_path):
     model.save(path)
     loaded = tf.keras.models.load_model(path, compile=False)
     after = loaded.predict(sample, batch_size=2, verbose=0)
-    assert before.shape == (3, 4)
-    np.testing.assert_allclose(before, after, rtol=1e-6, atol=1e-6)
+    assert set(before) == {"dominant_state", "attack_alert"}
+    assert before["dominant_state"].shape == (3, 4)
+    assert before["attack_alert"].shape == (3, 4)
+    for key in before:
+        np.testing.assert_allclose(before[key], after[key], rtol=1e-6, atol=1e-6)
 
 
 def test_job_status_round_trip_and_api_contract(tmp_path, monkeypatch):

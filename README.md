@@ -301,6 +301,48 @@ bash scripts/run_backend.sh  # Linux and macOS
 
 Then open **http://127.0.0.1:8765** — the backend serves the UI directly.
 
+## Command-line interface
+
+`backend/cli/` is a single argparse entrypoint over the whole pipeline —
+every subcommand calls the same service function as the matching `/api/*`
+route, so the CLI and the server never diverge. Run it as
+`python -m backend.cli <group> ...` or `python scripts/nids.py <group> ...`.
+`--json` on any command prints the raw result instead of a text summary.
+
+```
+nids serve [--host H] [--port 8765]        run the FastAPI app
+nids interfaces                            list capture interfaces
+nids capture start --iface I [--seconds N] [--packets N] [--buffer-mb N]
+nids capture packets --pcap FILE [--limit N] [--offset N]
+nids capture stat --pcap FILE
+nids extract <pcap> [--features-dir DIR]   pcap -> CICFlowMeter feature CSV
+nids predict <csv> [--out FILE]            per-flow ANN prediction
+nids predict-metrics [--csv-path LABELLED_CSV]   precision/recall/F1/FPR + confusion matrix
+nids explain --model ann|lstm|hgb <values.npy> [--class NAME] [--wait] [--timeout S]
+nids temporal prepare <csv> [--window 10] [--seq 5] [--out DIR]
+nids temporal validate <temporal-dir> --source-csv <features/..._prediction.csv>
+nids lstm status | train [--force] | forecast [--windows DIR] | evaluate [--artifact-dir DIR] | report
+nids multistep dataset [--force] | train [--force] | evaluate | benchmark
+nids worldmodel status | train [--force] | forecast [--k 6] [--windows DIR]
+nids benchmark                             LSTM vs logistic-regression baseline, incl. FPR
+nids mitre map --state S --prob CLASS=V [--prob ...] [--feature KEY=V ...]
+nids pipeline show                         on-disk artifact / report inventory
+```
+
+Notes:
+
+- `capture start` runs in the foreground (the CLI has no daemon to hold a
+  session) — it returns when `--seconds` elapses or on Ctrl+C.
+- `explain` needs a pre-built SHAP background array
+  (`models/ann_shap_background.npy`, `artifacts/*/shap_background.npy`). When
+  it is absent the command exits `3`; when `shap` runs but a background is
+  missing the job result carries `is_shap: false` and a `fallback_reason`.
+- `worldmodel forecast` exits `3` until a model is trained
+  (`worldmodel train` needs `NIDS_CICIDS2017_DIR` and a prepared temporal
+  dataset).
+- Exit codes: `0` ok, `2` usage error, `3` a required artifact/dataset is
+  missing, `4` a runtime failure.
+
 ## Performing a real capture
 
 1. Pick an interface from the toolbar dropdown (populated from a real

@@ -27,6 +27,8 @@ class AttackMetadataStore:
     source_url: str
     source_sha256: str
     techniques: dict[str, dict]
+    detection_strategies: tuple[dict, ...]
+    mitigations: tuple[dict, ...]
 
     @classmethod
     def load(cls, path: Path | str = DEFAULT_METADATA_PATH) -> "AttackMetadataStore":
@@ -49,7 +51,8 @@ class AttackMetadataStore:
             technique_id = item["technique_id"]
             if not TECHNIQUE_ID_PATTERN.fullmatch(technique_id):
                 raise AttackMetadataError(f"Invalid ATT&CK technique ID: {technique_id}")
-            if not item["url"].endswith(f"/{technique_id}"):
+            expected_suffix = "/" + technique_id.replace(".", "/")
+            if not item["url"].endswith(expected_suffix):
                 raise AttackMetadataError(f"Technique URL does not match ID: {technique_id}")
             if not item["tactics"] or not set(item["tactics"]).issubset(VALID_TACTICS):
                 raise AttackMetadataError(f"Invalid tactic reference for {technique_id}")
@@ -64,13 +67,15 @@ class AttackMetadataStore:
             source_url=str(source["url"]),
             source_sha256=str(source["stix_bundle_sha256"]),
             techniques=techniques,
+            detection_strategies=tuple(payload.get("detection_strategies", [])),
+            mitigations=tuple(payload.get("mitigations", [])),
         )
 
 
 class MitreAttackMapper:
     STATE_TECHNIQUES = {
         "PortScan": ("T1595", "T1046"),
-        "DDoS": ("T1498",),
+        "DDoS": ("T1498", "T1498.001", "T1498.002"),
         "DoS": ("T1499",),
     }
 
@@ -130,6 +135,40 @@ class MitreAttackMapper:
             "limitations": [NETWORK_LIMITATION, UNCALIBRATED_LIMITATION, limitation],
         }
 
+    @staticmethod
+    def _guidance(state: str | None) -> tuple[str, list[str], list[str]]:
+        if state == "DDoS":
+            return "high", [
+                "Validate that sources are distributed within the same rolling window.",
+                "Identify the concentrated victim IP, service, and business owner.",
+                "Engage the ISP, CDN, or DDoS provider for upstream filtering.",
+                "Apply risk-reviewed rate limits or protocol/port filtering.",
+                "Preserve the capture, flow export, service telemetry, and response timeline.",
+            ], [
+                "Concurrent source and victim concentration across rolling windows.",
+                "Victim service saturation, latency, error rate, and interface utilization.",
+                "Protocol details sufficient to distinguish direct flood from reflection/amplification.",
+            ]
+        if state == "DoS":
+            return "high", [
+                "Inspect the affected service and host health.",
+                "Check connection-table, thread, socket, and SYN-backlog exhaustion.",
+                "Apply service-specific rate limits and validate recovery.",
+                "Preserve flow and endpoint evidence before blocking confirmed sources.",
+            ], ["Service health and resource exhaustion telemetry.", "Connection state and rate-limit logs."]
+        if state == "PortScan":
+            return "medium", [
+                "Verify whether the scan was authorized.",
+                "Review exposed services and recent configuration changes.",
+                "Monitor or block confirmed unauthorized sources using change control.",
+                "Preserve flow and firewall evidence.",
+            ], ["Scanner ownership and authorization.", "Destination service inventory and firewall logs."]
+        return "informational", [
+            "Continue monitoring and compare traffic with the established baseline.",
+            "Preserve the capture and analysis result.",
+            "Collect endpoint and service evidence if operational symptoms appear.",
+        ], ["Additional rolling-window traffic.", "Endpoint, service, and network-device telemetry."]
+
     def map_forecast(
         self,
         current_state: str,
@@ -153,6 +192,21 @@ class MitreAttackMapper:
             "attack_data_modified": self.metadata.data_modified,
             "metadata_source": self.metadata.source_url,
         }
+        guidance_state = current_state if current_state in self.STATE_TECHNIQUES else (
+            predicted_state if predicted_state in self.STATE_TECHNIQUES and forecast_probability >= 0.50 else None
+        )
+        severity, operator_guidance, evidence_needed = self._guidance(guidance_state)
+        result.update({
+            "severity": severity,
+            "operator_guidance": operator_guidance,
+            "evidence_needed": evidence_needed,
+            "action_provenance": {
+                "source": "local_risk_matched_playbook",
+                "mitigations": ["M1037"] if guidance_state in {"DDoS", "DoS"} else [],
+                "detection_strategies": ["DET0518"] if guidance_state == "DDoS" else [],
+                "requires_operator_validation": True,
+            },
+        })
         if current_state == "INVALID_FEATURES":
             result["reason"] = "invalid features cannot support ATT&CK interpretation"
             return result
@@ -188,9 +242,15 @@ class MitreAttackMapper:
                     limitation = "Flow data cannot establish whether scanning occurred from a compromised internal host."
                 elif technique_id == "T1498":
                     limitation = "Flow statistics cannot identify distributed sources or a specific network-flood sub-technique here."
+                elif technique_id == "T1498.001":
+                    limitation = "Direct-flood context requires protocol and source validation beyond aggregate flow statistics."
+                elif technique_id == "T1498.002":
+                    limitation = "Reflection amplification requires spoofing, reflector, and amplification-protocol evidence."
                 else:
                     limitation = "Flow statistics cannot identify an endpoint exhaustion or exploitation sub-technique."
-                candidates.append(self._candidate(technique_id, status, confidence, state_evidence + behavior, limitation))
+                candidate_status = status if technique_id in {"T1498", "T1046", "T1595", "T1499"} else "INSUFFICIENT_EVIDENCE"
+                candidate_confidence = confidence if candidate_status == status else min(confidence, 0.25)
+                candidates.append(self._candidate(technique_id, candidate_status, candidate_confidence, state_evidence + behavior, limitation))
 
         candidates.sort(key=lambda item: (-item["mapping_confidence"], item["technique_id"]))
         result["mitre_candidates"] = candidates

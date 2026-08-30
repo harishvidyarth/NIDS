@@ -7,7 +7,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from ..lstm.config import FORECAST_CLASSES, SEQUENCE_LENGTH
+from ..lstm.config import ALERT_CLASSES, FORECAST_CLASSES, SEQUENCE_LENGTH
 from ..lstm.dataset import (
     artifact_fingerprints,
     contiguous_blocks,
@@ -18,10 +18,12 @@ from ..prediction.predict import INVALID_FEATURES_LABEL
 from ..temporal.schema import STATE_FEATURE_NAMES
 from .config import DATASET_MANIFEST, HORIZONS, SOURCE_FILENAMES, TEST_SESSIONS, TRAIN_SESSIONS, VALIDATION_SESSIONS, source_paths
 
+EMBARGO_WINDOWS = HORIZONS
+
 
 def build_multistep_sequences(windows: pd.DataFrame, sequence_length: int = SEQUENCE_LENGTH, horizons: int = HORIZONS) -> dict:
     values = {key: [] for key in (
-        "X", "y", "input_labels", "history_window_ids", "target_window_ids",
+        "X", "y", "y_dominant", "y_alert", "input_labels", "input_alert_labels", "history_window_ids", "target_window_ids",
         "session_id", "sample_id",
     )}
     for block in contiguous_blocks(windows):
@@ -29,12 +31,14 @@ def build_multistep_sequences(windows: pd.DataFrame, sequence_length: int = SEQU
             continue
         features = block[STATE_FEATURE_NAMES].to_numpy(dtype=np.float32)
         labels = block["dominant_state"].to_numpy(dtype=str)
+        alerts = block.get("alert_state", block["dominant_state"].where(block["dominant_state"] != "BENIGN", "NONE")).to_numpy(dtype=str)
         window_ids = block["window_id"].to_numpy(dtype=np.int64)
         session = str(block["session_id"].iloc[0])
         for start in range(len(block) - sequence_length - horizons + 1):
             target_start = start + sequence_length
             history_labels = labels[start:target_start]
             targets = labels[target_start:target_start + horizons]
+            alert_targets = alerts[target_start:target_start + horizons]
             if INVALID_FEATURES_LABEL in history_labels or INVALID_FEATURES_LABEL in targets:
                 continue
             if not set(history_labels).issubset(FORECAST_CLASSES) or not set(targets).issubset(FORECAST_CLASSES):
@@ -45,7 +49,10 @@ def build_multistep_sequences(windows: pd.DataFrame, sequence_length: int = SEQU
                 continue
             values["X"].append(features[start:target_start])
             values["y"].append(targets)
+            values["y_dominant"].append(targets)
+            values["y_alert"].append(alert_targets)
             values["input_labels"].append(history_labels)
+            values["input_alert_labels"].append(alerts[start:target_start])
             values["history_window_ids"].append(history_ids)
             values["target_window_ids"].append(target_ids)
             values["session_id"].append(session)
@@ -54,7 +61,10 @@ def build_multistep_sequences(windows: pd.DataFrame, sequence_length: int = SEQU
     return {
         "X": np.asarray(values["X"], dtype=np.float32).reshape(-1, sequence_length, feature_count),
         "y": np.asarray(values["y"], dtype=str).reshape(-1, horizons),
+        "y_dominant": np.asarray(values["y_dominant"], dtype=str).reshape(-1, horizons),
+        "y_alert": np.asarray(values["y_alert"], dtype=str).reshape(-1, horizons),
         "input_labels": np.asarray(values["input_labels"], dtype=str).reshape(-1, sequence_length),
+        "input_alert_labels": np.asarray(values["input_alert_labels"], dtype=str).reshape(-1, sequence_length),
         "history_window_ids": np.asarray(values["history_window_ids"], dtype=np.int64).reshape(-1, sequence_length),
         "target_window_ids": np.asarray(values["target_window_ids"], dtype=np.int64).reshape(-1, horizons),
         "session_id": np.asarray(values["session_id"], dtype=str),
@@ -71,10 +81,23 @@ def concat_sequence_sets(items: list[dict]) -> dict:
 
 def split_session_windows(session_windows: list[pd.DataFrame]) -> dict[str, list[pd.DataFrame]]:
     by_name = {f"{str(frame['session_id'].iloc[0])}.csv": frame for frame in session_windows}
+    ddos = by_name[TEST_SESSIONS[0]].sort_values("window_id").reset_index(drop=True)
+    train_end = int(len(ddos) * 0.60)
+    validation_start = train_end + EMBARGO_WINDOWS
+    validation_end = int(len(ddos) * 0.80)
+    test_start = validation_end + EMBARGO_WINDOWS
+    minimum = SEQUENCE_LENGTH + HORIZONS
+    partitions = {
+        "train": ddos.iloc[:train_end].copy(),
+        "validation": ddos.iloc[validation_start:validation_end].copy(),
+        "test": ddos.iloc[test_start:].copy(),
+    }
+    if any(len(frame) < minimum for frame in partitions.values()):
+        raise RuntimeError("Friday DDoS is too short for chronological train/validation/test partitions with embargo gaps.")
     return {
-        "train": [by_name[name] for name in TRAIN_SESSIONS],
-        "validation": [by_name[name] for name in VALIDATION_SESSIONS],
-        "test": [by_name[name] for name in TEST_SESSIONS],
+        "train": [by_name[name] for name in TRAIN_SESSIONS] + [partitions["train"]],
+        "validation": [by_name[name] for name in VALIDATION_SESSIONS] + [partitions["validation"]],
+        "test": [partitions["test"]],
     }
 
 
@@ -85,10 +108,20 @@ def class_distribution(labels: np.ndarray) -> dict[str, list[int]]:
     }
 
 
+def validate_class_support(train: dict, validation: dict) -> None:
+    train_labels = np.asarray(train["y_dominant"]).reshape(-1)
+    missing = [label for label in FORECAST_CLASSES if not np.any(train_labels == label)]
+    if missing:
+        raise RuntimeError(f"Required class(es) have zero training support: {', '.join(missing)}")
+    validation_labels = np.asarray(validation["y_dominant"]).reshape(-1)
+    if not np.any(validation_labels == "DDoS"):
+        raise RuntimeError("DDoS has zero validation support; activation is forbidden.")
+
+
 def prepare_multistep_dataset(force_rebuild: bool = False, progress=lambda **kwargs: None) -> tuple[dict, dict, list[pd.DataFrame]]:
     paths = source_paths()
     fingerprints = dataset_fingerprints(paths)
-    ann_fingerprints = artifact_fingerprints()
+    ann_fingerprints = {}
     session_windows = []
     cache = []
     raw_label_diagnostics = {}
@@ -109,25 +142,31 @@ def prepare_multistep_dataset(force_rebuild: bool = False, progress=lambda **kwa
         name: concat_sequence_sets([build_multistep_sequences(frame) for frame in frames])
         for name, frames in split_windows.items()
     }
+    validate_class_support(sequences["train"], sequences["validation"])
     identities = {
         name: {
             "samples": int(len(item["X"])),
             "sessions": sorted(set(item["session_id"].tolist())),
             "sample_ids_sha256": __import__("hashlib").sha256("\n".join(item["sample_id"]).encode()).hexdigest(),
-            "class_distribution_by_horizon": class_distribution(item["y"]),
+            "dominant_class_distribution_by_horizon": class_distribution(item["y_dominant"]),
+            "alert_class_distribution_by_horizon": {
+                label: [int(np.sum(item["y_alert"][:, horizon] == label)) for horizon in range(HORIZONS)]
+                for label in ALERT_CLASSES
+            },
         }
         for name, item in sequences.items()
     }
     manifest = {
         "sources_in_official_order": list(SOURCE_FILENAMES),
         "source_fingerprints": fingerprints,
-        "ann_artifact_fingerprints": ann_fingerprints,
         "raw_cicids_label_diagnostics": raw_label_diagnostics,
-        "target_policy": "Targets are the existing ANN's four-class output; raw CICIDS labels are diagnostics only.",
+        "target_policy": "Targets come only from the CICIDS2017 ground-truth Label column; ANN predictions are not training targets.",
+        "target_provenance": "cicids2017_ground_truth_label",
         "split": {
             "train": list(TRAIN_SESSIONS),
             "validation": list(VALIDATION_SESSIONS),
             "test": list(TEST_SESSIONS),
+            "ddos_partition": "chronological 60/20/20 with six-window embargo gaps",
         },
         "shapes": {"history": [SEQUENCE_LENGTH, len(STATE_FEATURE_NAMES)], "targets": [HORIZONS]},
         "feature_order": list(STATE_FEATURE_NAMES),

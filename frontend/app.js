@@ -100,6 +100,8 @@ let lstmPolling = false;
 let activeInnerTab = "overview";
 let activeTemporalSubtab = "states";
 let selectedValidationCheck = null;
+let explanationResults = {};
+let explanationPolling = new Set();
 
 async function api(path, opts) {
   const res = await fetch(API + path, opts);
@@ -1121,7 +1123,7 @@ function renderPredictionTab() {
 
   const stateVal = el("p-state-value");
   // Effective = ANN verdict, escalated where the signature layer disagrees.
-  const attackClass = pred && (pred.effective_attack_class || pred.attack_class);
+  const attackClass = pred && ((pred.attack_alert && pred.attack_alert !== "NONE" ? pred.attack_alert : null) || pred.effective_attack_class || pred.attack_class);
   const conf = pred && (pred.effective_confidence || pred.confidence);
   if (!pred) {
     stateVal.textContent = "N/A";
@@ -1143,7 +1145,7 @@ function renderPredictionTab() {
     if (!pred) {
       domEl.textContent = "";
     } else {
-      let sub = `ANN dominant: ${pred.dominant_state}`;
+      let sub = `Dominant traffic: ${pred.dominant_state} · attack alert: ${pred.attack_alert || "NONE"}`;
       if (pred.attack_class) {
         sub += ` · ANN: ${pred.attack_class_counts[pred.attack_class]} ${pred.attack_class} flow(s)`;
       }
@@ -1157,7 +1159,7 @@ function renderPredictionTab() {
   const flagged = el("p-flagged");
   if (flagged) {
     if (pred && pred.flows_analyzed) {
-      const pct = ((pred.malicious_flow_ratio || 0) * 100).toFixed(1);
+      const pct = ((pred.attack_ratio ?? pred.malicious_flow_ratio ?? 0) * 100).toFixed(1);
       flagged.textContent = `${pred.attack_flow_count} of ${pred.flows_analyzed} flows flagged (${pct}%)`;
       flagged.style.color = pred.attack_present ? "var(--red)" : "var(--green)";
     } else {
@@ -1201,7 +1203,20 @@ function renderSignatureHits(pred) {
 function renderDrivingFeatures(pred) {
   const wrap = el("driving-features");
   if (!wrap) return;
-  const feats = pred && pred.driving_features;
+  const job = pred && pred.explanation_jobs && pred.explanation_jobs[0];
+  const shapResult = job && explanationResults[job.job_id];
+  if (job && !shapResult && !explanationPolling.has(job.job_id)) pollExplanation(job.job_id);
+  const feats = shapResult
+    ? shapResult.feature_contributions.map(item => ({
+        feature: item.feature,
+        mean_abs_contribution: Math.abs(item.contribution),
+        mean_signed_contribution: item.contribution,
+      }))
+    : pred && pred.driving_features;
+  const method = el("attribution-method");
+  if (method) method.textContent = shapResult
+    ? `${shapResult.method} · class ${shapResult.explained_class} · base ${shapResult.base_value == null ? "N/A" : Number(shapResult.base_value).toFixed(4)}`
+    : (pred ? "gradient × input fallback — not SHAP" : "awaiting asynchronous SHAP");
   if (!feats || !feats.length) {
     wrap.innerHTML = '<div class="dist-empty">N/A — no prediction yet</div>';
     return;
@@ -1211,11 +1226,29 @@ function renderDrivingFeatures(pred) {
     const pct = Math.round((Math.abs(f.mean_abs_contribution) / max) * 100);
     const color = f.mean_signed_contribution >= 0 ? "var(--green)" : "var(--red)";
     return `<div class="dist-row">
-      <span class="dist-label" title="mean gradient×input over scored flows">${escapeHtml(f.feature)}</span>
+      <span class="dist-label">${escapeHtml(f.feature)}</span>
       <span class="dist-bar-track"><span class="dist-bar-fill" style="width:${pct}%; background:${color}"></span></span>
       <span class="dist-pct">${f.mean_signed_contribution >= 0 ? "+" : ""}${f.mean_signed_contribution.toFixed(4)}</span>
     </div>`;
   }).join("");
+}
+
+async function pollExplanation(jobId) {
+  explanationPolling.add(jobId);
+  try {
+    const job = await api(`/api/explanations/${jobId}`);
+    if (job.status === "completed") {
+      explanationResults[jobId] = job.result;
+      explanationPolling.delete(jobId);
+      renderPredictionTab();
+    } else if (job.status === "failed") {
+      explanationPolling.delete(jobId);
+    } else {
+      setTimeout(() => { explanationPolling.delete(jobId); pollExplanation(jobId); }, 500);
+    }
+  } catch (_) {
+    explanationPolling.delete(jobId);
+  }
 }
 
 const CLASS_COLORS = { BENIGN: "var(--green)", DDoS: "var(--red)", DoS: "var(--orange)", PortScan: "var(--amber)" };
@@ -1320,6 +1353,7 @@ function renderLstmTab() {
   const forecast = lstmForecast;
   el("lstm-current").textContent = forecast ? forecast.current_state : "N/A";
   el("lstm-predicted").textContent = forecast ? forecast.predicted_state : "N/A";
+  el("lstm-alert").textContent = forecast ? (forecast.attack_alert_forecast || "NONE") : "N/A";
   el("lstm-confidence").textContent = forecast ? `${(forecast.confidence * 100).toFixed(2)}%` : "N/A";
   el("lstm-probabilities").innerHTML = forecast ? Object.entries(forecast.probabilities).map(([label, probability]) => {
     const percent = Math.round(probability * 100);
@@ -1327,11 +1361,7 @@ function renderLstmTab() {
   }).join("") : '<div class="dist-empty">N/A</div>';
   const mapping = forecast && forecast.mitre_mapping;
   const supportedCandidates = mapping ? mapping.mitre_candidates.filter((candidate) => candidate.mapping_status === "POSSIBLE") : [];
-  if (!mapping || supportedCandidates.length === 0) {
-    const reason = mapping ? mapping.reason : "No forecast context available.";
-    el("lstm-mitre-context").innerHTML = `<div class="dist-empty">${escapeHtml(reason)}</div>`;
-  } else {
-    el("lstm-mitre-context").innerHTML = supportedCandidates.map((candidate) => `
+  const supported = supportedCandidates.length ? supportedCandidates.map((candidate) => `
       <div class="mitre-candidate">
         <div class="mitre-candidate-heading">${escapeHtml(candidate.technique_id)} — ${escapeHtml(candidate.technique_name)}</div>
         <div><span>Tactic</span><strong>${escapeHtml(candidate.tactic)}</strong></div>
@@ -1339,8 +1369,13 @@ function renderLstmTab() {
         <div><span>Mapping confidence</span><strong>${(candidate.mapping_confidence * 100).toFixed(0)}%</strong></div>
         <div class="mitre-copy"><span>Evidence</span><ul>${candidate.evidence.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul></div>
         <div class="mitre-copy"><span>Limitations</span><ul>${candidate.limitations.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul></div>
-      </div>`).join("");
-  }
+      </div>`).join("") : `<div class="dist-empty">${escapeHtml(mapping ? mapping.reason : "No forecast context available.")}</div>`;
+  const evidence = mapping && mapping.evidence_needed ? mapping.evidence_needed.map(item => `<li>${escapeHtml(item)}</li>`).join("") : "<li>Run a forecast to identify evidence gaps.</li>";
+  const actions = mapping && mapping.operator_guidance ? mapping.operator_guidance.map(item => `<li>${escapeHtml(item)}</li>`).join("") : "<li>Continue monitoring.</li>";
+  el("lstm-mitre-context").innerHTML = `
+    <div class="mitre-context-label">Supported ATT&amp;CK Context</div>${supported}
+    <div class="mitre-context-label">Evidence Needed</div><div class="mitre-candidate mitre-copy"><ul>${evidence}</ul></div>
+    <div class="mitre-context-label">Recommended Actions</div><div class="mitre-candidate mitre-copy"><ul>${actions}</ul></div>`;
 }
 
 function renderMultistepTab() {
@@ -1365,7 +1400,7 @@ function renderMultistepTab() {
     const candidates = item.mitre_candidates || [];
     const probabilities = Object.entries(item.probabilities).map(([label, value]) => `<li>${escapeHtml(label)}: ${(value * 100).toFixed(2)}%</li>`).join("");
     const mitre = candidates.length ? candidates.map((candidate) => `<li>${escapeHtml(candidate.technique_id)} — ${escapeHtml(candidate.technique_name)} (${(candidate.mapping_confidence * 100).toFixed(0)}% mapping confidence)</li>`).join("") : "<li>No supported network-only ATT&amp;CK candidate.</li>";
-    return `<details class="multistep-horizon"><summary><strong>H${item.horizon}</strong><span>${escapeHtml(item.predicted_state)}</span><span>${(item.forecast_probability * 100).toFixed(2)}%</span><span>attack ${(item.attack_probability * 100).toFixed(2)}%</span></summary><div><strong>Four-class probabilities</strong><ul>${probabilities}</ul><strong>MITRE context</strong><ul>${mitre}</ul></div></details>`;
+    return `<details class="multistep-horizon"><summary><strong>H${item.horizon}</strong><span>dominant ${escapeHtml(item.dominant_state_forecast || item.predicted_state)} · alert ${escapeHtml(item.attack_alert_forecast || "NONE")}</span><span>${(item.forecast_probability * 100).toFixed(2)}%</span><span>attack ${(item.attack_probability * 100).toFixed(2)}%</span></summary><div><strong>Dominant-state probabilities</strong><ul>${probabilities}</ul><strong>Supported ATT&amp;CK Context</strong><ul>${mitre}</ul></div></details>`;
   }).join("");
 }
 

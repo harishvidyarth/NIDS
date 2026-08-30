@@ -21,6 +21,8 @@ data/temporal/*/
 data/lstm_cache/
 !data/temporal/.gitkeep
 models/temporal_scaler.bin
+models/ann_shap_background.npy
+artifacts/flow_challenger/
 .pytest_cache/
 
 .server.out.log

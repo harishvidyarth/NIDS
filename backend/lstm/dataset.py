@@ -19,6 +19,7 @@ from ..temporal.schema import (
     find_id_columns,
 )
 from .config import (
+    ALERT_CLASSES,
     CACHE_ROOT,
     CHUNK_SIZE,
     FORECAST_CLASSES,
@@ -29,6 +30,20 @@ from .config import (
 )
 
 Progress = Callable[..., None]
+
+
+def cicids_ground_truth_state(label: object) -> str | None:
+    """Map the dataset's Label column to the supported forecast states."""
+    normalized = str(label).strip().lower().replace("–", "-")
+    if normalized == "benign":
+        return "BENIGN"
+    if "ddos" in normalized:
+        return "DDoS"
+    if normalized.startswith("dos ") or normalized == "dos":
+        return "DoS"
+    if "portscan" in normalized or "port scan" in normalized:
+        return "PortScan"
+    return None
 
 
 def sha256_file(path: Path) -> str:
@@ -55,10 +70,10 @@ def dataset_fingerprints(paths: Iterable[Path]) -> list[dict]:
     ]
 
 
-def cache_identity(source: dict, artifact_hashes: dict) -> dict:
+def cache_identity(source: dict, artifact_hashes: dict | None = None) -> dict:
     return {
         "source": source,
-        "ann_artifacts": artifact_hashes,
+        "target_provenance": "cicids2017_ground_truth_label",
         "schema_version": SCHEMA_VERSION,
         "window_size_seconds": WINDOW_SIZE_SECONDS,
         "sequence_length": SEQUENCE_LENGTH,
@@ -246,6 +261,12 @@ def _aggregate_proxy_chunk(frame: pd.DataFrame, labels: np.ndarray, first_row: i
         np.argmax(counts.to_numpy(), axis=1)
     ]
     output["attack_present"] = (counts[list(FORECAST_CLASSES[1:])].sum(axis=1) > 0).astype(np.int64)
+    attack_counts = counts[list(FORECAST_CLASSES[1:])].to_numpy()
+    output["alert_state"] = np.where(
+        attack_counts.sum(axis=1) > 0,
+        np.asarray(FORECAST_CLASSES[1:], dtype=object)[np.argmax(attack_counts, axis=1)],
+        "NONE",
+    )
     output["proxy_start_row"] = output.index.to_numpy(dtype=np.int64) * WINDOW_SIZE_SECONDS
     output["proxy_end_row"] = output["proxy_start_row"] + WINDOW_SIZE_SECONDS
     return output.reset_index()
@@ -275,17 +296,21 @@ def prepare_session_windows(
             progress(stage="cache", cache_state="hit", rows_processed=source_fingerprint.get("rows", 0))
         return windows, metadata
 
-    model, scaler = _load_artifacts()
     frames = []
     rows_processed = invalid_rows = 0
     started = time.perf_counter()
     for chunk in pd.read_csv(path, chunksize=chunk_size, low_memory=False):
-        labels, _, valid = score_ann_chunk(chunk, model, scaler)
+        label_column = next((column for column in chunk.columns if str(column).strip().lower() == "label"), None)
+        if label_column is None:
+            raise RuntimeError(f"Ground-truth Label column is missing from {path.name}.")
+        mapped = chunk[label_column].map(cicids_ground_truth_state)
+        valid = mapped.notna().to_numpy()
+        labels = mapped.fillna(INVALID_FEATURES_LABEL).to_numpy(dtype=object)
         frames.append(_aggregate_proxy_chunk(chunk, labels, rows_processed))
         rows_processed += len(chunk)
         invalid_rows += int((~valid).sum())
         if progress:
-            progress(stage="ann_scoring", rows_processed=rows_processed, cache_state="miss")
+            progress(stage="ground_truth_windowing", rows_processed=rows_processed, cache_state="miss")
 
     windows = pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
     windows.insert(0, "session_id", path.stem)
@@ -302,6 +327,7 @@ def prepare_session_windows(
         "source_path": path.name,
         "rows": rows_processed,
         "invalid_rows": invalid_rows,
+        "label_provenance": "cicids2017_ground_truth_label",
         "windows": len(windows),
         "dropped_empty_scoreable_windows": (rows_processed + WINDOW_SIZE_SECONDS - 1) // WINDOW_SIZE_SECONDS - len(windows),
         "feature_availability": {
@@ -324,19 +350,23 @@ def contiguous_blocks(windows: pd.DataFrame) -> list[pd.DataFrame]:
 
 
 def build_sequences(windows: pd.DataFrame, sequence_length: int = SEQUENCE_LENGTH) -> dict:
-    arrays = {"X": [], "y": [], "input_labels": [], "input_window_ids": [], "target_window_id": [], "session_id": []}
+    arrays = {"X": [], "y": [], "y_dominant_state": [], "y_attack_alert": [], "input_labels": [], "input_alert_labels": [], "input_window_ids": [], "target_window_id": [], "session_id": []}
     for block in contiguous_blocks(windows):
         if len(block) <= sequence_length:
             continue
         features = block[STATE_FEATURE_NAMES].to_numpy(dtype=np.float32)
         labels = block["dominant_state"].to_numpy(dtype=str)
+        alerts = block.get("alert_state", block["dominant_state"].where(block["dominant_state"] != "BENIGN", "NONE")).to_numpy(dtype=str)
         ids = block["window_id"].to_numpy(dtype=np.int64)
         session_id = str(block["session_id"].iloc[0]) if "session_id" in block else "unknown"
         for index in range(len(block) - sequence_length):
             target = index + sequence_length
             arrays["X"].append(features[index:target])
             arrays["y"].append(labels[target])
+            arrays["y_dominant_state"].append(labels[target])
+            arrays["y_attack_alert"].append(alerts[target])
             arrays["input_labels"].append(labels[index:target])
+            arrays["input_alert_labels"].append(alerts[index:target])
             arrays["input_window_ids"].append(ids[index:target])
             arrays["target_window_id"].append(ids[target])
             arrays["session_id"].append(session_id)
@@ -344,7 +374,10 @@ def build_sequences(windows: pd.DataFrame, sequence_length: int = SEQUENCE_LENGT
     return {
         "X": np.asarray(arrays["X"], dtype=np.float32).reshape(-1, sequence_length, feature_count),
         "y": np.asarray(arrays["y"], dtype=str),
+        "y_dominant_state": np.asarray(arrays["y_dominant_state"], dtype=str),
+        "y_attack_alert": np.asarray(arrays["y_attack_alert"], dtype=str),
         "input_labels": np.asarray(arrays["input_labels"], dtype=str).reshape(-1, sequence_length),
+        "input_alert_labels": np.asarray(arrays["input_alert_labels"], dtype=str).reshape(-1, sequence_length),
         "input_window_ids": np.asarray(arrays["input_window_ids"], dtype=np.int64).reshape(-1, sequence_length),
         "target_window_id": np.asarray(arrays["target_window_id"], dtype=np.int64),
         "session_id": np.asarray(arrays["session_id"], dtype=str),
@@ -353,5 +386,5 @@ def build_sequences(windows: pd.DataFrame, sequence_length: int = SEQUENCE_LENGT
 
 def concat_sequence_sets(sequence_sets: list[dict]) -> dict:
     if not sequence_sets:
-        return build_sequences(pd.DataFrame(columns=["window_id", "dominant_state", *STATE_FEATURE_NAMES]))
+        return build_sequences(pd.DataFrame(columns=["window_id", "dominant_state", "alert_state", *STATE_FEATURE_NAMES]))
     return {key: np.concatenate([item[key] for item in sequence_sets], axis=0) for key in sequence_sets[0]}

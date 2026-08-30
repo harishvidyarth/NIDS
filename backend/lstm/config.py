@@ -7,10 +7,11 @@ from ..config import REPO_ROOT
 from ..temporal.config import STATE_CLASSES
 
 FORECAST_CLASSES = tuple(STATE_CLASSES)
+ALERT_CLASSES = ("NONE", "DDoS", "DoS", "PortScan")
 WINDOW_SIZE_SECONDS = 10
 SEQUENCE_LENGTH = 5
 PROXY_CADENCE_SECONDS = 1
-SCHEMA_VERSION = "row-order-proxy/v2"
+SCHEMA_VERSION = "row-order-proxy-ground-truth/v3"
 SEED = 42
 CHUNK_SIZE = 50_000
 HOLDOUT_RATIO = 0.15
@@ -22,7 +23,11 @@ SOURCE_FILENAMES = (
     "Monday-WorkingHours.pcap_ISCX.csv",
     "Tuesday-WorkingHours.pcap_ISCX.csv",
     "Wednesday-workingHours.pcap_ISCX.csv",
+    "Thursday-WorkingHours-Morning-WebAttacks.pcap_ISCX.csv",
     "Thursday-WorkingHours-Afternoon-Infilteration.pcap_ISCX.csv",
+    "Friday-WorkingHours-Morning.pcap_ISCX.csv",
+    "Friday-WorkingHours-Afternoon-PortScan.pcap_ISCX.csv",
+    "Friday-WorkingHours-Afternoon-DDos.pcap_ISCX.csv",
 )
 
 ARTIFACT_ROOT = REPO_ROOT / "artifacts" / "lstm_forecaster"

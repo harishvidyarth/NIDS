@@ -16,6 +16,8 @@ import time
 from pathlib import Path
 from typing import Optional
 
+import numpy as np
+
 from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -101,6 +103,32 @@ class PacketFeatureRequest(BaseModel):
 
 class PredictRequest(BaseModel):
     csv_path: Optional[str] = None
+
+
+class ExplanationRequest(BaseModel):
+    model_kind: str
+    values: list
+    explained_class: str | None = None
+
+
+@app.post("/api/explanations", status_code=202)
+def create_explanation(request: ExplanationRequest):
+    from ..prediction.explanation_runtime import submit_explanation
+
+    try:
+        return submit_explanation(request.model_kind, np.asarray(request.values, dtype=np.float32), request.explained_class)
+    except (ValueError, RuntimeError, OSError) as error:
+        raise HTTPException(status_code=409, detail=str(error)) from error
+
+
+@app.get("/api/explanations/{job_id}")
+def explanation_status(job_id: str):
+    from ..prediction.shap_service import jobs
+
+    result = jobs.get(job_id)
+    if result is None:
+        raise HTTPException(status_code=404, detail="Explanation job not found.")
+    return result
 
 
 @app.get("/api/interfaces")
