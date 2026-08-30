@@ -9,5 +9,10 @@
   },
   "capture": {
     "wireshark_dir": "C:/Program Files/Wireshark"
+  },
+  "verdict_gate": {
+    "_comment": "Confidence gate for the headline traffic verdict (backend/prediction/predict.py::summarize_states). An attack class reads red ATTACK only when its OWN share of scored flows reaches min_ratio for its tier (or the deterministic signature layer confirmed it); otherwise amber SUSPICIOUS. Purely percentage-based, no absolute flow count. Edit and restart the backend to retune.",
+    "ddos": { "min_ratio": 0.20 },
+    "other": { "min_ratio": 0.20 }
   }
 }

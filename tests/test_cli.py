@@ -88,8 +88,12 @@ def test_json_flag_is_position_agnostic(capsys):
     json.loads(capsys.readouterr().out)  # trailing --json still produces JSON
 
 
-def test_worldmodel_forecast_without_artifact_exits_3(capsys):
-    # no artifacts/worldmodel/latest.json in the tree -> WorldModelUnavailable
+def test_worldmodel_forecast_without_artifact_exits_3(capsys, monkeypatch, tmp_path):
+    # point the artifact pointer at a path that does not exist so the test
+    # is hermetic regardless of whether a model has been trained in the tree
+    from backend.worldmodel import engine as wm_engine
+
+    monkeypatch.setattr(wm_engine, "LATEST_PATH", tmp_path / "nope" / "latest.json")
     code = main(["worldmodel", "forecast"])
     assert code == 3
     assert "world-model" in capsys.readouterr().err.lower()

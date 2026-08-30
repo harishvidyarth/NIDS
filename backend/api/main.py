@@ -11,6 +11,8 @@ State machine:
 """
 from __future__ import annotations
 
+import csv
+import json
 import threading
 import time
 from pathlib import Path
@@ -27,6 +29,7 @@ from pydantic import BaseModel, ConfigDict
 from ..config import PCAPS_DIR, FEATURES_DIR, RESULTS_DIR, REPO_ROOT
 from ..capture import capture as capture_mod
 from ..extraction.extract import run_extraction, ExtractionError
+from ..extraction.parallel_extract import run_parallel_extraction
 from ..extraction.packet_features import packet_features_summary, PacketFeatureError
 from ..prediction.predict import predict_csv, PredictionError
 from ..prediction.metrics import evaluate_ann_metrics, proxy_agreement_metrics
@@ -238,7 +241,7 @@ def _run_extraction_bg(pcap_path: Path):
         with state.lock:
             state.stage = "EXTRACTING"
             state.error = None
-        result = run_extraction(pcap_path, FEATURES_DIR)
+        result = run_parallel_extraction(pcap_path, FEATURES_DIR)
         with state.lock:
             state.extraction_result = result
             state.stage = "EXTRACTION_COMPLETED"
@@ -533,6 +536,62 @@ def temporal_status():
     return temporal_state.snapshot()
 
 
+_TEMPORAL_STATES_NUMERIC = (
+    "window_id", "flow_count", "total_packets", "total_bytes",
+    "packets_per_second", "bytes_per_second", "flows_per_second",
+    "benign_flow_count", "ddos_flow_count", "dos_flow_count", "portscan_flow_count",
+    "attack_present",
+)
+
+
+@app.get("/api/temporal/states")
+def temporal_states():
+    """Ordered per-window rows from the most recent prepared temporal
+    dataset — the row-level detail `/api/temporal/status` deliberately
+    omits — so the dashboard can draw a state-over-time timeline. Uses the
+    in-process dataset when one is prepared, else the newest on disk.
+    404 when nothing has been prepared."""
+    session_dir: Optional[Path] = None
+    source = "on_disk"
+    with temporal_state.lock:
+        if temporal_state.stage == "COMPLETED" and temporal_state.summary:
+            out = temporal_state.summary.get("output_dir")
+            if out and Path(out).is_dir():
+                session_dir = Path(out)
+                source = "in_process"
+    if session_dir is None:
+        session_dir = _recent_temporal_session_dir(min_windows=1)
+    if session_dir is None:
+        raise HTTPException(status_code=404, detail="No prepared temporal dataset on disk.")
+
+    states_csv = session_dir / "temporal_states.csv"
+    if not states_csv.is_file():
+        raise HTTPException(status_code=404, detail="Prepared dataset has no temporal_states.csv.")
+
+    rows: list[dict] = []
+    with states_csv.open(newline="") as handle:
+        for raw in csv.DictReader(handle):
+            row: dict = {}
+            for key, value in raw.items():
+                if key in _TEMPORAL_STATES_NUMERIC:
+                    try:
+                        row[key] = int(float(value))
+                    except (TypeError, ValueError):
+                        row[key] = None
+                else:
+                    row[key] = value
+            rows.append(row)
+    rows.sort(key=lambda r: (r.get("window_id") is None, r.get("window_id")))
+    rows = rows[-500:]
+
+    return {
+        "session": session_dir.name,
+        "source": source,
+        "window_size_seconds": DEFAULT_WINDOW_SIZE_SECONDS,
+        "rows": rows,
+    }
+
+
 class ValidationState:
     """Independent of TemporalState — validates an already-prepared
     temporal dataset (read-only) rather than building one."""
@@ -583,14 +642,24 @@ def temporal_validate():
     with validation_state.lock:
         if validation_state.stage == "VALIDATING":
             raise HTTPException(status_code=409, detail="Validation already running.")
+    source_csv = temporal_dir = None
     with temporal_state.lock:
-        if temporal_state.stage != "COMPLETED" or not temporal_state.summary:
-            raise HTTPException(
-                status_code=400,
-                detail="TEMPORAL DATASET NOT AVAILABLE — run /api/temporal/prepare first.",
-            )
-        source_csv = Path(temporal_state.summary["input_csv"])
-        temporal_dir = Path(temporal_state.summary["output_dir"])
+        if temporal_state.stage == "COMPLETED" and temporal_state.summary:
+            source_csv = Path(temporal_state.summary["input_csv"])
+            temporal_dir = Path(temporal_state.summary["output_dir"])
+    if temporal_dir is None:
+        # No in-process prepare (e.g. after a server restart) — validate the
+        # newest dataset still on disk instead of refusing outright.
+        session_dir = _recent_temporal_session_dir(min_windows=1)
+        if session_dir is not None:
+            resolved_csv = _source_csv_for_session(session_dir)
+            if resolved_csv is not None:
+                source_csv, temporal_dir = resolved_csv, session_dir
+    if temporal_dir is None:
+        raise HTTPException(
+            status_code=400,
+            detail="TEMPORAL DATASET NOT AVAILABLE — run /api/temporal/prepare first.",
+        )
 
     thread = threading.Thread(target=_run_validation_bg, args=(source_csv, temporal_dir), daemon=True)
     thread.start()
@@ -633,15 +702,84 @@ def lstm_status():
     return read_lstm_status()
 
 
+def _recent_temporal_session_dir(min_windows: int = 5) -> Optional[Path]:
+    """Newest `data/temporal/<session>/` on disk whose temporal_states.csv
+    holds at least `min_windows` data rows. Lets a forecast (or the states
+    graph) run against a previously prepared dataset after a server
+    restart, when the in-process TemporalState has been reset to IDLE."""
+    root = REPO_ROOT / "data" / "temporal"
+    if not root.is_dir():
+        return None
+    candidates = sorted(
+        (p for p in root.iterdir() if p.is_dir()),
+        key=lambda p: p.stat().st_mtime,
+        reverse=True,
+    )
+    for session in candidates:
+        states_csv = session / "temporal_states.csv"
+        if not states_csv.is_file():
+            continue
+        try:
+            with states_csv.open() as handle:
+                rows = sum(1 for _ in handle) - 1  # minus header
+        except OSError:
+            continue
+        if rows >= min_windows:
+            return session
+    return None
+
+
+def _source_csv_for_session(session_dir: Path) -> Optional[Path]:
+    """The Current_State-labelled flow CSV a prepared temporal session was
+    built from. Prefer the path recorded in a prior validation_report.json,
+    else the same-stem file under features/. None if neither exists."""
+    report = session_dir / "validation_report.json"
+    if report.is_file():
+        try:
+            recorded = Path(json.loads(report.read_text()).get("source_csv", ""))
+            if recorded.is_file():
+                return recorded
+        except (OSError, ValueError):
+            pass
+    candidate = FEATURES_DIR / f"{session_dir.name}.csv"
+    return candidate if candidate.is_file() else None
+
+
+def _bootstrap_validation_state() -> None:
+    """On startup, surface the newest on-disk validation_report.json so the
+    VALIDATION tab shows the last real result instead of 'NOT VALIDATED'
+    after a server restart."""
+    session_dir = _recent_temporal_session_dir(min_windows=1)
+    if session_dir is None:
+        return
+    report_path = session_dir / "validation_report.json"
+    if not report_path.is_file():
+        return
+    try:
+        report = json.loads(report_path.read_text())
+    except (OSError, ValueError):
+        return
+    report.setdefault("report_path", str(report_path))
+    with validation_state.lock:
+        validation_state.report = report
+        validation_state.stage = _stage_for_overall_status(report.get("overall_status", ""))
+
+
+_bootstrap_validation_state()
+
+
 def _windows_source_for_forecast() -> Optional[Path]:
-    """The temporal dataset the user last prepared in this process, so a
-    forecast runs on their capture instead of the frozen training-set
-    window cache (which isn't shipped)."""
+    """The temporal dataset a forecast should run against: the one prepared
+    in this process if present, otherwise the most recent one still on disk
+    (survives a server restart). The frozen CICIDS2017 training-window
+    cache isn't shipped, so without this a restart makes every forecast
+    return 409."""
     with temporal_state.lock:
         if temporal_state.stage == "COMPLETED" and temporal_state.summary:
             out = temporal_state.summary.get("output_dir")
-            return Path(out) if out else None
-    return None
+            if out and Path(out).is_dir():
+                return Path(out)
+    return _recent_temporal_session_dir(min_windows=5)  # SEQUENCE_LENGTH
 
 
 @app.post("/api/lstm/forecast")

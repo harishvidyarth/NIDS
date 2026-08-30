@@ -35,6 +35,7 @@ import numpy as np
 import pandas as pd
 from sklearn.exceptions import InconsistentVersionWarning
 
+from ..config import load_config
 from .features import TRAINING_FEATURES, match_columns, is_id_or_label_column
 from .explain import attribute, top_features_for_row, driving_features
 from .signatures import flow_signatures
@@ -50,16 +51,22 @@ CURRENT_STATE_COLUMN = "Current_State"
 INVALID_FEATURES_LABEL = "INVALID_FEATURES"
 
 
-# Confidence gate for the headline verdict. A handful of ANN-only flagged
-# flows (e.g. 5 of 35) is not a confirmed attack — especially DDoS, which
-# is a *volumetric, many-source* phenomenon. Below the gate the hero reads
+# Confidence gate for the headline verdict. A small fraction of ANN-only
+# flagged flows is not a confirmed attack. Below the gate the hero reads
 # "SUSPICIOUS — <class>?" (amber, review) instead of "ATTACK — <class>"
-# (red). The deterministic signature layer firing for the same class
-# always clears the gate. Tunables in one place:
-MIN_ATTACK_FLOWS_DDOS = 20
-MIN_ATTACK_RATIO_DDOS = 0.10
-MIN_ATTACK_FLOWS_OTHER = 5
-MIN_ATTACK_RATIO_OTHER = 0.05
+# (red). The gate is purely percentage-based: the attack class's OWN share
+# of scored flows must reach `min_ratio` for its tier — a minority DoS is
+# not promoted to ATTACK by unrelated DDoS flows also present in the
+# capture, and there is no absolute flow-count condition. The deterministic
+# signature layer firing for the same class always clears the gate.
+# Values come from config/config.json -> "verdict_gate" (read once at
+# import; restart the backend after editing). Defaults below are the
+# fallback when the key is absent.
+_VERDICT_GATE = load_config().get("verdict_gate", {})
+_GATE_DDOS = _VERDICT_GATE.get("ddos", {})
+_GATE_OTHER = _VERDICT_GATE.get("other", {})
+MIN_ATTACK_RATIO_DDOS = _GATE_DDOS.get("min_ratio", 0.20)
+MIN_ATTACK_RATIO_OTHER = _GATE_OTHER.get("min_ratio", 0.20)
 
 
 def summarize_states(
@@ -73,9 +80,13 @@ def summarize_states(
     1% attack flows. The real signal is the ratio, returned alongside.
 
     `verdict` / `confidence` apply the gate above: BENIGN (none) → SUSPICIOUS
-    (low) → ATTACK (high). `signature_attack_class` is the deterministic
-    signature layer's verdict for this capture, if any — it clears the gate
-    for its class."""
+    (low) → ATTACK (high). The gate is judged purely on the attack class's
+    OWN share of scored flows (`attack_class_ratio`) vs `min_ratio`, not the
+    combined non-BENIGN ratio and not any absolute flow count — so a
+    minority DoS is not promoted to ATTACK by unrelated DDoS flows in the
+    same capture. `signature_attack_class` is the deterministic signature
+    layer's verdict for this capture, if any — it clears the gate for its
+    class."""
     dominant_state = max(
         CLASS_NAMES, key=lambda c: (counts.get(c, 0), -CLASS_NAMES.index(c))
     )
@@ -93,17 +104,19 @@ def summarize_states(
             key=lambda c: (attack_class_counts[c], -attack_classes.index(c)),
         )
 
+    # Per-class share of scored flows — the figure the gate is judged on.
+    cls_count = attack_class_counts[attack_class] if attack_class else 0
+    cls_ratio = round(cls_count / n_scored, 4) if (attack_class and n_scored) else 0.0
+
     if attack_class is None:
         verdict, confidence = "BENIGN", "none"
     else:
-        if attack_class == "DDoS":
-            min_flows, min_ratio = MIN_ATTACK_FLOWS_DDOS, MIN_ATTACK_RATIO_DDOS
-        else:
-            min_flows, min_ratio = MIN_ATTACK_FLOWS_OTHER, MIN_ATTACK_RATIO_OTHER
-        cls_count = attack_class_counts[attack_class]
+        min_ratio = (
+            MIN_ATTACK_RATIO_DDOS if attack_class == "DDoS" else MIN_ATTACK_RATIO_OTHER
+        )
         confirmed = (
             signature_attack_class == attack_class
-            or (cls_count >= min_flows and ratio >= min_ratio)
+            or cls_ratio >= min_ratio
         )
         if confirmed:
             verdict, confidence = f"ATTACK — {attack_class}", "high"
@@ -114,6 +127,7 @@ def summarize_states(
         "dominant_state": dominant_state,
         "attack_flow_count": attack_flow_count,
         "malicious_flow_ratio": ratio,
+        "attack_class_ratio": cls_ratio,
         "attack_present": attack_flow_count > 0,
         "attack_class": attack_class,
         "attack_class_counts": attack_class_counts,
@@ -488,6 +502,9 @@ def predict_csv(csv_path: Path) -> dict:
         "confidence": state_summary["confidence"],
         "attack_class": state_summary["attack_class"],
         "attack_class_counts": state_summary["attack_class_counts"],
+        # The attack class's own share of scored flows — the figure the
+        # confidence gate is judged on (not the combined non-BENIGN ratio).
+        "attack_class_ratio": state_summary["attack_class_ratio"],
         "attack_flow_count": state_summary["attack_flow_count"],
         "malicious_flow_ratio": state_summary["malicious_flow_ratio"],
         "attack_present": state_summary["attack_present"],

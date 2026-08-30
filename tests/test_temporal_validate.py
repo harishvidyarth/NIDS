@@ -55,10 +55,13 @@ def test_invalid_current_state_label_fails(tmp_path):
     assert report["overall_status"] == "FAIL"
 
 
-# ---------- 3. Timestamp disorder -> FAIL ----------
+# ---------- 3a. Minor timestamp disorder -> WARNING (pipeline re-sorts) ----------
 
-def test_timestamp_disorder_fails(tmp_path):
-    df = make_flow_csv(60, step_seconds=2)
+def test_minor_timestamp_disorder_warns(tmp_path):
+    # A flow exporter flushes on completion, so a handful of rows land out
+    # of start-time order. prepare_temporal_dataset re-sorts before
+    # windowing, so this is a data-quality WARNING, not a structural FAIL.
+    df = make_flow_csv(120, step_seconds=1)
     csv_path, temporal_dir = _prepare(tmp_path, df)
 
     disordered = df.copy()
@@ -67,10 +70,49 @@ def test_timestamp_disorder_fails(tmp_path):
     disordered.to_csv(disordered_csv, index=False)
 
     report = validate_temporal_dataset(disordered_csv, temporal_dir)
+    assert report["checks"]["timestamps"] == "WARNING"
+    assert report["details"]["timestamps"]["details"]["order_status"] == "WARNING"
+    assert report["details"]["timestamps"]["details"]["out_of_order_rows"] > 0
+    assert report["overall_status"] != "FAIL"
+
+
+# ---------- 3b. Structural timestamp disorder -> FAIL ----------
+
+def test_structural_timestamp_disorder_fails(tmp_path):
+    df = make_flow_csv(60, step_seconds=2)
+    csv_path, temporal_dir = _prepare(tmp_path, df)
+
+    disordered = df.copy()
+    # Reverse the second half of the rows -> a large fraction of adjacent
+    # pairs inverted: a genuinely broken export, not exporter flush jitter.
+    tail = disordered.loc[30:, "timestamp"].to_numpy()[::-1]
+    disordered.loc[30:, "timestamp"] = tail
+    disordered_csv = tmp_path / "disordered.csv"
+    disordered.to_csv(disordered_csv, index=False)
+
+    report = validate_temporal_dataset(disordered_csv, temporal_dir)
     assert report["checks"]["timestamps"] == "FAIL"
     assert report["details"]["timestamps"]["details"]["order_status"] == "FAIL"
-    assert report["details"]["timestamps"]["details"]["out_of_order_rows"] > 0
+    assert report["details"]["timestamps"]["details"]["out_of_order_rows"] > 5
     assert report["overall_status"] == "FAIL"
+
+
+# ---------- 3c. Tiny-negative IAT extremum -> WARNING, not FAIL ----------
+
+def test_near_zero_negative_iat_warns(tmp_path):
+    df = make_flow_csv(60, step_seconds=2)
+    csv_path, temporal_dir = _prepare(tmp_path, df)
+
+    states_path = temporal_dir / "temporal_states.csv"
+    states_df = pd.read_csv(states_path)
+    states_df.loc[0, "min_iat"] = -1e-4  # float / sub-second clock jitter, not a real defect
+    states_df.to_csv(states_path, index=False)
+
+    report = validate_temporal_dataset(csv_path, temporal_dir)
+    assert report["checks"]["features"] == "WARNING"
+    assert not report["details"]["features"]["details"]["range_violations"]
+    assert any(v["feature"] == "min_iat" for v in report["details"]["features"]["details"]["near_zero_negatives"])
+    assert report["overall_status"] != "FAIL"
 
 
 # ---------- 4. Invalid (overlapping) window -> FAIL ----------

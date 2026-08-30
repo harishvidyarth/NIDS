@@ -102,6 +102,9 @@ let activeTemporalSubtab = "states";
 let selectedValidationCheck = null;
 let explanationResults = {};
 let explanationPolling = new Set();
+let temporalStatesData = null;   // { session, source, window_size_seconds, rows: [...] }
+let temporalStatesKey = null;    // session name + row count, to avoid redundant refetch
+let packetRateHistory = [];       // [{ t: ms, packets }] for the capture sparkline
 
 async function api(path, opts) {
   const res = await fetch(API + path, opts);
@@ -329,6 +332,7 @@ async function syncTemporalAndValidationStatus() {
   if (!temporalPolling) {
     try { temporalStatus = await api("/api/temporal/status"); } catch (e) { /* leave last known */ }
   }
+  try { await loadTemporalStates(); } catch (e) { /* leave last known */ }
   if (!validationPolling) {
     try { validationStatus = await api("/api/temporal/validate/status"); } catch (e) { /* leave last known */ }
   }
@@ -755,9 +759,10 @@ function renderTemporalTable() {
 
   const statesEl = el("temporal-subtab-states");
   if (!r) {
-    statesEl.innerHTML = `<div class="panel-notice">Temporal dataset not prepared yet. Use "Prepare Temporal Dataset" in the TEMPORAL DATASET detail tab.</div>`;
+    statesEl.innerHTML = renderTemporalStatesTimeline() +
+      `<div class="panel-notice">Temporal dataset not prepared yet. Use "Prepare Temporal Dataset" in the TEMPORAL DATASET detail tab.</div>`;
   } else {
-    statesEl.innerHTML = `
+    statesEl.innerHTML = renderTemporalStatesTimeline() + `
       <div class="panel-notice" style="text-align:left; padding:0;">
         Row-level window data is not exposed by <code>/api/temporal/status</code> (summary counts only) —
         full detail lives in <code>${escapeHtml(r.output_dir)}/temporal_states.csv</code>. Summary from the last real run:
@@ -883,6 +888,19 @@ function renderCaptureTab() {
   if (mode === "live") {
     const cap = liveSnap ? liveSnap.capture : null;
     const capturing = cap && cap.status === "CAPTURING";
+
+    // B3 — feed the packets/sec sparkline from this same poll.
+    if (capturing && cap && cap.packet_count != null) {
+      const last = packetRateHistory[packetRateHistory.length - 1];
+      if (!last || cap.packet_count < last.packets) packetRateHistory = [];  // new capture / counter reset
+      if (!last || cap.packet_count !== last.packets || Date.now() - last.t > 900) {
+        packetRateHistory.push({ t: Date.now(), packets: cap.packet_count });
+        if (packetRateHistory.length > 40) packetRateHistory.shift();
+      }
+    } else if (!capturing && cap && cap.status !== "STOPPED") {
+      packetRateHistory = [];
+    }
+    renderCaptureRateSparkline();
     el("btn-start").disabled = capturing;
     el("btn-stop").disabled = !capturing;
     el("iface-select").disabled = capturing;
@@ -1114,9 +1132,10 @@ function renderClassifierMetrics() {
 }
 
 /* Shared display verdict — honours the confidence gate (predict.py
-   MIN_ATTACK_FLOWS_* / MIN_ATTACK_RATIO_*). A handful of ANN-only flagged
-   flows in a mostly-benign capture reads BENIGN/SUSPICIOUS, never ATTACK,
-   unless the signature layer confirmed it (confidence "high"). */
+   verdict_gate min_ratio: the attack class's own % share of scored flows).
+   A small fraction of ANN-only flagged flows in a mostly-benign capture
+   reads BENIGN/SUSPICIOUS, never ATTACK, unless the signature layer
+   confirmed it (confidence "high"). */
 function predVerdict(pred) {
   if (!pred) return { tier: "none", cls: null };
   const cls = (pred.attack_alert && pred.attack_alert !== "NONE" ? pred.attack_alert : null)
@@ -1161,6 +1180,9 @@ function renderPredictionTab() {
       let sub = `Dominant traffic: ${pred.dominant_state} · attack alert: ${pred.attack_alert || "NONE"}`;
       if (pred.attack_class) {
         sub += ` · ANN: ${pred.attack_class_counts[pred.attack_class]} ${pred.attack_class} flow(s)`;
+        if (typeof pred.attack_class_ratio === "number") {
+          sub += ` (${(pred.attack_class_ratio * 100).toFixed(1)}%)`;
+        }
       }
       if (pred.signature_verdict && pred.signature_verdict !== pred.attack_class) {
         sub += ` · signature: ${pred.signature_verdict}`;
@@ -1192,6 +1214,7 @@ function renderPredictionTab() {
   renderClassDistribution(pred);
   renderSignatureHits(pred);
   renderDrivingFeatures(pred);
+  renderPredictionFlowsTimeline(pred);
 }
 
 function renderSignatureHits(pred) {
@@ -1265,6 +1288,137 @@ async function pollExplanation(jobId) {
 }
 
 const CLASS_COLORS = { BENIGN: "var(--green)", DDoS: "var(--red)", DoS: "var(--orange)", PortScan: "var(--amber)" };
+
+/* ==================== Dashboard mini-charts (hand-rolled inline SVG) ==================== */
+
+// B1 — per-window temporal-states timeline. Fetches the row-level detail
+// /api/temporal/status deliberately omits; only refetches when the prepared
+// session or its window count changed. 404 => nothing prepared yet.
+async function loadTemporalStates() {
+  const summary = temporalStatus && temporalStatus.result;
+  if (!summary) { temporalStatesData = null; temporalStatesKey = null; return; }
+  const wantKey = `${summary.output_dir || ""}#${summary.total_windows || 0}`;
+  if (wantKey === temporalStatesKey && temporalStatesData) return;
+  try {
+    temporalStatesData = await api("/api/temporal/states");
+    temporalStatesKey = wantKey;
+  } catch (e) {
+    temporalStatesData = null;   // 404 before a dataset is prepared
+    temporalStatesKey = null;
+  }
+}
+
+function renderTemporalStatesTimeline() {
+  const data = temporalStatesData;
+  if (!data || !data.rows || !data.rows.length) {
+    return `<div id="temporal-states-timeline" class="mini-chart"><div class="dist-empty">No prepared temporal windows yet — run Prepare Temporal Dataset.</div></div>`;
+  }
+  const rows = data.rows;
+  const W = 640, H = 96, padL = 4, padR = 4, padTop = 8, padBot = 18;
+  const plotW = W - padL - padR, plotH = H - padTop - padBot;
+  const maxFlows = Math.max(1, ...rows.map((r) => r.flow_count || 0));
+  const bw = plotW / rows.length;
+  const bars = rows.map((r, i) => {
+    const h = Math.max(2, (r.flow_count || 0) / maxFlows * plotH);
+    const x = padL + i * bw;
+    const y = padTop + (plotH - h);
+    const fill = CLASS_COLORS[r.dominant_state] || "var(--accent)";
+    const tick = r.attack_present
+      ? `<rect x="${x.toFixed(1)}" y="${padTop.toFixed(1)}" width="${Math.max(1, bw - 0.5).toFixed(1)}" height="3" fill="var(--red)"/>`
+      : "";
+    return `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${Math.max(1, bw - 0.5).toFixed(1)}" height="${h.toFixed(1)}" fill="${fill}"><title>${escapeHtml(String(r.window_start || ("window " + r.window_id)))} · ${escapeHtml(r.dominant_state || "?")} · ${r.flow_count || 0} flows${r.attack_present ? " · attack" : ""}</title></rect>${tick}`;
+  }).join("");
+  const baseY = padTop + plotH;
+  const firstLbl = escapeHtml(String(rows[0].window_start || rows[0].window_id));
+  const lastLbl = escapeHtml(String(rows[rows.length - 1].window_start || rows[rows.length - 1].window_id));
+  const legend = ["BENIGN", "DoS", "DDoS", "PortScan"]
+    .map((c) => `<span><i style="background:${CLASS_COLORS[c]}"></i>${c}</span>`).join("") +
+    `<span><i style="background:var(--red)"></i>attack window</span>`;
+  return `<div id="temporal-states-timeline" class="mini-chart">
+    <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="dominant network state per ${data.window_size_seconds || 10}s window">
+      <line x1="${padL}" y1="${baseY}" x2="${padL + plotW}" y2="${baseY}" stroke="currentColor"/>
+      ${bars}
+      <text x="${padL}" y="${H - 4}" text-anchor="start">${firstLbl}</text>
+      <text x="${padL + plotW}" y="${H - 4}" text-anchor="end">${lastLbl}</text>
+    </svg>
+    <div class="mini-chart-legend">${legend}<span style="margin-left:auto">${escapeHtml(data.session)} · ${data.source === "in_process" ? "live" : "on disk"} · bar height = flow count</span></div>
+  </div>`;
+}
+
+// B2 — attack vs benign flows per minute + mean confidence, from the
+// prediction result already on the page. No backend call.
+function renderPredictionFlowsTimeline(pred) {
+  const wrap = el("prediction-flows-timeline");
+  if (!wrap) return;
+  const flows = (pred && pred.flows) || [];
+  const parsed = flows.map((f) => {
+    const raw = f.timestamp || f.Timestamp || "";
+    const ms = Date.parse(String(raw).replace(" ", "T"));
+    return Number.isNaN(ms) ? null : { ms, attack: (f.effective_state || f.predicted_state) !== "BENIGN", conf: typeof f.confidence === "number" ? f.confidence : null };
+  }).filter(Boolean).sort((a, b) => a.ms - b.ms);
+  if (parsed.length < 2) {
+    wrap.innerHTML = '<div class="dist-empty">N/A — not enough timestamped flows</div>';
+    return;
+  }
+  const t0 = parsed[0].ms, t1 = parsed[parsed.length - 1].ms;
+  const span = Math.max(1, t1 - t0);
+  const nbins = Math.min(120, Math.max(1, Math.ceil(span / 60000)));
+  const bins = Array.from({ length: nbins }, () => ({ benign: 0, attack: 0, confSum: 0, confN: 0 }));
+  for (const p of parsed) {
+    const idx = Math.min(nbins - 1, Math.floor((p.ms - t0) / span * nbins));
+    if (p.attack) bins[idx].attack++; else bins[idx].benign++;
+    if (p.conf != null) { bins[idx].confSum += p.conf; bins[idx].confN++; }
+  }
+  const W = 640, H = 150, padL = 34, padR = 8, padTop = 10, padBot = 22;
+  const plotW = W - padL - padR, plotH = H - padTop - padBot;
+  const maxCount = Math.max(1, ...bins.map((b) => Math.max(b.benign, b.attack)));
+  const xAt = (i) => padL + (nbins === 1 ? plotW / 2 : i * (plotW / (nbins - 1)));
+  const yCount = (v) => padTop + (1 - v / maxCount) * plotH;
+  const yConf = (v) => padTop + (1 - v) * plotH;
+  const line = (pick, color, dash) => `<polyline points="${bins.map((b, i) => `${xAt(i).toFixed(1)},${pick(b).toFixed(1)}`).join(" ")}" fill="none" stroke="${color}" stroke-width="2"${dash ? ` stroke-dasharray="4 3"` : ""}/>`;
+  const benignLine = line((b) => yCount(b.benign), "var(--green)");
+  const attackLine = line((b) => yCount(b.attack), "var(--red)");
+  const confLine = line((b) => yConf(b.confN ? b.confSum / b.confN : 0), "var(--amber)", true);
+  const fmtT = (ms) => new Date(ms).toISOString().slice(11, 19);
+  wrap.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="attack vs benign flows per minute and mean confidence">
+    <line x1="${padL}" y1="${padTop + plotH}" x2="${padL + plotW}" y2="${padTop + plotH}" stroke="currentColor"/>
+    <line x1="${padL}" y1="${padTop}" x2="${padL}" y2="${padTop + plotH}" stroke="currentColor"/>
+    <text x="${padL - 4}" y="${padTop + 4}" text-anchor="end">${maxCount}</text>
+    <text x="${padL - 4}" y="${padTop + plotH}" text-anchor="end">0</text>
+    ${benignLine}${attackLine}${confLine}
+    <text x="${padL}" y="${H - 6}" text-anchor="start">${fmtT(t0)}</text>
+    <text x="${padL + plotW}" y="${H - 6}" text-anchor="end">${fmtT(t1)}</text>
+  </svg>
+  <div class="mini-chart-legend">
+    <span><i style="background:var(--green)"></i>benign flows/min</span>
+    <span><i style="background:var(--red)"></i>attack flows/min</span>
+    <span><i style="background:var(--amber)"></i>mean confidence (0–1)</span>
+  </div>`;
+}
+
+// B3 — packets/sec sparkline for a live capture, accumulated client-side
+// from the poll that already runs. No backend call.
+function renderCaptureRateSparkline() {
+  const wrap = el("capture-rate-sparkline");
+  if (!wrap) return;
+  const hist = packetRateHistory;
+  if (hist.length < 2) { wrap.innerHTML = '<div class="dist-empty">&mdash;</div>'; return; }
+  const rates = [];
+  for (let i = 1; i < hist.length; i++) {
+    const dt = (hist[i].t - hist[i - 1].t) / 1000;
+    const dp = hist[i].packets - hist[i - 1].packets;
+    rates.push(dt > 0 && dp >= 0 ? dp / dt : 0);
+  }
+  const W = 320, H = 48, pad = 4;
+  const maxR = Math.max(1, ...rates);
+  const stepX = (W - pad * 2) / Math.max(1, rates.length - 1);
+  const pts = rates.map((r, i) => `${(pad + i * stepX).toFixed(1)},${(H - pad - r / maxR * (H - pad * 2)).toFixed(1)}`).join(" ");
+  const current = rates[rates.length - 1] || 0;
+  wrap.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="packets per second">
+    <polyline points="${pts}" fill="none" stroke="var(--green)" stroke-width="2"/>
+    <text x="${W - pad}" y="${pad + 9}" text-anchor="end">${current.toFixed(0)} pkt/s</text>
+  </svg>`;
+}
 function renderClassDistribution(pred) {
   const wrap = el("class-distribution");
   if (!pred || !pred.class_counts) {

@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>NIDS Network Traffic Analyzer</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2016%2016'%3E%3Ccircle%20cx='8'%20cy='8'%20r='6'%20fill='%234fa3e3'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=phase5" />
+<link rel="stylesheet" href="styles.css?v=phase6" />
 </head>
 <body>
 
@@ -227,6 +227,8 @@
               <div class="hero-metric"><span class="hero-metric-label">Packets</span><span id="d-hero-packets" class="hero-metric-value">N/A</span></div>
               <div class="hero-metric"><span class="hero-metric-label">Duration</span><span id="d-hero-duration" class="hero-metric-value">N/A</span></div>
             </div>
+            <div class="detail-col-subtitle" style="margin-top:10px;">PACKET RATE</div>
+            <div id="capture-rate-sparkline" class="mini-chart mini-chart-sm"><div class="dist-empty">&mdash;</div></div>
           </div>
         </div>
       </div>
@@ -299,6 +301,9 @@
             <button id="btn-download-csv" class="btn btn-action" disabled>&#8681; Download Processed CSV</button>
           </div>
         </div>
+        <div class="detail-col-title" style="margin-top:14px;">FLOWS OVER TIME
+          <span class="detail-col-subtitle">attack vs benign flows per minute · mean confidence</span></div>
+        <div id="prediction-flows-timeline" class="mini-chart"><div class="dist-empty">N/A — no prediction yet</div></div>
         <div class="detail-col-title" style="margin-top:16px;">CLASSIFIER METRICS
           <span class="detail-col-subtitle">ground truth when available · otherwise clearly labelled proxy agreement</span></div>
         <button id="btn-classifier-metrics" class="btn btn-sm">Load classifier metrics</button>
@@ -514,6 +519,6 @@
   </div>
 </div>
 
-<script src="app.js?v=phase5"></script>
+<script src="app.js?v=phase6"></script>
 </body>
 </html>

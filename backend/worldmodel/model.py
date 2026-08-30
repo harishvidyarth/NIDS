@@ -31,9 +31,12 @@ def build_world_model(input_dim: int = INPUT_DIM, seq_len: int = SEQUENCE_LENGTH
     outputs = L.LSTM(hidden_dim, return_sequences=True, name="lstm")(inp)
     scores = L.Dense(1, name="attn_score")(outputs)           # [B, T, 1]
     scores = L.Softmax(axis=1, name=ATTN_LAYER_NAME)(scores)  # over time
-    context = L.Lambda(
-        lambda z: tf.reduce_sum(z[0] * z[1], axis=1), name="context"
-    )([outputs, scores])
+    # attention-weighted sum over the time axis: sum_t scores[t] * outputs[t]
+    # -> [B, H]. Built only from stock layers (no Lambda) so the model
+    # round-trips cleanly through model.save() / load_model() — a Lambda
+    # closing over `tf` does not survive deserialization.
+    context = L.Dot(axes=1, name="context")([scores, outputs])  # [B, 1, H]
+    context = L.Flatten(name="context_flat")(context)           # [B, H]
     class_probs = L.Dense(n_classes, activation="softmax", name="class_probs")(context)
     next_state = L.Dense(input_dim, name="next_state")(context)
     return tf.keras.Model(inp, [class_probs, next_state], name="world_model_lstm")

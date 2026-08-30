@@ -51,8 +51,19 @@ def _load_artifact():
     artifact_dir = repository_path(latest["artifact_dir"])
     import tensorflow as tf
 
-    model = tf.keras.models.load_model(artifact_dir / "model.keras", compile=False)
-    scaler = joblib.load(artifact_dir / "scaler.bin")
+    try:
+        # safe_mode=False: build_world_model() uses a Lambda layer (a Python
+        # lambda over tf.reduce_sum), which Keras 3 refuses to deserialize
+        # under the default safe_mode. This is our own just-trained artifact.
+        model = tf.keras.models.load_model(
+            artifact_dir / "model.keras", compile=False, safe_mode=False
+        )
+        scaler = joblib.load(artifact_dir / "scaler.bin")
+    except Exception as error:  # a corrupt/incompatible artifact -> clean 409, not a 500
+        raise WorldModelUnavailable(
+            f"Trained world-model artifact could not be loaded ({error}). "
+            "Re-run POST /api/worldmodel/train."
+        ) from error
     report = {}
     report_path = artifact_dir / "report.json"
     if report_path.is_file():

@@ -7,7 +7,7 @@ from backend.prediction.predict import summarize_states
 
 def test_few_ann_ddos_flows_are_suspicious_not_attack():
     # 13 of 348 (3.7%) DDoS flows, ANN only, no signature hit -> below the
-    # DDoS gate -> SUSPICIOUS, not a red ATTACK.
+    # 20% DDoS gate -> SUSPICIOUS, not a red ATTACK.
     s = summarize_states({"BENIGN": 335, "DDoS": 13, "DoS": 0, "PortScan": 0}, 348)
     assert s["dominant_state"] == "BENIGN"          # was "MALICIOUS" before
     assert s["attack_flow_count"] == 13
@@ -28,7 +28,7 @@ def test_signature_hit_clears_the_gate():
 
 
 def test_ddos_clears_gate_on_volume():
-    # 30 of 100 (30%) DDoS flows -> clears MIN_ATTACK_FLOWS_DDOS/ratio.
+    # 30 of 100 (30%) DDoS flows -> own share >= 20% -> ATTACK.
     s = summarize_states({"BENIGN": 70, "DDoS": 30, "DoS": 0, "PortScan": 0}, 100)
     assert s["verdict"] == "ATTACK — DDoS"
     assert s["confidence"] == "high"
@@ -43,11 +43,51 @@ def test_verdict_benign_when_no_attack_flows():
 
 def test_attack_class_ties_prefer_more_severe():
     # DoS and PortScan tie on count; DoS is the earlier (more severe) entry.
-    # 20% attack ratio, 10 DoS flows -> clears the non-DDoS gate.
-    s = summarize_states({"BENIGN": 80, "DDoS": 0, "DoS": 10, "PortScan": 10}, 100)
+    # 25 DoS of 100 = 25% (its own share) >= 20% -> clears the gate.
+    s = summarize_states({"BENIGN": 50, "DDoS": 0, "DoS": 25, "PortScan": 25}, 100)
     assert s["dominant_state"] == "BENIGN"
     assert s["attack_class"] == "DoS"
+    assert s["attack_class_ratio"] == 0.25
     assert s["verdict"] == "ATTACK — DoS"
+
+
+def test_minority_class_ratio_not_dragged_up_by_other_attack_class():
+    # The reported live-dashboard capture: BENIGN 329, DDoS 9, DoS 10 of 348.
+    # DoS's own share is 10/348 = 2.87% < 20% gate. Pre-fix the *combined*
+    # non-BENIGN ratio (19/348 = 5.46%) wrongly cleared the gate and the
+    # hero read a red "ATTACK — DoS".
+    s = summarize_states({"BENIGN": 329, "DDoS": 9, "DoS": 10, "PortScan": 0}, 348)
+    assert s["dominant_state"] == "BENIGN"
+    assert s["attack_class"] == "DoS"
+    assert s["attack_class_ratio"] == 0.0287
+    assert s["verdict"] == "SUSPICIOUS — DoS?"
+    assert s["confidence"] == "low"
+
+
+def test_per_class_ratio_below_gate_is_suspicious_despite_combined_ratio():
+    # DoS 12 of 100 = 12% < 20% gate. PortScan 12 pushes the combined
+    # non-BENIGN ratio to 24%, but the gate ignores the combined figure.
+    s = summarize_states({"BENIGN": 76, "DDoS": 0, "DoS": 12, "PortScan": 12}, 100)
+    assert s["attack_class"] == "DoS"          # tie -> earlier / more severe
+    assert s["attack_class_ratio"] == 0.12
+    assert s["verdict"] == "SUSPICIOUS — DoS?"
+
+
+def test_per_class_ratio_exactly_at_gate_is_attack():
+    # DoS 20 of 100 = 20% == MIN_ATTACK_RATIO_OTHER. Boundary is inclusive.
+    s = summarize_states({"BENIGN": 80, "DDoS": 0, "DoS": 20, "PortScan": 0}, 100)
+    assert s["attack_class"] == "DoS"
+    assert s["attack_class_ratio"] == 0.2
+    assert s["verdict"] == "ATTACK — DoS"
+
+
+def test_gate_is_percentage_only_no_absolute_floor():
+    # 40 DoS flows but only 8% of a large capture -> SUSPICIOUS. A raw
+    # flow count never clears the gate on its own.
+    s = summarize_states({"BENIGN": 460, "DDoS": 0, "DoS": 40, "PortScan": 0}, 500)
+    assert s["attack_class"] == "DoS"
+    assert s["attack_class_ratio"] == 0.08
+    assert s["verdict"] == "SUSPICIOUS — DoS?"
 
 
 def test_one_off_portscan_flow_is_suspicious():

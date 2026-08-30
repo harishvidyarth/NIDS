@@ -201,3 +201,40 @@ def test_ui_renders_only_bounded_aggregates():
     assert "lstm-probabilities" in html
     assert "lstmReport.counts" in script
     assert "flow-level training rows" not in script
+
+
+def test_forecast_survives_mitre_metadata_failure(monkeypatch):
+    """A broken/stale ATT&CK metadata layer must not 409 the whole
+    one-window forecast — it degrades to mitre_mapping=None."""
+    pytest.importorskip("tensorflow")
+    from backend.lstm.config import LATEST_PATH
+    from backend.lstm.training import forecast_latest
+
+    if not LATEST_PATH.is_file():
+        pytest.skip("no LSTM forecasting artifact on disk")
+
+    temporal_root = REPO_ROOT / "data" / "temporal"
+    session = None
+    if temporal_root.is_dir():
+        for cand in sorted((p for p in temporal_root.iterdir() if p.is_dir()),
+                           key=lambda p: p.stat().st_mtime, reverse=True):
+            states = cand / "temporal_states.csv"
+            if states.is_file() and sum(1 for _ in states.open()) - 1 >= SEQUENCE_LENGTH:
+                session = cand
+                break
+    if session is None:
+        pytest.skip("no prepared temporal session with enough windows on disk")
+
+    import backend.mitre.mapper as mapper_mod
+
+    def _boom(*_a, **_k):
+        raise mapper_mod.AttackMetadataError("simulated stale/broken ATT&CK metadata")
+
+    monkeypatch.setattr(mapper_mod.AttackMetadataStore, "load", classmethod(lambda cls, *a, **k: _boom()))
+
+    result = forecast_latest(windows_source=session)
+    assert isinstance(result, dict)
+    assert result["mitre_mapping"] is None
+    assert result["mitre_mapping_error"]
+    assert result["predicted_state"] in FORECAST_CLASSES
+    assert set(result["probabilities"]) == set(FORECAST_CLASSES)

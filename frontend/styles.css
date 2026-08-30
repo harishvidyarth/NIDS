@@ -410,6 +410,14 @@ input[type="file"]::file-selector-button {
 .multistep-warning.warning-active { border-color: var(--amber); color: var(--amber); background: rgba(251,191,36,0.08); }
 .multistep-chart { color: var(--text-faint); max-width: 760px; }
 .multistep-chart svg { width: 100%; min-height: 170px; font: 10px var(--mono); }
+
+.mini-chart { color: var(--text-faint); max-width: 760px; margin-top: 6px; overflow-x: auto; }
+.mini-chart svg { width: 100%; min-height: 90px; font: 10px var(--mono); display: block; }
+.mini-chart rect { shape-rendering: crispEdges; }
+.mini-chart-sm svg { min-height: 48px; }
+.mini-chart-legend { display: flex; gap: 12px; font-size: 10px; margin-top: 4px; flex-wrap: wrap; }
+.mini-chart-legend span { display: inline-flex; align-items: center; gap: 4px; }
+.mini-chart-legend i { width: 10px; height: 3px; display: inline-block; border-radius: 2px; }
 .multistep-horizons { display: grid; gap: 6px; }
 .multistep-horizon { border: 1px solid var(--border-soft); background: var(--bg-alt); padding: 7px 10px; font: 11px var(--mono); }
 .multistep-horizon summary { display: grid; grid-template-columns: 42px 1fr 90px 110px; gap: 10px; cursor: pointer; }

@@ -18,7 +18,7 @@ from sklearn.metrics import f1_score
 from sklearn.preprocessing import MinMaxScaler
 
 from ..lstm.config import repository_relative
-from ..lstm_multistep.config import TEST_SESSIONS, TRAIN_SESSIONS, VALIDATION_SESSIONS
+from ..lstm_multistep.config import SOURCE_FILENAMES, TEST_SESSIONS, TRAIN_SESSIONS, VALIDATION_SESSIONS
 from ..lstm_multistep.dataset import prepare_multistep_dataset
 from ..temporal.schema import STATE_FEATURE_NAMES
 from .config import (
@@ -35,14 +35,72 @@ from .model import build_world_model
 _CLASS_IDX = {c: i for i, c in enumerate(FORECAST_CLASSES)}
 
 
+def _norm_session(name: str) -> str:
+    return name[:-4] if name.endswith(".csv") else name
+
+
+_TRAIN_STEMS = {_norm_session(s) for s in TRAIN_SESSIONS}
+_VAL_STEMS = {_norm_session(s) for s in VALIDATION_SESSIONS}
+_TEST_STEMS = {_norm_session(s) for s in TEST_SESSIONS}
+
+
 def _session_bucket(session_id: str) -> str:
-    if session_id in TRAIN_SESSIONS:
-        return "train"
-    if session_id in VALIDATION_SESSIONS:
+    # session_id comes through as a bare stem (no .csv) from
+    # prepare_session_windows / the cache loader, while the *_SESSIONS
+    # tuples carry the .csv suffix — normalise both sides so the
+    # chronological train/val/test split actually applies.
+    stem = _norm_session(str(session_id))
+    if stem in _VAL_STEMS:
         return "validation"
-    if session_id in TEST_SESSIONS:
+    if stem in _TEST_STEMS:
         return "test"
-    return "train"
+    return "train"  # train stems + anything unrecognised
+
+
+def _session_frames_from_cache():
+    """Assemble the 8 per-session windowed frames straight from the
+    already-built window caches under data/lstm_cache/, using the exact
+    cache_key set recorded in multistep_dataset_manifest.json (the set the
+    working multi-step artifact was built from — its ground-truth labels
+    carry PortScan/DoS/DDoS, unlike a fresh rebuild under the current
+    Infiltration-drops-to-BENIGN label map). No raw CICIDS2017 CSV read.
+    Returns None if the manifest or any of the 8 caches is missing."""
+    import pandas as pd
+
+    from ..lstm.config import CACHE_ROOT
+    from ..temporal.schema import STATE_FEATURE_NAMES
+
+    manifest_path = CACHE_ROOT / "multistep_dataset_manifest.json"
+    if not manifest_path.is_file():
+        return None
+    try:
+        cache_entries = json.loads(manifest_path.read_text()).get("cache", [])
+    except (OSError, ValueError):
+        return None
+
+    by_name = {}
+    for entry in cache_entries:
+        name = (entry.get("identity", {}).get("source", {}) or {}).get("name") or entry.get("source_path")
+        if name:
+            by_name[name] = entry.get("cache_key")
+
+    frames = []
+    for name in SOURCE_FILENAMES:
+        key = by_name.get(name)
+        if not key:
+            return None
+        npz_path = CACHE_ROOT / key / "windows.npz"
+        if not npz_path.is_file():
+            return None
+        data = np.load(npz_path, allow_pickle=True)  # our own local cache; label columns are object arrays
+        frame = pd.DataFrame({col: data[col] for col in data.files})
+        if not {"window_id", "dominant_state"}.issubset(frame.columns) or any(
+            f not in frame.columns for f in STATE_FEATURE_NAMES
+        ):
+            return None
+        frame.insert(0, "session_id", _norm_session(name))
+        frames.append(frame)
+    return frames
 
 
 def _build_pairs(frames, scaler=None):
@@ -79,13 +137,34 @@ def _build_pairs(frames, scaler=None):
 
 def train_world_model(force_rebuild: bool = False, status=lambda **k: None) -> dict:
     status(stage="preparing-dataset")
-    try:
-        _dataset, _manifest, session_frames = prepare_multistep_dataset(
-            force_rebuild=force_rebuild,
-            progress=lambda **k: status(stage="preparing-dataset", **k),
-        )
-    except FileNotFoundError as exc:
-        raise RuntimeError(f"World-model training needs the CICIDS2017 CSVs. {exc}") from exc
+
+    # The K-step world-model only consumes the raw per-session window frames
+    # (`prepare_multistep_dataset`'s 3rd return value). Those already exist
+    # on disk under data/lstm_cache/ (the exact set the working multi-step
+    # artifact was built from), so prefer them: it avoids the CICIDS2017 CSV
+    # dependency AND the current label map's validate_class_support() /
+    # object-array cache-reader breakage in prepare_multistep_dataset.
+    session_frames = None if force_rebuild else _session_frames_from_cache()
+    if session_frames is not None:
+        status(stage="preparing-dataset", cache_state="hit", source="lstm_cache_manifest")
+    else:
+        try:
+            # forward the dataset layer's own progress kwargs unchanged — it
+            # already emits stage= ("ground_truth_windowing" / "cache"), so
+            # re-injecting stage= here would collide.
+            _dataset, _manifest, session_frames = prepare_multistep_dataset(
+                force_rebuild=force_rebuild,
+                progress=lambda **k: status(**k),
+            )
+        except (FileNotFoundError, RuntimeError, ValueError) as exc:
+            session_frames = _session_frames_from_cache()
+            if session_frames is None:
+                raise RuntimeError(
+                    "World-model training needs the CICIDS2017 CSVs or a complete "
+                    "data/lstm_cache/ window set (per multistep_dataset_manifest.json). "
+                    + str(exc)
+                ) from exc
+            status(stage="preparing-dataset", cache_state="hit", source="lstm_cache_manifest")
 
     buckets = {"train": [], "validation": [], "test": []}
     for frame in session_frames:

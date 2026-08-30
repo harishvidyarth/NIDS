@@ -272,15 +272,21 @@ def test_missing_timestamp_column_raises(tmp_path):
         prepare_temporal_dataset(csv_path, tmp_path / "out")
 
 
-# ---------- end-to-end sanity on a real project-generated file, if present ----------
+# ---------- end-to-end sanity on a synthetic multi-state capture ----------
 
-def test_end_to_end_on_real_generated_csv():
-    real_csv = Path(r"D:\NIDS-Using-CICIDS2017-Dataset\features\capture_2026-08-28_232338_fa981afc.csv")
-    if not real_csv.exists():
-        pytest.skip("Real captured CSV not present in this environment")
+def test_end_to_end_on_synthetic_multistate_csv(tmp_path):
+    # 64 flows @ 5s spacing -> ~320s -> ~32 ten-second windows; state blocks of
+    # 8 rows (= 4 windows each) so every window has an unambiguous dominant
+    # state and all four taxonomy classes appear.
+    block = 8
+    cycle = ["BENIGN"] * block + ["DoS"] * block + ["DDoS"] * block + ["PortScan"] * block
+    n_rows = len(cycle) * 2  # 64
+    states = (cycle * 2)[:n_rows]
+    df = make_flow_csv(n_rows, step_seconds=5, states=states)
+    csv_path = tmp_path / "generated.csv"
+    df.to_csv(csv_path, index=False)
     summary = prepare_temporal_dataset(
-        real_csv, Path(r"C:\Users\Kaviya V\.claude\jobs\63713ff0\tmp\temporal_pytest_out"),
-        window_size_seconds=10, sequence_length=5,
+        csv_path, tmp_path / "out", window_size_seconds=10, sequence_length=5,
     )
     assert summary["total_windows"] > 0
     assert summary["train_sequences"] > 0

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import numpy as np
+import pytest
 
 from backend.worldmodel import config as C
 from backend.worldmodel.killchain import (
@@ -11,6 +12,7 @@ from backend.worldmodel.killchain import (
     state_to_stage,
 )
 from backend.worldmodel.model import build_world_model, rollout
+from backend.worldmodel.training import _session_bucket, _session_frames_from_cache
 
 
 def test_state_to_stage_covers_all_four_classes():
@@ -37,6 +39,35 @@ def test_risk_level_bands():
     assert risk_level(0.1) == "low"
     assert risk_level(0.6) == "medium"
     assert risk_level(0.95) == "high"
+
+
+def test_session_bucket_normalizes_csv_suffix():
+    # session_id arrives as a bare stem from the window cache / builder,
+    # while the *_SESSIONS tuples carry ".csv" — both must bucket the same.
+    assert _session_bucket("Monday-WorkingHours.pcap_ISCX") == "train"
+    assert _session_bucket("Monday-WorkingHours.pcap_ISCX.csv") == "train"
+    assert _session_bucket("Friday-WorkingHours-Afternoon-PortScan.pcap_ISCX") == "validation"
+    assert _session_bucket("Friday-WorkingHours-Afternoon-DDos.pcap_ISCX") == "test"
+    assert _session_bucket("Friday-WorkingHours-Afternoon-DDos.pcap_ISCX.csv") == "test"
+
+
+def test_session_frames_from_cache_are_complete_and_multiclass():
+    frames = _session_frames_from_cache()
+    if frames is None:
+        pytest.skip("no complete data/lstm_cache/ window set on this machine")
+    import pandas as pd
+
+    from backend.temporal.schema import STATE_FEATURE_NAMES
+
+    assert len(frames) == 8
+    combined = pd.concat(frames, ignore_index=True)
+    assert {"window_id", "dominant_state"}.issubset(combined.columns)
+    assert all(f in combined.columns for f in STATE_FEATURE_NAMES)
+    # the chronological split must yield more than one dominant class overall
+    assert combined["dominant_state"].nunique() >= 2
+    # buckets actually split
+    buckets = {_session_bucket(str(f["session_id"].iloc[0])) for f in frames}
+    assert {"train", "validation", "test"} <= buckets
 
 
 def test_rollout_is_k_steps_and_autoregressive():

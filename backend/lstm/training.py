@@ -566,11 +566,16 @@ def forecast_latest(windows_source=None) -> dict:
     alert_probability_map = {label: float(alert_probabilities[i]) for i, label in enumerate(ALERT_CLASSES)}
     alert_index = int(np.argmax(alert_probabilities))
     from ..mitre.mapper import MitreAttackMapper
-    mitre_mapping = MitreAttackMapper().map_forecast(
-        str(recent["dominant_state"].iloc[-1]),
-        probability_map,
-        recent.iloc[-1][STATE_FEATURE_NAMES].to_dict(),
-    )
+    mitre_mapping = None
+    mitre_mapping_error = None
+    try:
+        mitre_mapping = MitreAttackMapper().map_forecast(
+            str(recent["dominant_state"].iloc[-1]),
+            probability_map,
+            recent.iloc[-1][STATE_FEATURE_NAMES].to_dict(),
+        )
+    except Exception as error:  # ATT&CK context is advisory — never fail the forecast over it
+        mitre_mapping_error = str(error)
     return {
         "current_state": str(recent["dominant_state"].iloc[-1]),
         "current_window": int(recent["window_id"].iloc[-1]),
@@ -586,6 +591,7 @@ def forecast_latest(windows_source=None) -> dict:
         "future_label_type": "forecast",
         "forecast_probability": float(probabilities[index]),
         "mitre_mapping": mitre_mapping,
+        "mitre_mapping_error": mitre_mapping_error,
         "model_version": latest["model_version"],
         "evaluation_status": report["evaluation_status"],
         "limitation": "row_order_proxy",

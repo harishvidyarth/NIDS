@@ -1,0 +1,52 @@
+{
+  "created_at": "2026-08-30T09:27:56",
+  "sequence_length": 5,
+  "feature_order": [
+    "flow_count",
+    "unique_src_ip_count",
+    "unique_dst_ip_count",
+    "unique_src_port_count",
+    "unique_dst_port_count",
+    "total_fwd_packets",
+    "total_bwd_packets",
+    "total_packets",
+    "total_fwd_bytes",
+    "total_bwd_bytes",
+    "total_bytes",
+    "packets_per_second",
+    "bytes_per_second",
+    "flows_per_second",
+    "syn_count",
+    "ack_count",
+    "fin_count",
+    "rst_count",
+    "psh_count",
+    "urg_count",
+    "mean_iat",
+    "iat_variance",
+    "min_iat",
+    "max_iat",
+    "mean_flow_duration",
+    "max_flow_duration",
+    "mean_packet_size",
+    "max_packet_size"
+  ],
+  "classes": [
+    "BENIGN",
+    "DDoS",
+    "DoS",
+    "PortScan"
+  ],
+  "train_examples": 212727,
+  "evaluation_status": "VALIDATED_WITH_WARNINGS",
+  "test": {
+    "n": 22570,
+    "macro_f1": 0.24608938547486034,
+    "class_support": {
+      "BENIGN": 9915,
+      "DDoS": 12653,
+      "DoS": 1,
+      "PortScan": 1
+    }
+  }
+}

@@ -338,14 +338,23 @@ def forecast_latest(windows_source=None) -> dict:
     dominant_probabilities = outputs["dominant_state"][0]
     alert_probabilities = outputs["attack_alert"][0]
     threshold = evaluation["threshold_selection"]["selected_threshold"]
-    mapper = MitreAttackMapper(); observed_features = recent.iloc[-1][STATE_FEATURE_NAMES].to_dict()
+    observed_features = recent.iloc[-1][STATE_FEATURE_NAMES].to_dict()
+    mitre_mapping_error = None
+    try:
+        mapper = MitreAttackMapper()
+    except Exception as error:  # ATT&CK context is advisory — never fail the forecast over it
+        mapper, mitre_mapping_error = None, str(error)
+    _null_mapping = {
+        "mitre_candidates": [], "operator_guidance": [], "evidence_needed": [],
+        "severity": None, "action_provenance": None,
+    }
     horizons = []
     for index, row in enumerate(dominant_probabilities):
         probability_map = {label: float(row[i]) for i, label in enumerate(FORECAST_CLASSES)}
         alert_map = {label: float(alert_probabilities[index][i]) for i, label in enumerate(ALERT_CLASSES)}
         predicted_index = int(np.argmax(row)); predicted_state = FORECAST_CLASSES[predicted_index]
         predicted_alert = ALERT_CLASSES[int(np.argmax(alert_probabilities[index]))]
-        mapping = mapper.map_forecast(str(recent["dominant_state"].iloc[-1]), probability_map, observed_features)
+        mapping = mapper.map_forecast(str(recent["dominant_state"].iloc[-1]), probability_map, observed_features) if mapper else _null_mapping
         horizons.append({
             "horizon": index + 1, "label": f"+{index + 1} window{'s' if index else ''}", "seconds_ahead": None,
             "probabilities": probability_map, "predicted_state": predicted_state,
@@ -373,4 +382,5 @@ def forecast_latest(windows_source=None) -> dict:
         "output_shape": {"dominant_state": [HORIZONS, len(FORECAST_CLASSES)], "attack_alert": [HORIZONS, len(ALERT_CLASSES)]},
         "classes": list(FORECAST_CLASSES), "alert_classes": list(ALERT_CLASSES),
         "evaluation_status": evaluation["evaluation_status"], "limitations": evaluation["limitations"],
+        "mitre_mapping_error": mitre_mapping_error,
     }

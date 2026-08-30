@@ -34,6 +34,7 @@ import pandas as pd
 from ..config import UPLOADS_DIR
 from ..capture.capture import validate_and_stat_pcap, CaptureError
 from ..extraction.extract import run_extraction, ExtractionError
+from ..extraction.parallel_extract import run_parallel_extraction
 from ..prediction.predict import predict_csv, PredictionError
 from ..prediction.features import match_columns
 
@@ -210,10 +211,15 @@ def process_pcap_upload(session: UploadSession):
         logger.info(f"[Upload {session.session_id}] Valid PCAP, {session.packet_count} packets")
 
         session.set_stage("EXTRACTING")
-        result = run_extraction(session.stored_path, session.features_dir)
+        result = run_parallel_extraction(
+            session.stored_path, session.features_dir, packet_count=session.packet_count
+        )
         session.extraction_result = result
         session.flow_count = result["flow_count"]
-        logger.info(f"[Upload {session.session_id}] Extracted {result['flow_count']} flows")
+        logger.info(
+            f"[Upload {session.session_id}] Extracted {result['flow_count']} flows "
+            f"({'parallel, %d chunks' % result['chunks'] if result.get('parallel') else 'serial'})"
+        )
 
         session.set_stage("PREDICTING")
         pred = predict_csv(Path(result["output_csv"]))

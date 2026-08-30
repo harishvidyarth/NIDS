@@ -337,6 +337,12 @@ Notes:
   (`models/ann_shap_background.npy`, `artifacts/*/shap_background.npy`). When
   it is absent the command exits `3`; when `shap` runs but a background is
   missing the job result carries `is_shap: false` and a `fallback_reason`.
+  `models/ann_shap_background.npy` is normally produced by the flow-challenger
+  training path from the labelled CICIDS2017 CSVs. Without those CSVs, run
+  `python scripts/build_shap_background.py` — it derives an equivalent
+  `(<=100, 77)` scaled background from the local `features/*.csv` captures,
+  stratified by the ANN's own predicted class. Regenerate from CICIDS2017
+  when the dataset is available for a ground-truth-stratified background.
 - `worldmodel forecast` exits `3` until a model is trained
   (`worldmodel train` needs `NIDS_CICIDS2017_DIR` and a prepared temporal
   dataset).

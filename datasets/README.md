@@ -26,6 +26,16 @@ The archive includes only the public CICIDS2017 source CSVs used by Phase 3.
 Local packet captures, uploads, runtime logs, virtual environments, and personal
 traffic-derived files are not included.
 
+## Offline world-model training (K-step Infiltration Forecast)
+
+`nids worldmodel train` (or `POST /api/worldmodel/train`) does **not** require the raw
+CICIDS2017 CSVs when the per-session window caches from an earlier build are present:
+`data/lstm_cache/multistep_dataset_manifest.json` plus the eight
+`data/lstm_cache/<cache_key>/windows.npz` it references. `train_world_model` loads those
+frames directly (bypassing `prepare_multistep_dataset`), so the Infiltration Forecast panel
+works without a fresh download. Pass `force_rebuild=True` to go back through the full CSV
+pipeline once the CSVs / `NIDS_CICIDS2017_DIR` are available.
+
 ## Phase 4 expansion
 
 Phase 4 uses all eight official weekday sessions in chronological order. The

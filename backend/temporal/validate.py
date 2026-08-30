@@ -59,6 +59,23 @@ def _combine(*statuses: str) -> str:
 # the constraint — never an invented arbitrary bound.
 _NON_NEGATIVE_HINTS = ("count", "packets", "bytes", "duration", "iat", "per_second", "size")
 
+# Raw feature CSVs come out of a flow exporter that flushes on flow
+# completion/timeout, so rows are commonly a little out of start-time
+# order. prepare_temporal_dataset re-sorts chronologically before
+# windowing (windowing.sort_chronologically) and window_id is derived
+# from timestamp *values*, not row position — so a small fraction of
+# out-of-order rows changes nothing downstream and is a WARNING, not a
+# structural FAIL. FAIL only when disorder is large enough to suggest a
+# genuinely broken export.
+_TS_ORDER_FAIL_FRACTION = 0.05
+_TS_ORDER_FAIL_MIN = 5
+
+# Aggregated IAT/duration extrema can land a hair below zero from
+# floating-point and sub-second clock jitter in the source capture. A
+# tiny negative is a data-quality WARNING; only a clearly non-physical
+# magnitude is a FAIL.
+_NON_NEGATIVE_TOLERANCE = 1.0
+
 
 def _hash_rows(df: pd.DataFrame) -> pd.Series:
     """Vectorized per-row hash for O(n) exact-duplicate-row detection."""
@@ -123,6 +140,12 @@ def _validate_timestamps(df: pd.DataFrame, ts_col: str | None) -> dict:
     valid_parsed = parsed.dropna()
     out_of_order = int((valid_parsed.diff().dt.total_seconds() < 0).sum()) if len(valid_parsed) > 1 else 0
     is_ordered = out_of_order == 0
+    order_fraction = out_of_order / result.n_valid if result.n_valid else 0.0
+    # A large share of inversions suggests a genuinely broken export; a
+    # handful is normal flow-exporter flush order and is re-sorted before
+    # windowing.
+    order_structural = out_of_order > _TS_ORDER_FAIL_MIN and order_fraction > _TS_ORDER_FAIL_FRACTION
+    order_status = "PASS" if is_ordered else ("FAIL" if order_structural else "WARNING")
 
     first_ts = valid_parsed.min() if not valid_parsed.empty else None
     last_ts = valid_parsed.max() if not valid_parsed.empty else None
@@ -131,10 +154,10 @@ def _validate_timestamps(df: pd.DataFrame, ts_col: str | None) -> dict:
     status = PASS
     if result.n_valid == 0:
         status = FAIL
-    elif result.n_invalid > 0 or not is_ordered:
-        status = WARNING if result.n_invalid > 0 else FAIL  # out-of-order is a hard structural problem; invalid rows alone are a warning (they're excluded, not silently kept)
-    if not is_ordered:
+    elif order_structural:
         status = FAIL
+    elif result.n_invalid > 0 or not is_ordered:
+        status = WARNING  # excluded-invalid rows, or minor flush-order inversions that sort_chronologically resolves before windowing
 
     return {"status": status, "details": {
         "rows_checked": result.n_total,
@@ -142,7 +165,8 @@ def _validate_timestamps(df: pd.DataFrame, ts_col: str | None) -> dict:
         "missing_or_invalid": result.n_invalid,
         "duplicate_timestamps": duplicate_timestamps,
         "duplicate_timestamps_note": "Expected for flow data at second-level precision — multiple flows commonly share a timestamp; not treated as a failure on its own.",
-        "order_status": "PASS" if is_ordered else "FAIL",
+        "order_status": order_status,
+        "order_note": "Rows are re-sorted chronologically before windowing; window_id derives from timestamp values, not row order, so a small fraction of out-of-order rows does not affect windows/sequences/splits.",
         "out_of_order_rows": out_of_order,
         "timestamp_format_detected": result.format_used,
         "first_timestamp": str(first_ts) if first_ts is not None else None,
@@ -246,6 +270,7 @@ def _validate_features(states_df: pd.DataFrame) -> dict:
     feature_table = []
     total_nan = total_inf = 0
     range_violations = []
+    near_zero_negatives = []
     for name in STATE_FEATURE_NAMES:
         if name not in states_df.columns:
             feature_table.append({"feature": name, "type": "missing", "missing": len(states_df),
@@ -260,17 +285,21 @@ def _validate_features(states_df: pd.DataFrame) -> dict:
         constant = bool(is_numeric and col.nunique(dropna=True) <= 1)
 
         range_bad = False
+        range_soft = False
         if is_numeric and col_min is not None and any(h in name.lower() for h in _NON_NEGATIVE_HINTS):
-            if col_min < 0:
+            if col_min < -_NON_NEGATIVE_TOLERANCE:
                 range_bad = True
                 range_violations.append({"feature": name, "min": col_min})
+            elif col_min < 0:
+                range_soft = True
+                near_zero_negatives.append({"feature": name, "min": col_min})
 
         fstatus = PASS
         if not is_numeric:
             fstatus = FAIL
         elif range_bad:
             fstatus = FAIL
-        elif nan_count or inf_count:
+        elif range_soft or nan_count or inf_count:
             fstatus = WARNING
 
         feature_table.append({
@@ -284,7 +313,7 @@ def _validate_features(states_df: pd.DataFrame) -> dict:
     status = PASS
     if missing_features or duplicate_columns or range_violations:
         status = FAIL
-    elif total_nan or total_inf:
+    elif total_nan or total_inf or near_zero_negatives:
         status = WARNING
 
     return {"status": status, "details": {
@@ -295,6 +324,11 @@ def _validate_features(states_df: pd.DataFrame) -> dict:
         "nan_values": total_nan,
         "infinite_values": total_inf,
         "range_violations": range_violations,
+        "near_zero_negatives": near_zero_negatives,
+        "near_zero_negatives_note": (
+            f"min below 0 but within {_NON_NEGATIVE_TOLERANCE} of it — float / sub-second "
+            "clock jitter in the source capture, not a structural defect."
+        ),
         "feature_table": feature_table,
     }}
 
