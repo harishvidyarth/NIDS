@@ -1113,6 +1113,20 @@ function renderClassifierMetrics() {
     ${m.note ? `<div class="dist-empty" style="text-align:left; margin-top:6px;">${escapeHtml(m.note)}</div>` : ""}`;
 }
 
+/* Shared display verdict — honours the confidence gate (predict.py
+   MIN_ATTACK_FLOWS_* / MIN_ATTACK_RATIO_*). A handful of ANN-only flagged
+   flows in a mostly-benign capture reads BENIGN/SUSPICIOUS, never ATTACK,
+   unless the signature layer confirmed it (confidence "high"). */
+function predVerdict(pred) {
+  if (!pred) return { tier: "none", cls: null };
+  const cls = (pred.attack_alert && pred.attack_alert !== "NONE" ? pred.attack_alert : null)
+    || pred.effective_attack_class || pred.attack_class || null;
+  const conf = pred.effective_confidence || pred.confidence;
+  if (!cls) return { tier: "benign", cls: null };
+  if (conf === "high") return { tier: "attack", cls };
+  return { tier: "suspicious", cls };
+}
+
 function renderPredictionTab() {
   const pred = mode === "live" ? (liveSnap && liveSnap.prediction) : (uploadStatus && uploadStatus.prediction);
   const stage = mode === "live" ? (liveSnap && liveSnap.stage) : (uploadStatus && uploadStatus.stage);
@@ -1123,18 +1137,17 @@ function renderPredictionTab() {
 
   const stateVal = el("p-state-value");
   // Effective = ANN verdict, escalated where the signature layer disagrees.
-  const attackClass = pred && ((pred.attack_alert && pred.attack_alert !== "NONE" ? pred.attack_alert : null) || pred.effective_attack_class || pred.attack_class);
-  const conf = pred && (pred.effective_confidence || pred.confidence);
+  const v = predVerdict(pred);
   if (!pred) {
     stateVal.textContent = "N/A";
     stateVal.className = "";
-  } else if (attackClass && conf === "high") {
-    stateVal.textContent = "ATTACK: " + attackClass;
-    stateVal.className = "state-" + attackClass + " verdict-attack";
-  } else if (attackClass) {
+  } else if (v.tier === "attack") {
+    stateVal.textContent = "ATTACK: " + v.cls;
+    stateVal.className = "state-" + v.cls + " verdict-attack";
+  } else if (v.tier === "suspicious") {
     // low confidence — a few ANN-only flows, no deterministic confirmation
-    stateVal.textContent = "SUSPICIOUS: " + attackClass + "?";
-    stateVal.className = "state-" + attackClass + " verdict-suspicious";
+    stateVal.textContent = "SUSPICIOUS: " + v.cls + "?";
+    stateVal.className = "state-" + v.cls + " verdict-suspicious";
   } else {
     stateVal.textContent = "BENIGN";
     stateVal.className = "state-BENIGN";
@@ -1161,7 +1174,7 @@ function renderPredictionTab() {
     if (pred && pred.flows_analyzed) {
       const pct = ((pred.attack_ratio ?? pred.malicious_flow_ratio ?? 0) * 100).toFixed(1);
       flagged.textContent = `${pred.attack_flow_count} of ${pred.flows_analyzed} flows flagged (${pct}%)`;
-      flagged.style.color = pred.attack_present ? "var(--red)" : "var(--green)";
+      flagged.style.color = v.tier === "attack" ? "var(--red)" : v.tier === "suspicious" ? "var(--amber)" : "var(--green)";
     } else {
       flagged.textContent = "";
     }
@@ -1642,7 +1655,13 @@ function renderStatusBar() {
   const packetCount = mode === "live" ? (cap && cap.packet_count != null ? cap.packet_count : 0) : (uploadStatus && uploadStatus.packet_count != null ? uploadStatus.packet_count : 0);
   el("sb-packets").textContent = `Packets: ${packetCount}`;
   el("sb-flows").textContent = `Flows: ${pred ? pred.flows_analyzed : "—"}`;
-  el("sb-state").textContent = `State: ${pred ? (pred.attack_class ? "ATTACK/" + pred.attack_class : "BENIGN") : "—"}`;
+  const sbv = predVerdict(pred);
+  el("sb-state").textContent = `State: ${
+    !pred ? "—" :
+    sbv.tier === "attack" ? "ATTACK/" + sbv.cls :
+    sbv.tier === "suspicious" ? "SUSPICIOUS/" + sbv.cls + "?" :
+    "BENIGN"
+  }`;
   el("sb-temporal").textContent = `Temporal: ${
     temporalStatus.stage === "COMPLETED" ? `READY (${temporalStatus.result.total_windows}w/${temporalStatus.result.total_sequences}s)` :
     temporalStatus.stage === "PREPARING" ? "PREPARING" :
