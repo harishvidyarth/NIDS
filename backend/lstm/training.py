@@ -3,9 +3,13 @@ from __future__ import annotations
 import json
 import os
 import random
-import resource
 import time
 from pathlib import Path
+
+try:
+    import resource
+except ImportError:  # Windows has no `resource` module
+    resource = None
 
 import joblib
 import numpy as np
@@ -243,6 +247,31 @@ def _logistic(train, evaluation, scaler):
     return model, model.predict(X_evaluation), probabilities
 
 
+def _peak_ram_mb() -> float:
+    if resource is not None:
+        divisor = 1024 * 1024 if os.uname().sysname == "Darwin" else 1024
+        return resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / divisor
+    import ctypes
+
+    class _ProcessMemoryCounters(ctypes.Structure):
+        _fields_ = [
+            ("cb", ctypes.c_ulong),
+            ("PageFaultCount", ctypes.c_ulong),
+            ("PeakWorkingSetSize", ctypes.c_size_t),
+            ("WorkingSetSize", ctypes.c_size_t),
+            ("QuotaPeakPagedPoolUsage", ctypes.c_size_t),
+            ("QuotaPagedPoolUsage", ctypes.c_size_t),
+            ("QuotaPeakNonPagedPoolUsage", ctypes.c_size_t),
+            ("QuotaNonPagedPoolUsage", ctypes.c_size_t),
+            ("PagefileUsage", ctypes.c_size_t),
+            ("PeakPagefileUsage", ctypes.c_size_t),
+        ]
+
+    counters = _ProcessMemoryCounters(cb=ctypes.sizeof(_ProcessMemoryCounters))
+    ctypes.windll.psapi.GetProcessMemoryInfo(ctypes.windll.kernel32.GetCurrentProcess(), ctypes.byref(counters), counters.cb)
+    return counters.PeakWorkingSetSize / (1024 * 1024)
+
+
 def _session_support(parts: list[pd.DataFrame]) -> dict:
     result = {}
     for frame in parts:
@@ -440,7 +469,7 @@ def train_forecaster(force_rebuild: bool = False, status=lambda **kwargs: None) 
             "baseline_seconds": round(baseline_seconds, 3),
             "holdout_inference_seconds": round(inference_seconds, 3),
             "holdout_sequences_per_second": round(len(holdout_sequences["X"]) / max(inference_seconds, 1e-9), 3),
-            "peak_ram_mb": round(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / (1024 * 1024 if os.uname().sysname == "Darwin" else 1024), 3),
+            "peak_ram_mb": round(_peak_ram_mb(), 3),
         },
         "artifact_dir": repository_relative(artifact_dir),
     }

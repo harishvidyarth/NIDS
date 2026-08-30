@@ -4,7 +4,6 @@ import hashlib
 import json
 import os
 import random
-import resource
 import time
 from collections import Counter
 from pathlib import Path
@@ -17,6 +16,7 @@ from ..config import REPO_ROOT
 from ..lstm.config import ALERT_CLASSES, FORECAST_CLASSES, LATEST_PATH as ONE_STEP_LATEST, repository_path, repository_relative
 from ..lstm.dataset import build_sequences as build_one_step_sequences, concat_sequence_sets as concat_one_step_sequences
 from ..lstm.evaluation import evaluate_predictions
+from ..lstm.training import _peak_ram_mb
 from ..mitre.mapper import MitreAttackMapper
 from ..prediction.shap_service import stratified_background
 from ..temporal.schema import STATE_FEATURE_NAMES
@@ -188,9 +188,8 @@ def _benchmark(artifact_dir: Path, model, scaler, sample: np.ndarray) -> dict:
         values = np.repeat(one, size, axis=0)
         started = time.perf_counter(); loaded.predict(values, batch_size=BATCH_SIZE, verbose=0); elapsed = time.perf_counter() - started
         batches[str(size)] = {"seconds": elapsed, "throughput_samples_per_second": size / max(elapsed, 1e-9)}
-    divisor = 1024 * 1024 if __import__("platform").system() == "Darwin" else 1024
     return {"cold_model_load_seconds": cold_load, "warm_single_inference_seconds": warm,
-            "batches": batches, "peak_rss_mb": resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / divisor}
+            "batches": batches, "peak_rss_mb": _peak_ram_mb()}
 
 
 def _markdown(report: dict) -> str:
