@@ -6,10 +6,10 @@ Category / Theme,Software / Blockchain & Cybersecurity
 Idea submission deadline,2026-09-20
 Team working cutoff,2026-09-19
 Days left to deadline,"=DATE(2026,9,20)-TODAY()"
-Repo,github.com/harishvidyarthcsecs/network-attack-forecasting (private)
-Public code link (E1),TBD — Sujitha
-Demo video link (E4),TBD — Sujitha
-Slides link (E5),TBD — Sujitha
+Repo,github.com/harishvidyarth/NIDS
+Public code link (E1),TBD — Harish
+Demo video link (E4),"TBD — Sujitha builds file, Harish posts link"
+Slides link (E5),"TBD — Sujitha builds deck, Harish posts link"
 Tracker owner / PM,Kaviya V
 Current core completion %,='PS Completion'!B2
 USP 1,"Production-grade MLOps spine (release gate, drift, shadow retrain, honest negatives)"
