@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>NIDS Command Center</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2016%2016'%3E%3Ccircle%20cx='8'%20cy='8'%20r='6'%20fill='%234fa3e3'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=command-center1" />
+<link rel="stylesheet" href="styles.css?v=command-center2" />
 </head>
 <body>
 
@@ -124,6 +124,10 @@
 
 <main class="workspace">
   <section class="table-panel">
+    <div class="panel-band">
+      <div><span>LIVE EVIDENCE</span><small>PCAP packets, derived flows, and classified records</small></div>
+      <span class="panel-band-status">OBSERVATION STREAM</span>
+    </div>
     <div class="table-tabs" id="table-tabs">
       <button class="table-tab table-tab-active" data-table-tab="packets">PACKETS</button>
       <button class="table-tab" data-table-tab="flows">FLOWS</button>
@@ -227,6 +231,10 @@
   <div class="resizer" id="resizer"></div>
 
   <section class="detail-panel">
+    <div class="panel-band panel-band-analysis">
+      <div><span>ANALYSIS WORKBENCH</span><small>Review evidence, then use the action controls within each stage</small></div>
+      <span class="panel-band-status">OPERATOR CONTROLLED</span>
+    </div>
     <div class="detail-tabs">
       <button class="detail-tab detail-tab-active" data-detail-tab="capture">CAPTURE</button>
       <button class="detail-tab" data-detail-tab="extraction">EXTRACTION</button>
@@ -644,6 +652,6 @@
   </div>
 </div>
 
-<script src="app.js?v=command-center1"></script>
+<script src="app.js?v=command-center2"></script>
 </body>
 </html>

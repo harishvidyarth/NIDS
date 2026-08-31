@@ -110,7 +110,7 @@ input[type="file"]::file-selector-button {
 .btn-stop { color: var(--red); border-color: #dfa2a2; }
 .btn-stop:hover:not(:disabled) { border-color: var(--red); }
 .btn-sm { padding: 3px 9px; font-size: 10.5px; }
-.btn-action { margin-top: 10px; align-self: flex-start; }
+.btn-action { margin-top: 10px; align-self: flex-start; min-height: 30px; padding: 6px 13px; }
 
 .toolbar-metric { display: flex; flex-direction: column; align-items: flex-end; line-height: 1.15; }
 .metric-label { font-size: 9px; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.05em; }
@@ -190,6 +190,16 @@ input[type="file"]::file-selector-button {
 .workspace { flex: 1; display: flex; flex-direction: column; min-height: 0; }
 
 .table-panel { flex: 1 1 60%; min-height: 120px; display: flex; flex-direction: column; border-bottom: 1px solid var(--border); box-shadow: inset 0 3px 0 #dce9f4; }
+.panel-band {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 31px;
+  padding: 5px 16px; background: #f2f7fb; border-bottom: 1px solid var(--border-soft);
+}
+.panel-band > div { display: flex; align-items: baseline; gap: 9px; min-width: 0; }
+.panel-band span:first-child { color: var(--navy); font: 750 9.5px var(--mono); letter-spacing: 0.08em; white-space: nowrap; }
+.panel-band small { color: var(--text-faint); font-size: 9.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.panel-band-status { color: var(--green); font: 700 9px var(--mono); letter-spacing: 0.06em; white-space: nowrap; }
+.panel-band-analysis { background: #e8f1f9; }
+.panel-band-analysis .panel-band-status { color: var(--accent); }
 
 .table-tabs { display: flex; background: var(--panel); border-bottom: 1px solid var(--border-soft); padding-left: 8px; }
 .table-tab {
@@ -245,7 +255,7 @@ input[type="file"]::file-selector-button {
 .resizer:hover { background: var(--accent-dim); }
 
 /* ================= Detail panel ================= */
-.detail-panel { flex: 0 0 auto; min-height: 220px; max-height: 44vh; display: flex; flex-direction: column; }
+.detail-panel { flex: 0 0 auto; min-height: 250px; max-height: 48vh; display: flex; flex-direction: column; }
 
 .detail-tabs { display: flex; background: #e8f1f9; border-bottom: 1px solid var(--border); flex-shrink: 0; padding-left: 8px; }
 .detail-tab {
@@ -256,21 +266,31 @@ input[type="file"]::file-selector-button {
 .detail-tab:hover { color: var(--text); }
 .detail-tab-active { color: var(--navy); border-bottom-color: var(--signal); background: var(--panel); }
 
-.detail-body { flex: 1; overflow-y: auto; background: var(--panel); }
-.detail-pane { padding: 14px 16px; }
+.detail-body { flex: 1; overflow-y: auto; overflow-x: hidden; background: var(--panel); scrollbar-gutter: stable; }
+.detail-pane { padding: 16px 20px 18px; }
 
-.detail-columns { display: grid; grid-template-columns: 1.1fr 1fr; gap: 28px; }
-.detail-columns-3 { grid-template-columns: 1fr 1fr 1fr; }
+.detail-columns { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 16px; align-items: stretch; }
+.detail-columns-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.detail-col {
+  display: flex; flex-direction: column; min-width: 0; min-height: 146px;
+  padding: 13px 14px; border: 1px solid var(--border-soft); border-top: 3px solid #d6e5f2;
+  background: #fbfdff;
+}
 .detail-col-title {
   font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--accent);
-  margin-bottom: 8px; padding-bottom: 5px; border-bottom: 1px solid var(--border-soft);
+  margin-bottom: 10px; padding-bottom: 7px; border-bottom: 1px solid var(--border-soft); font-weight: 750;
 }
 .detail-col-subtitle { text-transform: none; letter-spacing: 0; color: var(--text-dim); font-size: 9.5px; margin-left: 6px; }
 .iface-all-label { font-size: 11px; color: var(--text-dim); display: inline-flex; align-items: center; gap: 3px; margin: 0 4px; cursor: pointer; }
-.detail-row { display: flex; justify-content: space-between; gap: 10px; font-size: 11.5px; padding: 2px 0; }
+.detail-row { display: grid; grid-template-columns: minmax(86px, 1fr) minmax(0, 1.15fr); align-items: start; gap: 12px; font-size: 11.5px; padding: 3px 0; }
 .detail-row > span:first-child { color: var(--text-dim); }
-.detail-row > span:last-child { color: var(--text); text-align: right; }
+.detail-row > span:last-child { color: var(--text); text-align: right; overflow-wrap: anywhere; min-width: 0; }
 .detail-mono { font-family: var(--mono); font-size: 10.5px; word-break: break-all; text-align: right; }
+.detail-col > .btn-action { margin-top: auto; align-self: flex-start; }
+.detail-col > .btn-action + .btn { margin-top: 7px; align-self: flex-start; }
+.detail-col > .btn { max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+.detail-col > .btn-action:not(:disabled) { min-width: 156px; background: var(--navy); border-color: var(--navy); color: #ffffff; }
+.detail-col > .btn-action:hover:not(:disabled) { background: #0d416f; border-color: #0d416f; color: #ffffff; }
 .detail-desc { color: var(--text-dim); font-size: 11px; line-height: 1.5; margin: 0 0 10px; }
 
 .detail-col-hero { display: flex; flex-direction: column; }
@@ -521,10 +541,18 @@ input[type="file"]::file-selector-button {
   .command-overview-title { grid-column: 1 / -1; padding: 8px 12px; }
   .command-metric { min-height: 58px; }
   .command-metric-temporal { display: none; }
+  .mode-bar { height: auto; min-height: 50px; padding: 7px 12px; align-items: flex-start; flex-wrap: wrap; }
+  .mode-toolbar { min-width: 0; flex-wrap: wrap; row-gap: 6px; }
+  .mode-toolbar select { flex: 1 1 170px; min-width: 0; }
+  .mode-toolbar .toolbar-sep { display: none; }
+  .mode-toolbar .toolbar-metric { margin-left: auto; }
   .mode-bar, .pipeline-strip, .table-tabs, .detail-tabs, .inner-tabs { overflow-x: auto; }
   .mode-bar, .pipeline-strip { flex-shrink: 0; }
-  .mode-toolbar { min-width: 720px; }
   .detail-columns, .detail-columns-3, .xdr-grid { grid-template-columns: 1fr; gap: 18px; }
+  .detail-col { min-height: 0; }
+  .detail-col > .btn-action { margin-top: 14px; }
+  .panel-band { padding: 5px 12px; }
+  .panel-band small { display: none; }
   .xdr-deception-panel { grid-column: auto; }
   .detail-panel { max-height: 52vh; }
 }

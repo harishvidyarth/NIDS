@@ -15,7 +15,7 @@ def test_xdr_campaign_tab_and_panels_are_present():
         "xdr-response-command", "xdr-operator-ack", "xdr-audit", "xdr-hits",
     ):
         assert f'id="{element_id}"' in html
-    assert "app.js?v=command-center1" in html and "styles.css?v=command-center1" in html
+    assert "app.js?v=command-center2" in html and "styles.css?v=command-center2" in html
 
 
 def test_xdr_frontend_calls_real_routes_and_draws_surprise_edges():
