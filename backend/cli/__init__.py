@@ -116,6 +116,8 @@ def build_parser() -> argparse.ArgumentParser:
     wm.add_parser("status", help="training job status")
     w = wm.add_parser("train", help="start a training job (needs NIDS_CICIDS2017_DIR)")
     w.add_argument("--force", action="store_true")
+    w.add_argument("--allow-ungated", action="store_true", help="promote despite a failed release gate (recorded in latest.json)")
+    wm.add_parser("benchmark", help="print benchmark from active world-model artifact")
     w = wm.add_parser("forecast", help="per-step infiltration probability + MITRE stage")
     w.add_argument("--k", type=int, default=None)
     w.add_argument("--windows", default=None, help="prepared temporal dataset dir")

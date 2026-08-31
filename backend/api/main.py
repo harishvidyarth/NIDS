@@ -989,7 +989,17 @@ def worldmodel_train(force_rebuild: bool = False):
 
 @app.get("/api/worldmodel/status")
 def worldmodel_status():
-    return worldmodel_jobs.read_status()
+    result = worldmodel_jobs.read_status()
+    from ..worldmodel.config import LATEST_PATH
+    from ..lstm.config import repository_path
+    if LATEST_PATH.is_file():
+        try:
+            latest = json.loads(LATEST_PATH.read_text())
+            report = json.loads((repository_path(latest["artifact_dir"]) / "report.json").read_text())
+            result["benchmark"] = report.get("test", {}).get("benchmark")
+        except (OSError, ValueError, KeyError):
+            result["benchmark"] = None
+    return result
 
 
 @app.post("/api/worldmodel/forecast")

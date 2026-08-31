@@ -313,12 +313,23 @@ def cmd_worldmodel(args) -> dict:
 
     if args.worldmodel_cmd == "train":
         try:
-            return worldmodel_jobs.start_training(force_rebuild=args.force)
+            return worldmodel_jobs.start_training(force_rebuild=args.force, allow_ungated=args.allow_ungated)
         except RuntimeError as exc:
             raise CliError(4, str(exc)) from exc
 
     if args.worldmodel_cmd == "status":
         return worldmodel_jobs.read_status()
+
+    if args.worldmodel_cmd == "benchmark":
+        from ..worldmodel.config import LATEST_PATH
+        from ..lstm.config import repository_path
+        if not LATEST_PATH.is_file():
+            raise CliError(3, "No active world-model artifact/report exists.")
+        latest = _read_json(LATEST_PATH)
+        report = _read_json(repository_path(latest["artifact_dir"]) / "report.json")
+        if "benchmark" not in report.get("test", {}):
+            raise CliError(3, "Active world-model report has no benchmark block.")
+        return report["test"]["benchmark"]
 
     if args.worldmodel_cmd == "forecast":
         source = Path(args.windows) if args.windows else None

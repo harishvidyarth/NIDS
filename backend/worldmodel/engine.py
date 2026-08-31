@@ -68,7 +68,11 @@ def _load_artifact():
     report_path = artifact_dir / "report.json"
     if report_path.is_file():
         report = json.loads(report_path.read_text())
-    return model, scaler, latest, report
+    gate = {}
+    gate_path = artifact_dir / "release_gate.json"
+    if gate_path.is_file():
+        gate = json.loads(gate_path.read_text())
+    return model, scaler, latest, report, gate
 
 
 def _feature_attribution(model, seq_scaled: np.ndarray) -> list[dict]:
@@ -101,7 +105,7 @@ def _feature_attribution(model, seq_scaled: np.ndarray) -> list[dict]:
 
 def forecast(windows_source=None, k: int | None = None) -> dict:
     k = DEFAULT_K if not k else max(1, min(int(k), MAX_K))
-    model, scaler, latest, report = _load_artifact()
+    model, scaler, latest, report, gate = _load_artifact()
 
     try:
         recent = _load_recent_windows(windows_source)
@@ -170,6 +174,8 @@ def forecast(windows_source=None, k: int | None = None) -> dict:
         "top_features": _feature_attribution(model, X_scaled),
         "top_windows": top_windows,
         "evaluation_status": report.get("evaluation_status", "UNVERIFIED"),
+        "artifact_gate_passed": gate.get("passed"),
+        "release_gate": {"passed": gate.get("passed"), "failures": gate.get("failures", [])},
         "limitations": [
             "row_order_proxy — windows are 10s slices in capture order, not "
             "wall-clock-validated seconds ahead.",

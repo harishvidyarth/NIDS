@@ -38,21 +38,21 @@ def write_status(**updates) -> dict:
     return current
 
 
-def _worker(force_rebuild: bool) -> None:
+def _worker(force_rebuild: bool, allow_ungated: bool = False) -> None:
     write_status(**_default_status(), stage="starting")
     try:
-        train_world_model(force_rebuild=force_rebuild, status=write_status)
+        train_world_model(force_rebuild=force_rebuild, status=write_status, allow_ungated=allow_ungated)
     except Exception as error:  # noqa: BLE001 - surfaced via status file
         write_status(stage="error", error=f"{type(error).__name__}: {error}")
 
 
-def start_training(force_rebuild: bool = False) -> dict:
+def start_training(force_rebuild: bool = False, allow_ungated: bool = False) -> dict:
     global _process
     with _lock:
         if _process is not None and _process.is_alive():
             raise RuntimeError("World-model training is already running.")
         ctx = multiprocessing.get_context("spawn")
-        _process = ctx.Process(target=_worker, args=(bool(force_rebuild),), daemon=True)
+        _process = ctx.Process(target=_worker, args=(bool(force_rebuild), bool(allow_ungated)), daemon=True)
         _process.start()
         return write_status(**_default_status(), stage="starting", pid=_process.pid)
 
