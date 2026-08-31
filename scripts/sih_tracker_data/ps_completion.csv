@@ -12,8 +12,8 @@ R6,"Offline demo (Streamlit/Flask/CLI), PCAP or CSV, timeline+flags+stage",Kaviy
 R7,Benchmark vs logistic-regression baseline (F1/P/R/FPR),Harish,7,80,=D12*E12/100,docs/SUBMISSION.md benchmark table,reconcile with failing release gate
 ,,,,,,,
 "Deliverable packaging (E1-E5) — tracked, not in the core rollup",,,,,,,
-E1,Source code link (GitHub/Drive),Sujitha,,40,,repo private,make public / Drive zip (D5)
-E2,README with setup,Sujitha,,95,,README.md; README-OPS.md; DEMO_RUNBOOK.md,polish pass
-E3,Architecture doc (max 2 pages),Archana,,85,,docs/ARCHITECTURE_NOTE.md,trim to 2 pp; single state story (D6)
-E4,Demo video (max 2 min),Sujitha,,45,,docs/DEMO_VIDEO_SCRIPT.md,recording unverified
-E5,Technical presentation (max 5 slides),Sujitha,,55,,docs/SLIDES.md,deck unverified
+E1,Source code link (GitHub/Drive),Harish,,50,,github.com/harishvidyarth/NIDS,confirm repo public; prep Drive zip fallback (D5)
+E2,README with setup,Kaviya,,80,,README.md,"add a fresh-machine setup section (.venv-lstm312, run_backend.sh, :8765)"
+E3,Architecture doc (max 2 pages),Archana,,30,,reports/NIDS_System_Guide_and_Roadmap.pdf; PIPELINE.md; PROTOTYPE.md,write the 2-page judge-facing doc; single state story (D6)
+E4,Demo video (max 2 min),Sujitha,,15,,-- (script not yet migrated from NAF),Sujitha edits in Canva / CapCut; script + recording both to do
+E5,Technical presentation (max 5 slides),Sujitha,,20,,reports/ figures + NIDS_Product_Description.pdf,Sujitha builds in Canva from reports/ + the E3 arch doc
