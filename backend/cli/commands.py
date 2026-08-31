@@ -313,7 +313,11 @@ def cmd_worldmodel(args) -> dict:
 
     if args.worldmodel_cmd == "train":
         try:
-            return worldmodel_jobs.start_training(force_rebuild=args.force, allow_ungated=args.allow_ungated)
+            # A short-lived CLI process cannot reliably retain the spawned API
+            # worker on every platform.  Train synchronously here; the API
+            # continues to use its background job controller.
+            from ..worldmodel.training import train_world_model
+            return train_world_model(force_rebuild=args.force, allow_ungated=args.allow_ungated)
         except RuntimeError as exc:
             raise CliError(4, str(exc)) from exc
 
