@@ -6,13 +6,16 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def test_xdr_campaign_tab_and_panels_are_present():
     html = (ROOT / "frontend" / "index.html").read_text()
+    assert "NIDS COMMAND CENTER" in html
+    for element_id in ("cmd-capture-state", "cmd-packet-count", "cmd-flow-count", "cmd-verdict", "cmd-temporal"):
+        assert f'id="{element_id}"' in html
     assert 'data-detail-tab="xdr">XDR / CAMPAIGN' in html
     for element_id in (
         "xdr-sensors", "xdr-graph", "xdr-triage-summary", "xdr-playbook",
         "xdr-response-command", "xdr-operator-ack", "xdr-audit", "xdr-hits",
     ):
         assert f'id="{element_id}"' in html
-    assert "app.js?v=xdr1" in html and "styles.css?v=xdr1" in html
+    assert "app.js?v=command-center1" in html and "styles.css?v=command-center1" in html
 
 
 def test_xdr_frontend_calls_real_routes_and_draws_surprise_edges():

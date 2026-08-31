@@ -2109,6 +2109,65 @@ function _checkSummaryText(key, c) {
 function report_rows(d) { return d.rows_checked != null ? d.rows_checked : "N/A"; }
 
 /* ==================== Footer / status bar ==================== */
+function renderCommandOverview() {
+  const cap = mode === "live" ? (liveSnap && liveSnap.capture) : null;
+  const prediction = mode === "live" ? (liveSnap && liveSnap.prediction) : (uploadStatus && uploadStatus.prediction);
+  const extraction = mode === "live" ? (liveSnap && liveSnap.extraction) : null;
+  const stage = mode === "live" ? (liveSnap && liveSnap.stage) : (uploadStatus && uploadStatus.stage);
+  const captureState = stage === "ERROR" ? "ERROR" : (cap ? cap.status : (mode === "upload" ? "FILE ANALYSIS" : "IDLE"));
+  const stateEl = el("cmd-capture-state");
+  stateEl.textContent = captureState;
+  stateEl.className = "command-value " + (
+    captureState === "CAPTURING" ? "command-status-capturing" :
+    captureState === "ERROR" ? "command-status-error" :
+    captureState === "STOPPED" || captureState === "FILE ANALYSIS" ? "command-status-ready" : "command-status-idle"
+  );
+  el("cmd-capture-interface").textContent = mode === "upload"
+    ? (uploadSessionId ? `Upload session ${uploadSessionId.slice(0, 12)}` : "Select a capture or flow CSV")
+    : (cap && cap.interface ? `Interface: ${cap.interface}` : "Select an interface to begin");
+
+  const packetCount = mode === "live"
+    ? (cap && cap.packet_count != null ? cap.packet_count : 0)
+    : (uploadStatus && uploadStatus.packet_count != null ? uploadStatus.packet_count : 0);
+  el("cmd-packet-count").textContent = packetCount;
+  el("cmd-capture-duration").textContent = cap
+    ? `PCAP span: ${fmtDuration(cap.duration_seconds)}`
+    : (mode === "upload" ? "Uploaded evidence" : "No active PCAP");
+
+  const flows = prediction && prediction.flows_analyzed != null
+    ? prediction.flows_analyzed
+    : (extraction && extraction.flow_count != null ? extraction.flow_count : "—");
+  el("cmd-flow-count").textContent = flows;
+
+  const verdict = predVerdict(prediction);
+  const verdictEl = el("cmd-verdict");
+  if (verdict.tier === "attack") {
+    verdictEl.textContent = `ATTACK · ${verdict.cls}`;
+    verdictEl.className = "command-value command-status-error";
+  } else if (verdict.tier === "suspicious") {
+    verdictEl.textContent = `REVIEW · ${verdict.cls}`;
+    verdictEl.className = "command-value command-status-capturing";
+  } else if (verdict.tier === "benign") {
+    verdictEl.textContent = "BENIGN";
+    verdictEl.className = "command-value command-status-ready";
+  } else {
+    verdictEl.textContent = "NO VERDICT";
+    verdictEl.className = "command-value";
+  }
+  el("cmd-verdict-detail").textContent = prediction
+    ? `${prediction.attack_flow_count || 0} of ${prediction.flows_analyzed || 0} flows flagged`
+    : "Awaiting flow analysis";
+
+  const temporalReady = temporalStatus.stage === "COMPLETED" && temporalStatus.result;
+  el("cmd-temporal").textContent = temporalReady
+    ? `${temporalStatus.result.total_windows} WINDOWS READY`
+    : (temporalStatus.stage === "PREPARING" ? "PREPARING" : "NOT PREPARED");
+  el("cmd-temporal").className = "command-value " + (temporalReady ? "command-status-ready" : "");
+  el("cmd-temporal-detail").textContent = temporalReady
+    ? `${temporalStatus.result.total_sequences} sequences available for forecast`
+    : "Requires time-spanning flow windows";
+}
+
 function renderStatusBar() {
   const cap = mode === "live" ? (liveSnap && liveSnap.capture) : null;
   const pred = mode === "live" ? (liveSnap && liveSnap.prediction) : (uploadStatus && uploadStatus.prediction);
@@ -2138,6 +2197,7 @@ function renderStatusBar() {
 
 /* ==================== Top-level render ==================== */
 function renderAll() {
+  renderCommandOverview();
   renderPipelineStrip();
   renderCaptureTab();
   renderExtractionTab();

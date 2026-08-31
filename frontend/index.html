@@ -3,25 +3,25 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>NIDS Network Traffic Analyzer</title>
+<title>NIDS Command Center</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2016%2016'%3E%3Ccircle%20cx='8'%20cy='8'%20r='6'%20fill='%234fa3e3'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=xdr1" />
+<link rel="stylesheet" href="styles.css?v=command-center1" />
 </head>
 <body>
 
 <header class="app-header">
   <div class="app-header-left">
-    <span class="app-icon">&#9906;</span>
+    <span class="app-icon" aria-hidden="true">&#9678;</span>
     <div class="app-title-block">
-      <span class="app-title">NIDS</span>
-      <span class="app-subtitle">Network Traffic Analyzer</span>
+      <span class="app-title">NIDS COMMAND CENTER</span>
+      <span class="app-subtitle">Network &amp; PCAP Operations</span>
     </div>
-    <span class="badge-local">LOCAL&nbsp;ANALYSIS</span>
+    <span class="badge-local">LOCAL SENSOR</span>
   </div>
   <div class="app-header-right">
-    <span id="hdr-session" class="hdr-item">Session: <span id="hdr-session-val">&mdash;</span></span>
+    <span id="hdr-session" class="hdr-item">SESSION <span id="hdr-session-val">&mdash;</span></span>
     <span id="hdr-backend" class="hdr-item hdr-backend-connected">
-      <span class="status-dot status-stopped"></span> Backend: <span id="hdr-backend-val">CONNECTING&hellip;</span>
+      <span class="status-dot status-stopped"></span> API <span id="hdr-backend-val">CONNECTING&hellip;</span>
     </span>
     <button id="btn-help" class="icon-btn" title="About / Help">?</button>
   </div>
@@ -55,6 +55,38 @@
   </div>
 </div>
 
+<section class="command-overview" aria-label="Current network operation summary">
+  <div class="command-overview-title">
+    <span>NETWORK OBSERVATION</span>
+    <small>PCAP-FIRST OPERATING PICTURE</small>
+  </div>
+  <div class="command-metric">
+    <span class="command-label">Capture state</span>
+    <strong id="cmd-capture-state" class="command-value command-status-idle">IDLE</strong>
+    <small id="cmd-capture-interface">Select an interface to begin</small>
+  </div>
+  <div class="command-metric">
+    <span class="command-label">Packet evidence</span>
+    <strong id="cmd-packet-count" class="command-value">0</strong>
+    <small id="cmd-capture-duration">No active PCAP</small>
+  </div>
+  <div class="command-metric">
+    <span class="command-label">Flow intelligence</span>
+    <strong id="cmd-flow-count" class="command-value">—</strong>
+    <small>Extracted CICFlowMeter records</small>
+  </div>
+  <div class="command-metric">
+    <span class="command-label">Threat assessment</span>
+    <strong id="cmd-verdict" class="command-value">NO VERDICT</strong>
+    <small id="cmd-verdict-detail">Awaiting flow analysis</small>
+  </div>
+  <div class="command-metric command-metric-temporal">
+    <span class="command-label">Temporal readiness</span>
+    <strong id="cmd-temporal" class="command-value">NOT PREPARED</strong>
+    <small id="cmd-temporal-detail">Requires time-spanning flow windows</small>
+  </div>
+</section>
+
 <div id="error-banner" class="error-banner" style="display:none;">
   <span class="error-banner-icon">&#10007;</span>
   <span class="error-banner-title">ERROR</span>
@@ -63,6 +95,7 @@
 </div>
 
 <div class="pipeline-strip" id="pipeline-strip">
+  <span class="pipeline-caption">EVIDENCE PIPELINE</span>
   <div class="pipeline-stage" data-stage="capture">
     <span class="stage-num">01</span>
     <span class="stage-icon" id="icon-capture">&#9675;</span>
@@ -611,6 +644,6 @@
   </div>
 </div>
 
-<script src="app.js?v=xdr1"></script>
+<script src="app.js?v=command-center1"></script>
 </body>
 </html>
