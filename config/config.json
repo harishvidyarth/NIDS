@@ -14,5 +14,23 @@
     "_comment": "Confidence gate for the headline traffic verdict (backend/prediction/predict.py::summarize_states). An attack class reads red ATTACK only when its OWN share of scored flows reaches min_ratio for its tier (or the deterministic signature layer confirmed it); otherwise amber SUSPICIOUS. Purely percentage-based, no absolute flow count. Edit and restart the backend to retune.",
     "ddos": { "min_ratio": 0.20 },
     "other": { "min_ratio": 0.20 }
+  },
+  "response": {
+    "_comment": "Exact IPs protected from response blocks. Add gateway, DNS/DHCP, management and operator addresses here.",
+    "protected_addresses": []
+  },
+  "xdr": {
+    "_comment": "Demo-depth XDR panels and routes. All capabilities default off so the existing NIDS pipeline and response shapes remain unchanged. Enable only the capabilities needed for a local demo; llm.endpoint is the sole optional outbound destination.",
+    "enabled": false,
+    "ingest": false,
+    "enrich_windows": false,
+    "graph": false,
+    "triage": false,
+    "response_ladder": false,
+    "deception": false,
+    "forecast_timing": false,
+    "llm": {
+      "endpoint": null
+    }
   }
 }

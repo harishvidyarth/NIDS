@@ -13,20 +13,23 @@ from __future__ import annotations
 
 import csv
 import json
+import logging
+import os
 import threading
 import time
+from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Optional
 
 import numpy as np
 
-from fastapi import FastAPI, HTTPException, UploadFile, File
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi import Depends, FastAPI, HTTPException, Request, UploadFile, File
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
-from pydantic import BaseModel, ConfigDict
+from starlette.middleware.trustedhost import TrustedHostMiddleware
+from pydantic import BaseModel, ConfigDict, Field
 
-from ..config import PCAPS_DIR, FEATURES_DIR, RESULTS_DIR, REPO_ROOT
+from ..config import PCAPS_DIR, FEATURES_DIR, RESULTS_DIR, REPO_ROOT, load_config
 from ..capture import capture as capture_mod
 from ..extraction.extract import run_extraction, ExtractionError
 from ..extraction.parallel_extract import run_parallel_extraction
@@ -43,11 +46,43 @@ from ..lstm.jobs import forecast_latest, read_status as read_lstm_status, start_
 from ..lstm_multistep.training import forecast_latest as forecast_multistep_latest
 from ..worldmodel import jobs as worldmodel_jobs
 from ..worldmodel.engine import WorldModelUnavailable
+from ..response.adapters import adapter_for_platform
+from ..response.api import _trusted_local_request, create_response_router
+from ..response.service import NotFoundError as ResponseNotFoundError, ResponseService
+from ..response.store import ResponseStore
+from ..response.api import require_local_authorization
+from ..response.ladder import DryRunResponseService, LadderError
+from ..ingest import get_ingest_store
+from ..graph import get_graph_analyzer
+from ..triage import TriageService
+from ..deception import default_canary_store
 
-app = FastAPI(title="NIDS Pipeline API")
-app.add_middleware(
-    CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"]
-)
+
+@asynccontextmanager
+async def _lifespan(_app: FastAPI):
+    _start_response_runtime()
+    try:
+        yield
+    finally:
+        _stop_response_runtime()
+
+
+app = FastAPI(title="NIDS Pipeline API", lifespan=_lifespan)
+app.add_middleware(TrustedHostMiddleware, allowed_hosts=["127.0.0.1", "localhost", "[::1]"])
+
+
+@app.middleware("http")
+async def _security_headers(request, call_next):
+    response = await call_next(request)
+    response.headers["Content-Security-Policy"] = (
+        "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; "
+        "img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'"
+    )
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["Referrer-Policy"] = "no-referrer"
+    response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+    return response
 
 
 class PipelineState:
@@ -78,6 +113,137 @@ class PipelineState:
 
 
 state = PipelineState()
+
+_response_service: ResponseService | None = None
+_response_expiry_stop = threading.Event()
+_response_expiry_thread: threading.Thread | None = None
+logger = logging.getLogger("nids.api")
+_xdr_demo_enabled = False
+_xdr_latest_forecast: dict = {}
+_xdr_ladder_service: DryRunResponseService | None = None
+
+
+def _xdr_enabled(capability: str) -> bool:
+    config = load_config().get("xdr", {})
+    return bool(
+        (_xdr_demo_enabled or os.environ.get("NIDS_XDR_DEMO") == "1")
+        or (config.get("enabled") and config.get(capability))
+    )
+
+
+def _require_xdr(capability: str) -> None:
+    if not _xdr_enabled(capability):
+        raise HTTPException(status_code=404, detail=f"XDR {capability} is disabled in config/config.json.")
+
+
+def _current_xdr_session(requested: str | None = None) -> str:
+    if requested:
+        return requested
+    with state.lock:
+        if state.capture_session is not None:
+            return state.capture_session.session_id
+    sessions = upload_mgr.list_sessions()
+    return sessions[0]["session_id"] if sessions else "xdr_demo"
+
+
+def _current_xdr_prediction(session_id: str | None = None) -> dict:
+    if session_id:
+        session = upload_mgr.get_session(session_id)
+        if session is not None:
+            return session.prediction_result or {}
+        with state.lock:
+            if state.capture_session and state.capture_session.session_id == session_id:
+                return state.prediction_result or {}
+        return {}
+    with state.lock:
+        prediction = state.prediction_result
+    if prediction:
+        return prediction
+    sessions = upload_mgr.list_sessions()
+    if sessions:
+        session = upload_mgr.get_session(sessions[0]["session_id"])
+        if session and session.prediction_result:
+            return session.prediction_result
+    return {}
+
+
+def _get_xdr_ladder_service() -> DryRunResponseService:
+    global _xdr_ladder_service
+    if _xdr_ladder_service is None:
+        protected = load_config().get("response", {}).get("protected_addresses", [])
+        _xdr_ladder_service = DryRunResponseService(REPO_ROOT / "logs" / "response_audit.jsonl", protected)
+    return _xdr_ladder_service
+
+
+def _get_response_service() -> ResponseService:
+    global _response_service
+    if _response_service is None:
+        config = load_config()
+        allowlist = set(config.get("response", {}).get("protected_addresses", []))
+        # Scan and preview remain available, but this XDR prototype never
+        # wires an executable privileged helper.
+        _response_service = ResponseService(
+            ResponseStore(RESULTS_DIR / "response.sqlite3"), adapter_for_platform(helper=None), allowlist,
+        )
+    return _response_service
+
+
+def _resolve_response_prediction(reference: dict) -> dict:
+    if reference.get("mode") == "live":
+        with state.lock:
+            prediction = state.prediction_result
+    elif reference.get("mode") == "upload":
+        session_id = reference.get("session_id")
+        session = upload_mgr.get_session(session_id) if session_id else None
+        prediction = session.prediction_result if session else None
+    else:
+        prediction = None
+    if prediction is None:
+        raise ResponseNotFoundError("Referenced prediction is unavailable or incomplete.")
+    return prediction
+
+
+def _start_response_runtime() -> None:
+    global _response_expiry_thread
+    _ensure_unprivileged_api()
+    if int(os.environ.get("WEB_CONCURRENCY", "1")) != 1:
+        raise RuntimeError("Firewall response requires a single API worker; privileged helper serialization is separate.")
+    try:
+        _get_response_service().reconcile()
+    except Exception as exc:  # keep detection available when the helper/firewall is unavailable
+        logger.warning("Response reconciliation unavailable: %s", exc)
+    if _response_expiry_thread is None or not _response_expiry_thread.is_alive():
+        _response_expiry_stop.clear()
+
+        def expire_loop() -> None:
+            while not _response_expiry_stop.wait(15):
+                try:
+                    _get_response_service().expire_due()
+                except Exception as exc:
+                    logger.warning("Response expiry check unavailable: %s", exc)
+
+        _response_expiry_thread = threading.Thread(target=expire_loop, name="nids-response-expiry", daemon=True)
+        _response_expiry_thread.start()
+
+
+def _stop_response_expiry() -> None:
+    _response_expiry_stop.set()
+
+
+def _stop_response_runtime() -> None:
+    _stop_response_expiry()
+
+
+def _ensure_unprivileged_api() -> None:
+    if hasattr(os, "geteuid") and os.geteuid() == 0:
+        raise RuntimeError("Refusing to run the NIDS API as root; configure the narrow firewall helper instead.")
+    if os.name == "nt":
+        try:
+            import ctypes
+            if ctypes.windll.shell32.IsUserAnAdmin():
+                raise RuntimeError("Refusing to run the NIDS API as Administrator; configure the narrow firewall helper instead.")
+        except AttributeError:
+            pass
 
 
 class StartCaptureRequest(BaseModel):
@@ -500,13 +666,16 @@ class TemporalState:
 temporal_state = TemporalState()
 
 
-def _run_temporal_bg(csv_path: Path, window_size_seconds: int, sequence_length: int):
+def _run_temporal_bg(csv_path: Path, window_size_seconds: int, sequence_length: int, session_id: str | None = None):
     try:
         with temporal_state.lock:
             temporal_state.stage = "PREPARING"
             temporal_state.error = None
         output_dir = REPO_ROOT / "data" / "temporal" / csv_path.stem
-        summary = prepare_temporal_dataset(csv_path, output_dir, window_size_seconds, sequence_length)
+        summary = prepare_temporal_dataset(
+            csv_path, output_dir, window_size_seconds, sequence_length,
+            session_id=session_id, enrich_windows=_xdr_enabled("enrich_windows"),
+        )
         with temporal_state.lock:
             temporal_state.summary = summary
             temporal_state.stage = "COMPLETED"
@@ -525,7 +694,9 @@ def temporal_prepare(req: TemporalRequest):
     if not csv_path.exists():
         raise HTTPException(status_code=400, detail=f"CSV not found: {csv_path}")
     thread = threading.Thread(
-        target=_run_temporal_bg, args=(csv_path, req.window_size_seconds, req.sequence_length), daemon=True
+        target=_run_temporal_bg,
+        args=(csv_path, req.window_size_seconds, req.sequence_length, _current_xdr_session()),
+        daemon=True,
     )
     thread.start()
     return {"started": True, "csv_path": str(csv_path)}
@@ -792,8 +963,14 @@ def lstm_forecast():
 
 @app.post("/api/lstm/forecast/multistep")
 def lstm_forecast_multistep():
+    global _xdr_latest_forecast
     try:
-        return forecast_multistep_latest(windows_source=_windows_source_for_forecast())
+        result = forecast_multistep_latest(
+            windows_source=_windows_source_for_forecast(),
+            include_timing=_xdr_enabled("forecast_timing"),
+        )
+        _xdr_latest_forecast = result
+        return result
     except RuntimeError as error:
         raise HTTPException(status_code=409, detail=str(error))
 
@@ -897,6 +1074,178 @@ def lstm_report():
         raise HTTPException(status_code=404, detail="The completed LSTM report is missing on disk.")
     return FileResponse(path=str(report_path), filename=report_path.name, media_type="application/json")
 
+
+class ZeekIngestRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    logs: list[dict | str] = Field(max_length=100_000)
+    session_id: str | None = Field(default=None, max_length=128)
+
+
+class ZeekDirectoryRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    path: str = Field(max_length=4096)
+    session_id: str | None = Field(default=None, max_length=128)
+
+
+class XdrResponsePlanRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    target: str
+    ttl_seconds: int = 900
+    verdict: dict | None = None
+    forecast: dict | None = None
+
+
+class XdrResponseApplyRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    plan_id: str
+    operator_ack: bool = False
+
+
+class XdrResponseRollbackRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    action_id: str
+    operator_ack: bool = False
+
+
+@app.post("/api/xdr/demo/enable", dependencies=[Depends(require_local_authorization)])
+def xdr_demo_enable():
+    """Enable the prototype only for this local backend process."""
+    global _xdr_demo_enabled
+    _xdr_demo_enabled = True
+    return {"enabled": True, "scope": "current_process", "dry_run_response": True}
+
+
+@app.get("/api/xdr/status")
+def xdr_status():
+    capabilities = ("ingest", "enrich_windows", "graph", "triage", "response_ladder", "deception", "forecast_timing")
+    return {"enabled": {name: _xdr_enabled(name) for name in capabilities}, "demo_override": _xdr_demo_enabled}
+
+
+@app.post("/api/ingest/zeek", dependencies=[Depends(require_local_authorization)])
+def ingest_zeek(req: ZeekIngestRequest):
+    _require_xdr("ingest")
+    try:
+        return get_ingest_store().ingest(_current_xdr_session(req.session_id), req.logs)
+    except ValueError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
+
+
+@app.get("/api/ingest/zeek", dependencies=[Depends(require_local_authorization)])
+def ingest_zeek_status(session_id: str | None = None):
+    _require_xdr("ingest")
+    session = _current_xdr_session(session_id)
+    return {"session_id": session, "enrichment": get_ingest_store().enrichment(session)}
+
+
+@app.post("/api/ingest/zeek/dir", dependencies=[Depends(require_local_authorization)])
+def ingest_zeek_directory(req: ZeekDirectoryRequest):
+    _require_xdr("ingest")
+    try:
+        return get_ingest_store().ingest_directory(_current_xdr_session(req.session_id), req.path)
+    except (OSError, ValueError) as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
+
+
+@app.get("/api/graph", dependencies=[Depends(require_local_authorization)])
+def xdr_graph(session_id: str | None = None):
+    _require_xdr("graph")
+    session = _current_xdr_session(session_id)
+    prediction = _current_xdr_prediction(session)
+    enrichment = get_ingest_store().enrichment(session)
+    quiet_enrichment = (
+        float(enrichment.get("beacon_score_max", 0.0)) < 0.5
+        and float(enrichment.get("ja3_novelty", 0.0)) < 0.25
+        and float(enrichment.get("nxdomain_ratio", 0.0)) < 0.25
+    )
+    graph = get_graph_analyzer().analyze(
+        session, prediction.get("flows", []),
+        mostly_benign=(bool(prediction) and not bool(prediction.get("attack_present"))
+                       and quiet_enrichment and not default_canary_store.list_hits()),
+    )
+    if default_canary_store.list_hits():
+        graph = get_graph_analyzer().bump_for_deception(session) or graph
+    return graph
+
+
+@app.post("/api/triage", dependencies=[Depends(require_local_authorization)])
+def xdr_triage(session_id: str | None = None):
+    _require_xdr("triage")
+    session = _current_xdr_session(session_id)
+    prediction = _current_xdr_prediction(session)
+    graph = get_graph_analyzer().latest(session) or {"campaign_score": 0.0}
+    forecast = _xdr_latest_forecast
+    horizon = (forecast.get("horizons") or [{}])[0]
+    mitre = {"mitre_candidates": horizon.get("mitre_candidates", []),
+             "operator_guidance": horizon.get("operator_guidance", [])}
+    endpoint = load_config().get("xdr", {}).get("llm", {}).get("endpoint")
+    return TriageService(endpoint=endpoint).summarize({
+        "verdict": prediction, "forecast": forecast, "mitre": mitre,
+        "campaign_score": min(1.0, float(graph.get("campaign_score", 0.0)) + default_canary_store.campaign_score_boost()),
+        "enrichment": get_ingest_store().enrichment(session),
+        "deception_events": default_canary_store.high_confidence_events(),
+    })
+
+
+@app.get("/api/deception/canary")
+def deception_canary(request: Request):
+    _require_xdr("deception")
+    fetch_site = request.headers.get("sec-fetch-site", "same-origin")
+    if not _trusted_local_request(request) or fetch_site not in {"same-origin", "none"}:
+        raise HTTPException(status_code=403, detail="The deception canary accepts only direct same-origin loopback access.")
+    source_ip = request.client.host if request.client else "unknown"
+    hit = default_canary_store.record_hit(source_ip, request.headers.get("user-agent"))
+    get_graph_analyzer().bump_for_deception(_current_xdr_session())
+    return {"status": "canary_recorded", "hit_id": hit["hit_id"]}
+
+
+@app.get("/api/deception/hits", dependencies=[Depends(require_local_authorization)])
+def deception_hits():
+    _require_xdr("deception")
+    return {"hits": default_canary_store.list_hits(), "honeytoken_path": default_canary_store.honeytoken_path}
+
+
+@app.post("/api/response/plan", dependencies=[Depends(require_local_authorization)])
+def xdr_response_plan(req: XdrResponsePlanRequest):
+    _require_xdr("response_ladder")
+    verdict = req.verdict or _current_xdr_prediction()
+    forecast = req.forecast or _xdr_latest_forecast
+    normalized = {
+        "current_state": verdict.get("effective_attack_class") or verdict.get("attack_class") or verdict.get("dominant_state", "BENIGN"),
+        "signature_confirmed": bool(verdict.get("signature_verdict")),
+    }
+    try:
+        return _get_xdr_ladder_service().plan(normalized, forecast, req.target, req.ttl_seconds)
+    except LadderError as error:
+        raise HTTPException(status_code=409, detail=str(error)) from error
+
+
+@app.post("/api/response/apply", dependencies=[Depends(require_local_authorization)])
+def xdr_response_apply(req: XdrResponseApplyRequest):
+    _require_xdr("response_ladder")
+    try:
+        return _get_xdr_ladder_service().apply(req.plan_id, req.operator_ack)
+    except LadderError as error:
+        raise HTTPException(status_code=409, detail=str(error)) from error
+
+
+@app.post("/api/response/rollback", dependencies=[Depends(require_local_authorization)])
+def xdr_response_rollback(req: XdrResponseRollbackRequest):
+    _require_xdr("response_ladder")
+    if not req.operator_ack:
+        raise HTTPException(status_code=409, detail="Explicit operator acknowledgement is required for rollback.")
+    try:
+        return _get_xdr_ladder_service().rollback(req.action_id)
+    except LadderError as error:
+        raise HTTPException(status_code=409, detail=str(error)) from error
+
+
+@app.get("/api/response/audit", dependencies=[Depends(require_local_authorization)])
+def xdr_response_audit():
+    _require_xdr("response_ladder")
+    return {"events": _get_xdr_ladder_service().audit()}
+
+
+app.include_router(create_response_router(_get_response_service, _resolve_response_prediction))
 
 frontend_dir = REPO_ROOT / "frontend"
 if frontend_dir.exists():

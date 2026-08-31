@@ -1,0 +1,4 @@
+{
+  "_comment": "Small demo baseline; operators replace this with locally observed benign JA3 values.",
+  "ja3": ["benign-browser-ja3", "benign-update-ja3"]
+}

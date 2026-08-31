@@ -99,3 +99,15 @@ STATE_FEATURE_NAMES = [
     "mean_packet_size",
     "max_packet_size",
 ]
+
+# Additive XDR display/graph features. The trained forecasting models and
+# their scalers continue to consume STATE_FEATURE_NAMES (the first 28 values).
+XDR_FEATURE_NAMES = [
+    "dns_entropy",
+    "unique_sni",
+    "beacon_score",
+    "byte_asymmetry",
+    "ja3_novelty",
+    "http_error_rate",
+]
+STATE_FEATURE_NAMES_V2 = [*STATE_FEATURE_NAMES, *XDR_FEATURE_NAMES]

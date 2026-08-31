@@ -12,7 +12,7 @@ import joblib
 import numpy as np
 from sklearn.preprocessing import MinMaxScaler
 
-from ..config import REPO_ROOT
+from ..config import REPO_ROOT, load_config
 from ..lstm.config import ALERT_CLASSES, FORECAST_CLASSES, LATEST_PATH as ONE_STEP_LATEST, repository_path, repository_relative
 from ..lstm.dataset import build_sequences as build_one_step_sequences, concat_sequence_sets as concat_one_step_sequences
 from ..lstm.evaluation import evaluate_predictions
@@ -66,6 +66,16 @@ def build_model(input_shape=(SEQUENCE_LENGTH, len(STATE_FEATURE_NAMES))):
         metrics={"dominant_state": ["accuracy"], "attack_alert": ["accuracy"]},
     )
     return model
+
+
+def forecast_timing(attack_probabilities, threshold: float, window_seconds: int = 10) -> dict:
+    """Translate horizon probabilities into elapsed time without retraining."""
+    curve = [float(value) for value in attack_probabilities]
+    first = next((index for index, value in enumerate(curve, start=1) if value >= threshold), None)
+    return {
+        "hazard_curve": curve,
+        "time_to_attack_seconds": first * window_seconds if first is not None else None,
+    }
 
 
 def _encode(labels: np.ndarray, classes=FORECAST_CLASSES) -> np.ndarray:
@@ -301,7 +311,10 @@ def train_multistep(force_rebuild: bool = False, status=lambda **kwargs: None) -
     return {"training": training_report, "evaluation": evaluation, "benchmark": benchmark}
 
 
-def forecast_latest(windows_source=None) -> dict:
+def forecast_latest(windows_source=None, include_timing: bool | None = None) -> dict:
+    if include_timing is None:
+        xdr = load_config().get("xdr", {})
+        include_timing = bool(xdr.get("enabled") and xdr.get("forecast_timing"))
     if not LATEST_PATH.is_file():
         raise RuntimeError("No activated multi-step LSTM artifact is available.")
     latest = json.loads(LATEST_PATH.read_text())
@@ -370,6 +383,7 @@ def forecast_latest(windows_source=None) -> dict:
             "action_provenance": mapping["action_provenance"],
         })
     warning = [item["horizon"] for item in horizons if item["attack_probability"] >= threshold]
+    timing = forecast_timing([item["attack_probability"] for item in horizons], threshold)
     return {
         "current_state": str(recent["dominant_state"].iloc[-1]),
         "historical_label": str(recent["dominant_state"].iloc[-1]),
@@ -377,6 +391,7 @@ def forecast_latest(windows_source=None) -> dict:
         "forecast_horizon": HORIZONS, "window_duration": None, "timestamp_mode": "row_order_proxy",
         "horizon_labeling": "windows", "horizons": horizons, "early_warning_threshold": threshold,
         "earliest_predicted_attack_horizon": min(warning) if warning else None,
+        **(timing if include_timing else {}),
         "maximum_attack_probability": max(item["attack_probability"] for item in horizons),
         "model_version": latest["model_version"], "input_shape": [SEQUENCE_LENGTH, len(STATE_FEATURE_NAMES)],
         "output_shape": {"dominant_state": [HORIZONS, len(FORECAST_CLASSES)], "attack_alert": [HORIZONS, len(ALERT_CLASSES)]},

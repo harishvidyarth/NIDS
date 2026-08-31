@@ -21,9 +21,9 @@ import joblib
 import numpy as np
 import pandas as pd
 
-from ..config import REPO_ROOT
+from ..config import REPO_ROOT, load_config
 from .config import DEFAULT_SEQUENCE_LENGTH, DEFAULT_WINDOW_SIZE_SECONDS, STATE_CLASSES
-from .schema import STATE_FEATURE_NAMES, find_id_columns
+from .schema import STATE_FEATURE_NAMES, STATE_FEATURE_NAMES_V2, XDR_FEATURE_NAMES, find_id_columns
 from .sequence_builder import build_state_transitions, raise_if_insufficient_windows
 from .splitting import build_split_sequences, chronological_split, fit_scaler_on_train
 from .state_builder import build_temporal_states
@@ -83,6 +83,9 @@ def prepare_temporal_dataset(
     output_dir: Path,
     window_size_seconds: int = DEFAULT_WINDOW_SIZE_SECONDS,
     sequence_length: int = DEFAULT_SEQUENCE_LENGTH,
+    session_id: str | None = None,
+    ingest_enrichment: dict | None = None,
+    enrich_windows: bool | None = None,
 ) -> dict:
     input_csv = Path(input_csv)
     output_dir = Path(output_dir)
@@ -118,6 +121,27 @@ def prepare_temporal_dataset(
     windowed_df = assign_windows(sorted_df, "timestamp_parsed", window_size_seconds)
 
     states_df, agg_warnings = build_temporal_states(windowed_df, "Current_State", window_size_seconds)
+
+    if enrich_windows is None:
+        enrich_windows = bool(load_config().get("xdr", {}).get("enrich_windows", False))
+    if enrich_windows:
+        if ingest_enrichment is None:
+            try:
+                from ..ingest import get_ingest_store
+                ingest_enrichment = get_ingest_store().enrichment(session_id or input_csv.stem)
+            except ImportError:
+                ingest_enrichment = None
+        enrichment = ingest_enrichment or {}
+        values = {
+            "dns_entropy": enrichment.get("dns_query_entropy_mean", 0.0),
+            "unique_sni": enrichment.get("unique_sni_count", 0.0),
+            "beacon_score": enrichment.get("beacon_score_max", 0.0),
+            "byte_asymmetry": enrichment.get("byte_asymmetry_max", 0.0),
+            "ja3_novelty": enrichment.get("ja3_novelty", 0.0),
+            "http_error_rate": enrichment.get("http_error_rate", 0.0),
+        }
+        for feature in XDR_FEATURE_NAMES:
+            states_df[feature] = float(values[feature] or 0.0)
 
     # Hard gate — checked against the TOTAL dataset before any split. On
     # failure this is re-raised with full diagnostics (capture start/end/
@@ -199,13 +223,14 @@ def prepare_temporal_dataset(
         )
 
     feature_names_out = output_dir / "state_feature_names.json"
-    feature_names_out.write_text(json.dumps({"features": STATE_FEATURE_NAMES}, indent=2))
+    output_features = STATE_FEATURE_NAMES_V2 if enrich_windows else STATE_FEATURE_NAMES
+    feature_names_out.write_text(json.dumps({"features": output_features}, indent=2))
 
     seq_metadata = {
         "window_size_seconds": window_size_seconds,
         "sequence_length": sequence_length,
         "num_sequences": int(len(all_seq["X"])) if all_seq is not None else 0,
-        "num_state_features": len(STATE_FEATURE_NAMES),
+        "num_state_features": len(output_features),
         "state_classes": STATE_CLASSES,
     }
     (output_dir / "temporal_sequences_metadata.json").write_text(json.dumps(seq_metadata, indent=2))
@@ -229,7 +254,9 @@ def prepare_temporal_dataset(
         "timestamp_format_used": ts_result.format_used,
         "window_size_seconds": window_size_seconds,
         "total_windows": int(len(states_df)),
-        "state_features": len(STATE_FEATURE_NAMES),
+        "state_features": len(output_features),
+        "forecast_state_features": len(STATE_FEATURE_NAMES),
+        "xdr_enrichment_enabled": bool(enrich_windows),
         "transitions": int(len(transitions_df)),
         "sequence_length": sequence_length,
         "total_sequences": int(len(all_seq["X"])) if all_seq is not None else 0,

@@ -105,12 +105,31 @@ let explanationPolling = new Set();
 let temporalStatesData = null;   // { session, source, window_size_seconds, rows: [...] }
 let temporalStatesKey = null;    // session name + row count, to avoid redundant refetch
 let packetRateHistory = [];       // [{ t: ms, packets }] for the capture sparkline
+let responseCapabilities = null;
+let responseToken = null;
+let responseScan = null;
+let responsePlan = null;
+let responseAction = null;
+let responseHistory = [];
+let responseAudit = [];
+let xdrEnrichment = null;
+let xdrGraph = null;
+let xdrTriage = null;
+let xdrHits = [];
+let xdrAudit = [];
+let xdrPlan = null;
+let xdrAction = null;
 
 async function api(path, opts) {
   const res = await fetch(API + path, opts);
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
-    throw new Error(body.detail || `${res.status} ${res.statusText}`);
+    const detail = body.detail;
+    const message = detail && typeof detail === "object" ? (detail.message || JSON.stringify(detail)) : detail;
+    const error = new Error(message || `${res.status} ${res.statusText}`);
+    error.status = res.status;
+    error.detail = detail;
+    throw error;
   }
   return res.json();
 }
@@ -165,6 +184,11 @@ function showError(message, severity) {
 
 /* ==================== Mode switching ==================== */
 function switchMode(newMode) {
+  if (mode !== newMode) {
+    responsePlan = null;
+    responseAction = null;
+    responseAudit = [];
+  }
   mode = newMode;
   const isLive = mode === "live";
   el("mode-live").className = "mode-btn" + (isLive ? " mode-btn-active" : "");
@@ -273,6 +297,9 @@ async function resetPipeline() {
   temporalStatus = { stage: "IDLE", error: null, result: null };
   validationStatus = { stage: "NOT_VALIDATED", error: null, report: null };
   selectedValidationCheck = null;
+  responsePlan = null;
+  responseAction = null;
+  responseAudit = [];
   refreshPipeline();
 }
 
@@ -854,6 +881,285 @@ function switchDetailTab(tab) {
   activeDetailTab = tab;
   document.querySelectorAll(".detail-tab").forEach((b) => b.classList.toggle("detail-tab-active", b.dataset.detailTab === tab));
   document.querySelectorAll(".detail-pane").forEach((p) => { p.style.display = p.dataset.detailPane === tab ? "" : "none"; });
+  if (tab === "xdr") loadXdrCampaign();
+}
+
+/* ==================== XDR / campaign prototype ==================== */
+function showXdrError(message) {
+  const box = el("xdr-error");
+  box.textContent = message || "";
+  box.style.display = message ? "block" : "none";
+}
+
+async function loadXdrCampaign() {
+  showXdrError("");
+  try {
+    const sessionId = mode === "upload" ? uploadSessionId : (liveSnap && liveSnap.capture && liveSnap.capture.session_id);
+    const query = sessionId ? `?session_id=${encodeURIComponent(sessionId)}` : "";
+    const [ingest, graph, triage, deception, audit] = await Promise.all([
+      responseApi(`/api/ingest/zeek${query}`), responseApi(`/api/graph${query}`),
+      responseApi(`/api/triage${query}`, { method: "POST" }),
+      responseApi("/api/deception/hits"), responseApi("/api/response/audit"),
+    ]);
+    xdrEnrichment = ingest.enrichment || null;
+    xdrGraph = graph;
+    xdrTriage = triage;
+    xdrHits = deception.hits || [];
+    xdrAudit = audit.events || [];
+    xdrPlan = [...xdrAudit].reverse().find((event) => event.event === "PLAN") || null;
+    xdrAction = xdrPlan ? ([...xdrAudit].reverse().find((event) =>
+      event.action_id === xdrPlan.action_id && ["APPLY", "ROLLBACK"].includes(event.event)) || null) : null;
+    el("xdr-disabled").style.display = "none";
+  } catch (error) {
+    el("xdr-disabled").style.display = "block";
+    showXdrError(error.status === 404 ? "XDR prototype is disabled or has no session data." : error.message);
+  }
+  renderXdrCampaign();
+}
+
+function renderXdrGraph(graph) {
+  if (!graph || !(graph.nodes || []).length) return '<div class="dist-empty">No graph data.</div>';
+  const nodes = graph.nodes.slice(0, 24);
+  const ids = new Set(nodes.map((node) => node.id));
+  const cx = 170, cy = 100, radius = 76;
+  const positions = {};
+  nodes.forEach((node, index) => {
+    const angle = (Math.PI * 2 * index / nodes.length) - Math.PI / 2;
+    positions[node.id] = [cx + radius * Math.cos(angle), cy + radius * Math.sin(angle)];
+  });
+  const surprising = new Set((graph.surprising_edges || []).map((edge) => `${edge.source}|${edge.target}`));
+  const lines = (graph.edges || []).filter((edge) => ids.has(edge.source) && ids.has(edge.target)).map((edge) => {
+    const a = positions[edge.source], b = positions[edge.target];
+    const red = surprising.has(`${edge.source}|${edge.target}`);
+    return `<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" class="${red ? "xdr-edge-surprise" : "xdr-edge"}"><title>${escapeHtml(edge.source)} → ${escapeHtml(edge.target)} · surprise ${Number(edge.edge_surprise || 0).toFixed(2)}</title></line>`;
+  }).join("");
+  const circles = nodes.map((node) => {
+    const point = positions[node.id];
+    return `<g><circle cx="${point[0]}" cy="${point[1]}" r="5" class="xdr-node"><title>${escapeHtml(node.id)}</title></circle><text x="${point[0] + 7}" y="${point[1] + 3}">${escapeHtml(node.id)}</text></g>`;
+  }).join("");
+  return `<svg viewBox="0 0 340 200" role="img" aria-label="Session communication graph">${lines}${circles}</svg>`;
+}
+
+function renderXdrCampaign() {
+  const sensorMap = [
+    ["DNS entropy", "dns_query_entropy_mean", 5], ["Unique SNI", "unique_sni_count", 20],
+    ["Beacon", "beacon_score_max", 1], ["Byte asymmetry", "byte_asymmetry_max", 1],
+    ["JA3 novelty", "ja3_novelty", 1], ["HTTP errors", "http_error_rate", 1],
+  ];
+  el("xdr-sensors").innerHTML = xdrEnrichment ? sensorMap.map(([label, key, max]) => {
+    const value = Number(xdrEnrichment[key] || 0);
+    return `<div class="xdr-sensor"><span>${label}</span><div><i style="width:${Math.min(100, value / max * 100)}%"></i></div><strong>${value.toFixed(key === "unique_sni_count" ? 0 : 3)}</strong></div>`;
+  }).join("") : '<div class="dist-empty">No enrichment data.</div>';
+  el("xdr-campaign-score").textContent = xdrGraph ? Number(xdrGraph.campaign_score || 0).toFixed(2) : "N/A";
+  el("xdr-graph").innerHTML = renderXdrGraph(xdrGraph);
+  el("xdr-triage-summary").textContent = xdrTriage ? `${xdrTriage.summary} Confidence: ${xdrTriage.confidence}.` : "No triage data.";
+  el("xdr-techniques").innerHTML = xdrTriage && xdrTriage.ranked_techniques.length ? xdrTriage.ranked_techniques.map((item) =>
+    `<div><strong>${escapeHtml(item.technique_id)}</strong> ${escapeHtml(item.technique_name)} — ${Math.round(Number(item.confidence || 0) * 100)}%</div>`).join("") : '<div class="dist-empty">No ranked techniques.</div>';
+  el("xdr-playbook").innerHTML = xdrTriage ? xdrTriage.playbook.map((step) => `<li>${escapeHtml(step)}</li>`).join("") : "";
+  el("xdr-response-step").textContent = xdrPlan ? xdrPlan.step : "NONE";
+  el("xdr-response-command").textContent = xdrPlan ? `${xdrPlan.command}\n\n${xdrPlan.ruleset || ""}` : "No response plan.";
+  const ack = el("xdr-operator-ack").checked;
+  el("btn-xdr-apply").disabled = !(xdrPlan && xdrPlan.step !== "NONE" && !xdrAction && (!xdrPlan.requires_operator_ack || ack));
+  el("btn-xdr-rollback").disabled = !(xdrAction && xdrAction.status !== "DRY_RUN_ROLLED_BACK" && ack);
+  el("xdr-audit").innerHTML = xdrAudit.length ? xdrAudit.slice(-12).reverse().map((event) => `<tr><td>${escapeHtml(event.event)}</td><td>${escapeHtml(event.step || "N/A")}</td><td>${escapeHtml(event.status || "PLANNED")}</td></tr>`).join("") : '<tr class="empty-row"><td colspan="3">No audit entries.</td></tr>';
+  el("xdr-hits").innerHTML = xdrHits.length ? xdrHits.slice().reverse().map((hit) => `<tr><td>${escapeHtml(hit.timestamp)}</td><td>${escapeHtml(hit.source_ip)}</td><td>${escapeHtml(hit.user_agent)}</td></tr>`).join("") : '<tr class="empty-row"><td colspan="3">No honeytoken hits.</td></tr>';
+}
+
+async function applyXdrDryRun() {
+  if (!xdrPlan) return;
+  try {
+    xdrAction = await responseApi("/api/response/apply", { method: "POST", body: JSON.stringify({ plan_id: xdrPlan.plan_id, operator_ack: el("xdr-operator-ack").checked }) });
+    await loadXdrCampaign();
+  } catch (error) { showXdrError(error.message); }
+}
+
+async function rollbackXdrDryRun() {
+  if (!xdrAction) return;
+  try {
+    await responseApi("/api/response/rollback", { method: "POST", body: JSON.stringify({ action_id: xdrAction.action_id, operator_ack: el("xdr-operator-ack").checked }) });
+    await loadXdrCampaign();
+  } catch (error) { showXdrError(error.message); }
+}
+
+/* ==================== Controlled firewall response ==================== */
+function responsePrediction() {
+  return mode === "live" ? (liveSnap && liveSnap.prediction) : (uploadStatus && uploadStatus.prediction);
+}
+
+function responseReference() {
+  return mode === "live" ? { mode: "live" } : { mode: "upload", session_id: uploadSessionId };
+}
+
+async function responseApi(path, opts = {}) {
+  const headers = { ...(opts.headers || {}) };
+  if (opts.body) headers["Content-Type"] = "application/json";
+  if (responseToken) headers["X-NIDS-Response-Token"] = responseToken;
+  return api(path, { ...opts, headers });
+}
+
+function showResponseError(message) {
+  const box = el("response-error");
+  box.textContent = message || "";
+  box.style.display = message ? "block" : "none";
+}
+
+async function loadResponseBootstrap() {
+  try {
+    responseCapabilities = await api("/api/response/capabilities");
+    responseToken = responseCapabilities.local_authorization_token;
+    await loadResponseHistory();
+    showResponseError("");
+  } catch (error) {
+    showResponseError("Response subsystem unavailable: " + error.message);
+  }
+  renderResponseTab();
+}
+
+async function loadResponseHistory() {
+  const result = await responseApi("/api/response/actions");
+  responseHistory = result.actions || [];
+}
+
+async function inspectResponseAction(actionId) {
+  showResponseError("");
+  try {
+    responseAction = await responseApi(`/api/response/actions/${encodeURIComponent(actionId)}`);
+    responseAudit = responseAction.events || [];
+  } catch (error) { showResponseError(error.message); }
+  renderResponseTab();
+}
+
+async function scanFirewall() {
+  showResponseError("");
+  el("btn-response-scan").disabled = true;
+  try {
+    responseScan = await responseApi("/api/response/scan", { method: "POST" });
+  } catch (error) {
+    showResponseError(error.message);
+  }
+  el("btn-response-scan").disabled = false;
+  renderResponseTab();
+}
+
+async function createResponsePlan() {
+  showResponseError("");
+  try {
+    responsePlan = await responseApi("/api/response/plans", {
+      method: "POST",
+      body: JSON.stringify({
+        prediction_reference: responseReference(),
+        ttl_minutes: Number(el("response-ttl").value),
+      }),
+    });
+    responseAction = null;
+    responseAudit = [];
+    el("response-apply-ack").checked = false;
+    el("response-rollback-ack").checked = false;
+    await loadResponseHistory();
+  } catch (error) {
+    showResponseError(error.message);
+  }
+  renderResponseTab();
+}
+
+async function applyResponsePlan() {
+  if (!responsePlan || !el("response-apply-ack").checked) return;
+  showResponseError("");
+  try {
+    responseAction = await responseApi(`/api/response/plans/${encodeURIComponent(responsePlan.plan_id)}/apply`, {
+      method: "POST",
+      body: JSON.stringify({ plan_hash: responsePlan.plan_hash, confirmed: true }),
+    });
+    responseAudit = responseAction.events || [];
+    await loadResponseHistory();
+  } catch (error) {
+    showResponseError(error.message);
+  }
+  renderResponseTab();
+}
+
+async function verifyResponseAction() {
+  if (!responseAction) return;
+  showResponseError("");
+  try {
+    responseAction = await responseApi(`/api/response/actions/${encodeURIComponent(responseAction.action_id)}/verify`, {
+      method: "POST", body: JSON.stringify({ confirmed: true }),
+    });
+    responseAudit = responseAction.events || [];
+    await loadResponseHistory();
+  } catch (error) { showResponseError(error.message); }
+  renderResponseTab();
+}
+
+async function rollbackResponseAction() {
+  if (!responseAction || !el("response-rollback-ack").checked) return;
+  showResponseError("");
+  try {
+    responseAction = await responseApi(`/api/response/actions/${encodeURIComponent(responseAction.action_id)}/rollback`, {
+      method: "POST", body: JSON.stringify({ confirmed: true }),
+    });
+    responseAudit = responseAction.events || [];
+    await loadResponseHistory();
+  } catch (error) { showResponseError(error.message); }
+  renderResponseTab();
+}
+
+function renderResponseTab() {
+  const caps = responseCapabilities;
+  const prediction = responsePrediction();
+  const actions = (caps && caps.supported_actions) || [];
+  el("response-engine").textContent = caps ? `${caps.platform} / ${caps.engine}` : "N/A";
+  el("response-privilege").textContent = caps ? (caps.privilege_ready ? "READY" : "HELPER NOT CONFIGURED") : "N/A";
+  el("response-health").textContent = responseScan ? (responseScan.namespace_healthy ? "HEALTHY" : "UNAVAILABLE") : "NOT SCANNED";
+  el("response-conflicts").textContent = responseScan && responseScan.conflicts.length ? responseScan.conflicts.join(", ") : "NONE OBSERVED";
+  el("btn-response-plan").disabled = !prediction || !responseToken;
+
+  const eligibility = responsePlan && responsePlan.eligibility;
+  el("response-source").textContent = eligibility ? eligibility.confidence_source : "N/A";
+  el("response-attack").textContent = eligibility ? (eligibility.attack_class || "N/A") : "N/A";
+  el("response-eligibility").textContent = !eligibility ? "NO PLAN" : (eligibility.executable ? "EXECUTABLE PROPOSAL" : "RECOMMENDATION ONLY");
+  const notes = responsePlan ? [
+    ...(responsePlan.warnings || []), ...(responsePlan.limitations || []),
+    ...(responsePlan.upstream_recommendation ? [responsePlan.upstream_recommendation] : []),
+  ] : [];
+  el("response-limitations").textContent = notes.join(" ") || "Run a current prediction to request a response recommendation.";
+  el("response-plan-hash").textContent = responsePlan ? responsePlan.plan_hash : "N/A";
+  const preview = responsePlan ? {
+    targets: responsePlan.targets,
+    ttl_minutes: responsePlan.ttl_minutes,
+    exact_native_changes: responsePlan.native_changes.commands,
+    affected_traffic: responsePlan.native_changes.affected_traffic,
+    rollback_effect: responsePlan.native_changes.rollback,
+    warnings: responsePlan.warnings,
+  } : "No plan generated.";
+  el("response-preview").textContent = typeof preview === "string" ? preview : JSON.stringify(preview, null, 2);
+
+  const applyReady = Boolean(eligibility && eligibility.executable && actions.includes("apply") && el("response-apply-ack").checked);
+  el("btn-response-apply").disabled = !applyReady;
+  const state = responseAction ? responseAction.state : "N/A";
+  el("response-action-state").textContent = state;
+  el("response-action-state").className = state === "N/A" ? "" : `response-state-${state}`;
+  el("response-native-ids").textContent = responseAction && responseAction.native_identifiers.length ? responseAction.native_identifiers.join(", ") : "N/A";
+  el("btn-response-verify").disabled = !(responseAction && ["APPLIED", "VERIFY_FAILED"].includes(responseAction.state) && actions.includes("verify"));
+  el("btn-response-rollback").disabled = !(responseAction && responseAction.state === "VERIFIED" && actions.includes("rollback") && el("response-rollback-ack").checked);
+
+  const filter = el("response-history-filter").value;
+  const filtered = responseHistory.filter((action) => !filter || action.state === filter);
+  el("response-history").innerHTML = filtered.length ? filtered.map((action) => `<tr>
+    <td>${escapeHtml(new Date(action.created_at).toLocaleString())}</td>
+    <td class="response-state-${escapeHtml(action.state)}">${escapeHtml(action.state)}</td>
+    <td>${escapeHtml(action.actor || "N/A")}</td>
+    <td><button class="btn btn-sm response-inspect" data-action-id="${escapeHtml(action.action_id)}" title="${escapeHtml(action.action_id)}">${escapeHtml(action.action_id.slice(0, 8))}</button></td>
+  </tr>`).join("") : '<tr class="empty-row"><td colspan="4">No matching response actions.</td></tr>';
+  document.querySelectorAll(".response-inspect").forEach((button) => button.addEventListener("click", () => inspectResponseAction(button.dataset.actionId)));
+  el("response-event-action").textContent = responseAction ? responseAction.action_id.slice(0, 8) : "select an action";
+  const eventFilter = el("response-event-filter").value;
+  const events = responseAudit.filter((event) => !eventFilter || event.state === eventFilter);
+  el("response-events").innerHTML = events.length ? events.map((event) => `<tr>
+    <td>${escapeHtml(new Date(event.created_at).toLocaleString())}</td>
+    <td class="response-state-${escapeHtml(event.state)}">${escapeHtml(event.state)}</td>
+    <td>${escapeHtml(event.actor || "N/A")}</td>
+  </tr>`).join("") : '<tr class="empty-row"><td colspan="3">No matching events.</td></tr>';
 }
 
 const STOP_REASON_LABEL = {
@@ -1839,6 +2145,7 @@ function renderAll() {
   renderTemporalTab();
   renderMultistepTab();
   renderWorldModelTab();
+  renderResponseTab();
   renderActiveTable();
   renderStatusBar();
 }
@@ -1888,6 +2195,18 @@ el("btn-lstm-forecast").addEventListener("click", runLstmForecast);
 el("btn-lstm-report").addEventListener("click", downloadLstmReport);
 el("btn-multistep-forecast").addEventListener("click", runMultistepForecast);
 el("btn-worldmodel-forecast").addEventListener("click", runWorldModelForecast);
+el("btn-response-scan").addEventListener("click", scanFirewall);
+el("btn-response-plan").addEventListener("click", createResponsePlan);
+el("btn-response-apply").addEventListener("click", applyResponsePlan);
+el("btn-response-verify").addEventListener("click", verifyResponseAction);
+el("btn-response-rollback").addEventListener("click", rollbackResponseAction);
+el("response-apply-ack").addEventListener("change", renderResponseTab);
+el("response-rollback-ack").addEventListener("change", renderResponseTab);
+el("response-history-filter").addEventListener("change", renderResponseTab);
+el("response-event-filter").addEventListener("change", renderResponseTab);
+el("xdr-operator-ack").addEventListener("change", renderXdrCampaign);
+el("btn-xdr-apply").addEventListener("click", applyXdrDryRun);
+el("btn-xdr-rollback").addEventListener("click", rollbackXdrDryRun);
 el("btn-packets-prev").addEventListener("click", () => goToPacketsPage(-1));
 el("btn-packets-next").addEventListener("click", () => goToPacketsPage(1));
 
@@ -1917,6 +2236,7 @@ el("btn-help-close").addEventListener("click", () => { el("help-modal").style.di
 el("help-modal").addEventListener("click", (e) => { if (e.target.id === "help-modal") el("help-modal").style.display = "none"; });
 
 loadInterfaces();
+loadResponseBootstrap();
 initResizer();
 startPolling();
 renderAll();

@@ -10,6 +10,9 @@ pcaps/*.pcap
 pcaps/*.pcapng
 features/*.csv
 results/*.json
+results/*.sqlite3
+results/*.sqlite3-shm
+results/*.sqlite3-wal
 !pcaps/.gitkeep
 !features/.gitkeep
 !results/.gitkeep
@@ -27,3 +30,5 @@ artifacts/flow_challenger/
 
 .server.out.log
 .server.err.log
+logs/response_audit.jsonl
+backend/graph/benign_baseline.json

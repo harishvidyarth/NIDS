@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>NIDS Network Traffic Analyzer</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2016%2016'%3E%3Ccircle%20cx='8'%20cy='8'%20r='6'%20fill='%234fa3e3'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=phase6" />
+<link rel="stylesheet" href="styles.css?v=xdr1" />
 </head>
 <body>
 
@@ -198,6 +198,8 @@
       <button class="detail-tab" data-detail-tab="extraction">EXTRACTION</button>
       <button class="detail-tab" data-detail-tab="prediction">STATE PREDICTION</button>
       <button class="detail-tab" data-detail-tab="temporal">TEMPORAL DATASET</button>
+      <button class="detail-tab" data-detail-tab="response">RESPONSE</button>
+      <button class="detail-tab" data-detail-tab="xdr">XDR / CAMPAIGN</button>
     </div>
 
     <div class="detail-body">
@@ -488,6 +490,95 @@
         </div>
       </div>
 
+      <!-- XDR PROTOTYPE VERTICAL SLICE -->
+      <div class="detail-pane" data-detail-pane="xdr" style="display:none;">
+        <div id="xdr-disabled" class="response-notice">XDR prototype data is unavailable. Enable local demo flags or run scripts/xdr_demo.py.</div>
+        <div class="xdr-grid">
+          <div class="detail-col">
+            <div class="detail-col-title">SENSOR FUSION</div>
+            <div id="xdr-sensors" class="xdr-sensors"><div class="dist-empty">No enrichment data.</div></div>
+          </div>
+          <div class="detail-col xdr-graph-panel">
+            <div class="detail-col-title">COMMUNICATION GRAPH <span id="xdr-campaign-score" class="xdr-score">N/A</span></div>
+            <div id="xdr-graph" class="xdr-graph"><div class="dist-empty">No graph data.</div></div>
+          </div>
+          <div class="detail-col">
+            <div class="detail-col-title">LLM TRIAGE <span class="detail-col-subtitle">advisory only</span></div>
+            <p id="xdr-triage-summary" class="xdr-summary">No triage data.</p>
+            <div id="xdr-techniques" class="xdr-list"></div>
+            <ol id="xdr-playbook" class="xdr-playbook"></ol>
+          </div>
+          <div class="detail-col">
+            <div class="detail-col-title">DRY-RUN RESPONSE LADDER</div>
+            <div class="detail-row"><span>Current step</span><strong id="xdr-response-step">NONE</strong></div>
+            <pre id="xdr-response-command" class="validation-detail-body">No response plan.</pre>
+            <label class="response-ack"><input id="xdr-operator-ack" type="checkbox"> Operator ACK for containment above RATE_LIMIT.</label>
+            <button id="btn-xdr-apply" class="btn btn-action" disabled>Apply Dry Run</button>
+            <button id="btn-xdr-rollback" class="btn btn-sm" disabled>Rollback Dry Run</button>
+            <div class="table-scroll-wrap xdr-audit-wrap"><table class="data-table"><thead><tr><th>Event</th><th>Step</th><th>Status</th></tr></thead><tbody id="xdr-audit"><tr class="empty-row"><td colspan="3">No audit entries.</td></tr></tbody></table></div>
+          </div>
+          <div class="detail-col xdr-deception-panel">
+            <div class="detail-col-title">DECEPTION</div>
+            <div class="table-scroll-wrap"><table class="data-table"><thead><tr><th>Timestamp</th><th>Source IP</th><th>User agent</th></tr></thead><tbody id="xdr-hits"><tr class="empty-row"><td colspan="3">No honeytoken hits.</td></tr></tbody></table></div>
+          </div>
+        </div>
+        <div id="xdr-error" class="response-message response-error" role="alert" aria-live="polite"></div>
+      </div>
+
+      <!-- OPERATOR-CONTROLLED FIREWALL RESPONSE -->
+      <div class="detail-pane" data-detail-pane="response" style="display:none;">
+        <div class="response-notice">LOCAL RESPONSE IS TEMPORARY AND OPERATOR-CONTROLLED. Forecasts never create rules; link-saturating DDoS requires upstream mitigation.</div>
+        <div class="detail-columns detail-columns-3">
+          <div class="detail-col">
+            <div class="detail-col-title">SCAN FIREWALL</div>
+            <div class="detail-row"><span>Platform / engine</span><span id="response-engine">N/A</span></div>
+            <div class="detail-row"><span>Privilege readiness</span><span id="response-privilege">N/A</span></div>
+            <div class="detail-row"><span>Namespace health</span><span id="response-health">NOT SCANNED</span></div>
+            <div class="detail-row"><span>Conflicts</span><span id="response-conflicts">N/A</span></div>
+            <button id="btn-response-scan" class="btn btn-action">Scan Firewall</button>
+          </div>
+          <div class="detail-col">
+            <div class="detail-col-title">SUGGESTED FIX</div>
+            <div class="detail-row"><span>Detection source</span><span id="response-source">N/A</span></div>
+            <div class="detail-row"><span>Attack class</span><span id="response-attack">N/A</span></div>
+            <div class="detail-row"><span>Eligibility</span><span id="response-eligibility">NO PLAN</span></div>
+            <div class="detail-row"><span>TTL</span><span><select id="response-ttl" aria-label="Temporary rule duration"><option value="5">5 min</option><option value="15" selected>15 min</option><option value="30">30 min</option><option value="60">60 min</option></select></span></div>
+            <button id="btn-response-plan" class="btn btn-action" disabled>Generate Preview</button>
+            <div id="response-limitations" class="response-message">Run a current prediction to request a response recommendation.</div>
+          </div>
+          <div class="detail-col">
+            <div class="detail-col-title">APPLY · VERIFY · ROLLBACK</div>
+            <label class="response-ack"><input id="response-apply-ack" type="checkbox"> I reviewed the immutable plan and exact traffic scope.</label>
+            <button id="btn-response-apply" class="btn btn-action" disabled>Apply Fix</button>
+            <button id="btn-response-verify" class="btn btn-sm" disabled>Verify Native Rule</button>
+            <label class="response-ack"><input id="response-rollback-ack" type="checkbox"> Remove only this action's NIDS-owned rules.</label>
+            <button id="btn-response-rollback" class="btn btn-sm" disabled>Rollback</button>
+            <div class="detail-row"><span>Action state</span><span id="response-action-state">N/A</span></div>
+            <div class="detail-row"><span>Native identifiers</span><span id="response-native-ids" class="detail-mono">N/A</span></div>
+          </div>
+        </div>
+        <div class="detail-columns response-lower-grid">
+          <div class="detail-col">
+            <div class="detail-col-title">PREVIEW</div>
+            <div class="detail-row"><span>Immutable plan hash</span><span id="response-plan-hash" class="detail-mono">N/A</span></div>
+            <pre id="response-preview" class="validation-detail-body response-preview">No plan generated.</pre>
+          </div>
+          <div class="detail-col">
+            <div class="detail-col-title">HISTORY</div>
+            <label class="response-filter-label" for="response-history-filter">Filter state</label>
+            <select id="response-history-filter"><option value="">All states</option><option>PROPOSED</option><option>APPLIED</option><option>VERIFIED</option><option>EXPIRED</option><option>ROLLED_BACK</option><option>APPLY_FAILED</option><option>VERIFY_FAILED</option><option>ROLLBACK_FAILED</option></select>
+            <div class="table-scroll-wrap response-history-wrap">
+              <table class="data-table"><thead><tr><th>Created</th><th>State</th><th>Actor</th><th>Action</th></tr></thead><tbody id="response-history"><tr class="empty-row"><td colspan="4">No response actions.</td></tr></tbody></table>
+            </div>
+            <div class="detail-col-title response-event-title">EVENT AUDIT <span id="response-event-action" class="detail-col-subtitle">select an action</span></div>
+            <label class="response-filter-label" for="response-event-filter">Filter event</label>
+            <select id="response-event-filter"><option value="">All events</option><option>DETECTED</option><option>PROPOSED</option><option>APPROVED</option><option>APPLYING</option><option>APPLIED</option><option>VERIFYING</option><option>VERIFIED</option><option>ROLLING_BACK</option><option>ROLLED_BACK</option><option>EXPIRED</option><option>APPLY_FAILED</option><option>VERIFY_FAILED</option><option>ROLLBACK_FAILED</option></select>
+            <div class="table-scroll-wrap response-history-wrap"><table class="data-table"><thead><tr><th>Time</th><th>State</th><th>Actor</th></tr></thead><tbody id="response-events"><tr class="empty-row"><td colspan="3">Select an action to inspect its append-only events.</td></tr></tbody></table></div>
+          </div>
+        </div>
+        <div id="response-error" class="response-message response-error" role="alert" aria-live="polite"></div>
+      </div>
+
     </div>
   </section>
 </main>
@@ -519,6 +610,6 @@
   </div>
 </div>
 
-<script src="app.js?v=phase6"></script>
+<script src="app.js?v=xdr1"></script>
 </body>
 </html>

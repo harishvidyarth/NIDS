@@ -8,7 +8,7 @@ from backend.lstm.dataset import cicids_ground_truth_state
 from backend.lstm_multistep.config import HORIZONS, SEQUENCE_LENGTH
 from backend.lstm_multistep.dataset import build_multistep_sequences, split_session_windows, validate_class_support
 from backend.lstm_multistep.evaluation import evaluate_horizons, onset_metrics, select_early_warning_threshold
-from backend.lstm_multistep.training import build_model
+from backend.lstm_multistep.training import build_model, forecast_timing
 from backend.temporal.schema import STATE_FEATURE_NAMES
 
 
@@ -57,6 +57,14 @@ def test_direct_model_output_probabilities_and_batching(tmp_path):
     restored = tf.keras.models.load_model(path, compile=False)
     restored_probabilities = restored.predict(batch, verbose=0)
     assert all(np.allclose(probabilities[key], restored_probabilities[key], atol=1e-6) for key in probabilities)
+
+
+def test_forecast_timing_uses_real_ten_second_windows():
+    assert forecast_timing([0.1, 0.4, 0.7], 0.5) == {
+        "hazard_curve": [0.1, 0.4, 0.7],
+        "time_to_attack_seconds": 30,
+    }
+    assert forecast_timing([0.1, 0.2], 0.5)["time_to_attack_seconds"] is None
 
 
 def test_threshold_selection_is_validation_only_and_tie_prefers_lower():
