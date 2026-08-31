@@ -1,4 +1,4 @@
-# NIDS: Network State Detection and Forecasting
+# NIDS: Network Detection, Forecasting and Controlled Response
 
 A network intrusion detection and next-window forecasting pipeline with a
 Wireshark-inspired desktop UI. Its primary path is:
@@ -32,6 +32,72 @@ Backend: FastAPI (`backend/api/main.py`) exposes this as a state machine —
 → PREDICTING → PREDICTION_COMPLETED`, or `ERROR` on any failure — and
 serves the static frontend. Frontend: plain HTML/CSS/JS
 (`frontend/`), no build step, polls the backend every ~1.2s.
+
+## Operator-controlled firewall response
+
+The **RESPONSE** tab turns a current deterministic detection into a temporary,
+auditable host-firewall proposal. It does not replace the NIDS: the detector
+supplies behavioral evidence and the firewall is only an enforcement target.
+The workflow is **Scan → Suggested Fix → Preview → History** in this prototype.
+The durable action lifecycle is present for future integration, but native
+Apply/Verify/Rollback capabilities are intentionally unavailable. Existing capture, ANN, temporal,
+LSTM, multistep and world-model paths are unchanged.
+
+Execution policy is deliberately narrow:
+
+- Only a current `PortScan`, single-source `DoS`, or bounded attributable
+  `DDoS` confirmed by `signature_verdict` can be executable. ANN-only results
+  remain lower-confidence recommendations. Forecasts can never create rules.
+- DDoS with missing sources or more than 64 sources is upstream-only guidance.
+  Even bounded local blocks do not mitigate a link already saturated by a
+  volumetric attack; use ISP/CDN/WAF filtering.
+- Source targets are parsed with Python `ipaddress`. Unspecified, loopback,
+  multicast, link-local, broadcast, local-interface, discovered gateway/DNS,
+  and configured management addresses are protected. Add site-specific DHCP,
+  management and infrastructure IPs to `response.protected_addresses` in
+  `config/config.json`.
+- Plans always specify a temporary 1–60 minute scope (15 minutes by default),
+  ready for a future independently validated helper contract.
+- Every plan, hash, evidence snapshot, state transition, actor, native rule
+  identifier, verification result and append-only event is stored in the local
+  `results/response.sqlite3` database. Pipeline Reset does not erase history.
+
+Supported adapter contracts:
+
+| Platform | Engine and ownership | Safe behavior |
+|---|---|---|
+| Linux | nftables preview for isolated `inet nids_response` ownership | Detects UFW/iptables only as compatibility information; never installs, purges, resets or flushes them |
+| Windows | PowerShell NetSecurity preview, `NIDS Response` group, action UUID names | No native command is executed |
+| macOS | PF anchor preview under `com.nids.response` | Never rewrites or flushes global PF configuration |
+
+Firewall scans are read-only and compare before/after NIDS-namespace
+fingerprints. The FastAPI application always constructs these adapters without
+a privileged helper, so setting an environment variable cannot enable native
+mutation in this prototype. The UI remains useful for scan, recommendation,
+preview and history and honestly reports that native Apply is unavailable. The
+separate XDR ladder below records dry-run apply/rollback events only.
+
+The server and CLI bind to `127.0.0.1` by default. Wildcard CORS is disabled.
+Response mutations require a per-process token, bootstrapped only to loopback
+clients and sent in `X-NIDS-Response-Token`; it is never placed in a URL or
+browser storage.
+
+Response API:
+
+```text
+GET  /api/response/capabilities
+POST /api/response/scan
+GET  /api/response/scans/{scan_id}
+POST /api/response/plans
+POST /api/response/plans/{plan_id}/apply
+POST /api/response/actions/{action_id}/verify
+POST /api/response/actions/{action_id}/rollback
+GET  /api/response/actions
+GET  /api/response/actions/{action_id}
+```
+
+The mutating endpoints remain as forward-compatible contracts but return a
+capability conflict because no executable helper is wired.
 
 ## Offline upload mode
 
@@ -417,6 +483,32 @@ states track the real pipeline stage, no browser console errors. Error
 paths verified: invalid interface (real `dumpcap` error surfaced, HTTP
 500), predicting with nothing extracted yet (HTTP 400), extracting a
 nonexistent PCAP (real "PCAP not found" error, pipeline → `ERROR`).
+
+## XDR prototype demo
+
+The default-off XDR vertical slice adds offline Zeek sensor fusion, optional
+34-field temporal display state (the trained models still receive the original
+28), deterministic communication-graph surprise scoring, advisory triage,
+deception canaries, and a graduated response ladder. The ladder is prototype
+dry-run code: it records the exact platform command and TTL rollback command but
+never executes either one.
+
+Run the existing backend, then populate all XDR panels with repository-local
+sample data:
+
+```bash
+.venv-lstm312/bin/python scripts/xdr_demo.py
+```
+
+Alternatively use `--serve` to start uvicorn with `.venv-lstm312`. Open the
+`XDR / CAMPAIGN` detail tab afterward. Configuration and every deferred
+production capability are documented in [PROTOTYPE.md](PROTOTYPE.md).
+
+Only an explicitly configured `xdr.llm.endpoint` may make an outbound request;
+the default triage path is deterministic and offline. The feature switches in
+`config/config.json` all default to false, so the existing detection pipeline
+and `/api/pipeline` response are unchanged. Local containment cannot fix a
+link-saturating DDoS; escalate those cases to ISP/CDN/upstream filtering.
 
 ## Known limitations
 
