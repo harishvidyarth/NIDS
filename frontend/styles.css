@@ -128,6 +128,13 @@ input[type="file"]::file-selector-button {
 }
 .error-banner-icon { color: var(--red); font-weight: 700; }
 .error-banner-title { font-weight: 700; color: var(--red); letter-spacing: 0.05em; }
+.error-banner-close {
+  margin-left: auto; border: 0; border-radius: 3px; padding: 0 5px;
+  background: transparent; color: currentColor; font: inherit; font-size: 17px;
+  line-height: 18px; cursor: pointer;
+}
+.error-banner-close:hover { background: rgba(23, 50, 77, 0.10); }
+.error-banner-close:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .error-banner.is-warning {
   background: #fff4d6; border-bottom-color: #e2c36a; color: var(--amber);
 }

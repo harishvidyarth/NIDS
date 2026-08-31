@@ -2187,6 +2187,7 @@ el("btn-classifier-metrics").addEventListener("click", loadClassifierMetrics);
 el("btn-extract").addEventListener("click", runExtract);
 el("btn-predict").addEventListener("click", runPredict);
 el("btn-reset").addEventListener("click", resetPipeline);
+el("error-banner-close").addEventListener("click", () => showError(null));
 el("btn-temporal").addEventListener("click", prepareTemporalDataset);
 el("btn-validate").addEventListener("click", runValidation);
 el("btn-download-report").addEventListener("click", downloadValidationReport);
