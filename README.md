@@ -33,6 +33,17 @@ Backend: FastAPI (`backend/api/main.py`) exposes this as a state machine —
 serves the static frontend. Frontend: plain HTML/CSS/JS
 (`frontend/`), no build step, polls the backend every ~1.2s.
 
+## Reproduce the world model
+
+Create the project virtual environment with `python3.12 -m venv backend/.venv`
+and install `backend/requirements.txt`. Set `NIDS_CICIDS2017_DIR` to the local
+CICIDS2017 CSV directory, then run `python scripts/nids.py worldmodel train`.
+For an explicitly recorded emergency promotion after a failed quality gate, add
+`--allow-ungated`. Inspect comparable held-out baselines with
+`python scripts/nids.py worldmodel benchmark`. Each versioned artifact lives in
+`artifacts/worldmodel/<version>/`; its `report.json` and `release_gate.json`
+record metrics and promotion eligibility.
+
 ## Operator-controlled firewall response
 
 The **RESPONSE** tab turns a current deterministic detection into a temporary,
