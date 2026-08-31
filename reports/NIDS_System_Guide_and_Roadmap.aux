@@ -1,0 +1,153 @@
+\relax 
+\providecommand\hyper@newdestlabel[2]{}
+\providecommand\HyField@AuxAddToFields[1]{}
+\providecommand\HyField@AuxAddToCoFields[2]{}
+\@writefile{toc}{\contentsline {section}{How to read this document}{3}{Doc-Start}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{PART I --- What NIDS does today}{4}{part*.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {1}The big picture}{4}{section.1}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces The whole pipeline. Everything runs locally; each arrow is a step a person or a timer triggers.}}{4}{figure.caption.2}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {1}{\ignorespaces The numbers that matter most, collected here and in Appendix~B.}}{4}{table.caption.3}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces The dashboard after analysing a capture. Top strip: the four pipeline stages. Left: a table of packets / flows / predictions. Right: detail panels. Bottom bar: live counters and the current verdict.}}{5}{figure.caption.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {2}Stage 1 --- Capturing packets}{5}{section.2}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces Capture state machine (\texttt  {capture.py}). \texttt  {check\_and\_finalize()} runs on every status poll and is the only place the duration and safety limits are enforced.}}{6}{figure.caption.5}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {2}{\ignorespaces Capture defaults, from \texttt  {backend/capture/capture.py}.}}{6}{table.caption.6}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces The live-capture panel before a run. Interface picker, Start/Stop, duration and packet counters, and a live packets-per-second sparkline once a capture is running.}}{6}{figure.caption.7}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {3}Stage 2 --- Turning packets into flows (CICFlowMeter)}{6}{section.3}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {5}{\ignorespaces Flow extraction. One conversation becomes one row of numbers.}}{7}{figure.caption.8}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {6}{\ignorespaces The extraction panel. For an uploaded CSV this step is skipped (the rows are already flows); for a capture it shows flow count, feature count and processing time. ``Feature space'' lists the 77 model features; ``Packet evidence'' is the separate Scapy pass below.}}{7}{figure.caption.9}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.1}Stage 2b --- Packet-level evidence}{7}{subsection.3.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {4}Stage 3 --- The neural-network classifier}{8}{section.4}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {7}{\ignorespaces Per-flow scoring (\texttt  {predict.py}).}}{8}{figure.caption.10}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.1}Stage 3b --- The signature layer}{8}{subsection.4.1}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {3}{\ignorespaces Signature rules. This layer never overwrites a real ANN call --- it only relabels flows the ANN left \texttt  {BENIGN} or \texttt  {INVALID\_FEATURES}, and it can clear the verdict gate for its class.}}{8}{table.caption.11}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.2}Stage 3c --- The verdict gate}{8}{subsection.4.2}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {8}{\ignorespaces The verdict gate. The test is on the attack class's \emph  {own} percentage of scored flows --- so a minority DoS is not promoted to red by unrelated DDoS flows in the same capture. Thresholds live in \texttt  {config/config.json} and can be retuned without touching code.}}{9}{figure.caption.12}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {9}{\ignorespaces A real verdict. This capture is 95\% benign with 10 DoS flows out of 348 (2.9\%). Because DoS's own share is well under 20\% and no signature fired, the hero reads amber \textbf  {SUSPICIOUS: DoS?}, not red. The class-distribution bars, ``no signature rule fired'', and the SHAP feature explanation are all on this one panel.}}{9}{figure.caption.13}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.3}Stage 3d --- Explaining a prediction}{9}{subsection.4.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.4}Stage 3e --- Classifier quality}{10}{subsection.4.4}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {10}{\ignorespaces Per-flow predictions: source, destination, protocol, ANN state, confidence. Row 5 here is a DDoS flow scored at 0.9998.}}{10}{figure.caption.14}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {11}{\ignorespaces The raw feature values behind each flow --- duration, packet and byte counts each direction, rates, inter-arrival timing, and the TCP-flag bitmask.}}{11}{figure.caption.15}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {5}Stage 4 --- Building the time-series dataset}{11}{section.5}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {12}{\ignorespaces Temporal dataset preparation (\texttt  {backend/temporal/}). This package never trains a model --- it only prepares data.}}{12}{figure.caption.16}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {13}{\ignorespaces The six-step temporal pipeline on the dashboard, with the run summary: 10 windows, 28 state features, 9 transitions, 5 sequences, a 7/2/1 window split. Short captures produce few windows --- the panel says so plainly rather than padding.}}{12}{figure.caption.17}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {14}{\ignorespaces The windows over time. Bar height is flow count, colour is the dominant class, a red tick marks a window with any attack flow. Timestamps are real (here 09:39:19 to 09:40:49).}}{13}{figure.caption.18}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.1}Stage 4b --- The 10-check validation / leakage audit}{13}{subsection.5.1}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {15}{\ignorespaces A validation run: 8 PASS, 2 WARNING, 0 FAIL; ``NO CROSS-SPLIT LEAKAGE DETECTED''. The Timestamps WARNING here is a benign ordering note, not a defect.}}{14}{figure.caption.19}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {6}Stage 5 --- Forecasting the next window (one-step LSTM)}{14}{section.6}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {16}{\ignorespaces One-step forecaster (\texttt  {backend/lstm/}). Two heads from one shared body.}}{15}{figure.caption.20}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {17}{\ignorespaces A live one-step forecast: current state BENIGN, predicted BENIGN, attack alert NONE, confidence 52\%. The evaluation table compares the LSTM to persistence and logistic-regression baselines; the row-order-proxy caveat is shown at the top of the panel.}}{15}{figure.caption.21}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.1}Stage 5b --- The multi-step forecast (H1--H6)}{15}{subsection.6.1}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {18}{\ignorespaces Multi-step: ``EARLY WARNING: attack probability reaches 60\% at H1'', with the per-class probability trajectory across the six horizons.}}{16}{figure.caption.22}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.2}Stage 5c --- The infiltration forecast (world model)}{16}{subsection.6.2}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {19}{\ignorespaces The rollout loop. Steps after the first are conditioned on the model's own imagined states, not on real data --- hence ``forward-simulating world model'' rather than ``one-step classifier''.}}{16}{figure.caption.23}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {20}{\ignorespaces Infiltration forecast: ``infiltration probability reaches 60\% at step 1 ($\sim $10\,s ahead)'', with the probability curve over the K steps and the current ATT\&CK stage.}}{17}{figure.caption.24}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {7}Stage 6 --- MITRE ATT\&CK context}{17}{section.7}\protected@file@percent }
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {1}{\ignorespaces \texttt  {nids mitre map --state PortScan --prob PortScan=0.7 --prob BENIGN=0.3} (abridged)}}{17}{lstlisting.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {8}Stage 7 --- The dashboard, panel by panel}{18}{section.8}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {4}{\ignorespaces Dashboard map. Element IDs and the exact render function for each are in Part~II.}}{18}{table.caption.25}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {21}{\ignorespaces The RESPONSE panel --- an early active-response arm. It scans the local firewall (here \texttt  {macos / PF}), turns a detection into a \emph  {suggested} rule with a TTL, and gates apply / verify / rollback behind an explicit operator checkbox. The banner is blunt: ``LOCAL RESPONSE IS TEMPORARY AND OPERATOR-CONTROLLED. Forecasts never create rules; link-saturating DDoS requires upstream mitigation.'' Protected addresses are allow-listed in \texttt  {config.json}.}}{19}{figure.caption.26}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {9}Stage 8 --- The command line}{19}{section.9}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {5}{\ignorespaces The \texttt  {nids} CLI. Exit codes: 0 ok, 2 usage, 3 missing artifact/dataset, 4 runtime failure, 130 interrupted.}}{20}{table.caption.27}\protected@file@percent }
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {2}{\ignorespaces \texttt  {nids pipeline show} on the live repository}}{20}{lstlisting.2}\protected@file@percent }
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {3}{\ignorespaces \texttt  {nids benchmark} --- one-step LSTM vs logistic regression, validation split}}{20}{lstlisting.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {10}Project history}{21}{section.10}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {6}{\ignorespaces From a broken single notebook to an offline capture$\to $forecast pipeline with a CLI, a SHAP service and a restrained ATT\&CK layer.}}{21}{table.caption.28}\protected@file@percent }
+\gdef \LT@i {\LT@entry 
+    {1}{131.19194pt}\LT@entry 
+    {1}{88.82234pt}\LT@entry 
+    {1}{210.85974pt}}
+\gdef \LT@ii {\LT@entry 
+    {1}{131.19194pt}\LT@entry 
+    {1}{88.82234pt}\LT@entry 
+    {1}{210.85974pt}}
+\@writefile{toc}{\contentsline {section}{PART II --- Function index}{22}{part*.29}\protected@file@percent }
+\gdef \LT@iii {\LT@entry 
+    {1}{131.19194pt}\LT@entry 
+    {1}{88.82234pt}\LT@entry 
+    {1}{210.85974pt}}
+\gdef \LT@iv {\LT@entry 
+    {1}{131.19194pt}\LT@entry 
+    {1}{88.82234pt}\LT@entry 
+    {1}{210.85974pt}}
+\gdef \LT@v {\LT@entry 
+    {1}{131.19194pt}\LT@entry 
+    {1}{88.82234pt}\LT@entry 
+    {1}{210.85974pt}}
+\gdef \LT@vi {\LT@entry 
+    {1}{131.19194pt}\LT@entry 
+    {1}{88.82234pt}\LT@entry 
+    {1}{210.85974pt}}
+\gdef \LT@vii {\LT@entry 
+    {1}{131.19194pt}\LT@entry 
+    {1}{88.82234pt}\LT@entry 
+    {1}{210.85974pt}}
+\gdef \LT@viii {\LT@entry 
+    {1}{131.19194pt}\LT@entry 
+    {1}{88.82234pt}\LT@entry 
+    {1}{210.85974pt}}
+\gdef \LT@ix {\LT@entry 
+    {1}{131.19194pt}\LT@entry 
+    {1}{88.82234pt}\LT@entry 
+    {1}{210.85974pt}}
+\gdef \LT@x {\LT@entry 
+    {1}{131.19194pt}\LT@entry 
+    {1}{88.82234pt}\LT@entry 
+    {1}{210.85974pt}}
+\gdef \LT@xi {\LT@entry 
+    {1}{131.19194pt}\LT@entry 
+    {1}{88.82234pt}\LT@entry 
+    {1}{210.85974pt}}
+\gdef \LT@xii {\LT@entry 
+    {1}{131.19194pt}\LT@entry 
+    {1}{88.82234pt}\LT@entry 
+    {1}{210.85974pt}}
+\gdef \LT@xiii {\LT@entry 
+    {1}{131.19194pt}\LT@entry 
+    {1}{88.82234pt}\LT@entry 
+    {1}{210.85974pt}}
+\@writefile{toc}{\contentsline {section}{PART III --- Attacks and how this app handles them}{28}{part*.30}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {11}The three levers}{28}{section.11}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {12}Attack-by-attack}{28}{section.12}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {13}Coverage --- an honest table}{33}{section.13}\protected@file@percent }
+\gdef \LT@xiv {\LT@entry 
+    {1}{79.97733pt}\LT@entry 
+    {1}{157.10922pt}\LT@entry 
+    {1}{103.04872pt}\LT@entry 
+    {1}{99.89418pt}}
+\@writefile{toc}{\contentsline {section}{PART IV --- Real attacks in India}{34}{part*.33}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{PART V --- The 2026 AI-era landscape}{36}{part*.34}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {14}Can the present model and data solve the coverage gap?}{36}{section.14}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {15}Direction of the field}{36}{section.15}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {16}Open-source projects that have already solved large parts}{37}{section.16}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {22}{\ignorespaces Target architecture. Coverage comes from adopting solved sensor/SIEM pieces; the forecasting layer stays ours.}}{37}{figure.caption.36}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{PART VI --- The roadmap}{38}{part*.37}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {17}Step 1 --- Widen the front door}{38}{section.17}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {18}Step 2 --- Refresh the detector}{38}{section.18}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {19}Step 3 --- Track C: communication-graph GNN}{38}{section.19}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {23}{\ignorespaces Track C. Almost every multi-stage attack shows up as a new or surprising edge in the host graph before it shows up in any single flow.}}{38}{figure.caption.38}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {20}Step 4 --- Tracks E + G: real-time forecasting + LLM triage}{38}{section.20}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {21}Step 5 --- Tracks H + I: deception + graduated response}{38}{section.21}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {24}{\ignorespaces Track I. Escalation is gated: anything above rate-limit needs an operator, every action is logged, and everything rolls back on a timer.}}{39}{figure.caption.39}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {22}Step 6 --- Package for enterprise}{39}{section.22}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {23}What this is not}{39}{section.23}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{PART VII --- From NIDS to XDR}{40}{part*.40}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {24}Why PCAP alone is blind}{40}{section.24}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {21}{\ignorespaces Attack-visibility breakdown. NIDS today lives in the ``High'' row plus the metadata half of ``Partial''.}}{40}{table.caption.41}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {25}The SOC Visibility Triad + XDR fusion}{40}{section.25}\protected@file@percent }
+\gdef \LT@xv {\LT@entry 
+    {1}{82.82234pt}\LT@entry 
+    {1}{142.88284pt}\LT@entry 
+    {1}{193.78836pt}}
+\@writefile{toc}{\contentsline {section}{\numberline {26}The architecture --- six tiers}{41}{section.26}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {25}{\ignorespaces NIDS stays the network sensor and the forecasting brain (tier 4). The Triad adds three more collection streams; a normalise + store layer gives one schema; response is a dedicated tier.}}{41}{figure.caption.42}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {27}What to install --- open-source tools, and where each plugs into NIDS}{41}{section.27}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {28}XDR-in-a-box --- if you want less assembly}{42}{section.28}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {29}The smallest first step for this repo}{42}{section.29}\protected@file@percent }
+\gdef \LT@xvi {\LT@entry 
+    {1}{205.16928pt}\LT@entry 
+    {1}{205.16928pt}}
+\@writefile{toc}{\contentsline {section}{Appendices}{43}{part*.43}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{Appendix A --- Glossary}{43}{section*.44}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{Appendix B --- Key numbers}{43}{section*.44}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{Appendix C --- Sources}{44}{table.23}\protected@file@percent }
+\gdef \@abspage@last{46}

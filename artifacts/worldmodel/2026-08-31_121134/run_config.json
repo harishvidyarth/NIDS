@@ -1,0 +1,24 @@
+{
+  "seed": 42,
+  "sequence_length": 5,
+  "forecast_k": 6,
+  "hidden_dimension": 64,
+  "epochs": 30,
+  "batch_size": 256,
+  "loss_weights": {
+    "class_probs": 1.0,
+    "next_state": 0.3
+  },
+  "split_strategy": "per-session chronological segments",
+  "boundary_policy": "deterministic chronological",
+  "embargo_windows": 6,
+  "dataset_cache_manifest_sha256": "cce6115b0a63b04d9be2f8d68ab9e269d9af7dec4a65f814be83e57db681e926",
+  "versions": {
+    "python": "3.12.13",
+    "tensorflow": "2.18.0",
+    "numpy": "1.26.4",
+    "scikit-learn": "1.5.2",
+    "pandas": "2.2.3",
+    "joblib": "1.4.2"
+  }
+}

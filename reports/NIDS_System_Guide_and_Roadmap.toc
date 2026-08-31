@@ -1,0 +1,49 @@
+\contentsline {section}{How to read this document}{3}{Doc-Start}%
+\contentsline {section}{PART I --- What NIDS does today}{4}{part*.1}%
+\contentsline {section}{\numberline {1}The big picture}{4}{section.1}%
+\contentsline {section}{\numberline {2}Stage 1 --- Capturing packets}{5}{section.2}%
+\contentsline {section}{\numberline {3}Stage 2 --- Turning packets into flows (CICFlowMeter)}{6}{section.3}%
+\contentsline {subsection}{\numberline {3.1}Stage 2b --- Packet-level evidence}{7}{subsection.3.1}%
+\contentsline {section}{\numberline {4}Stage 3 --- The neural-network classifier}{8}{section.4}%
+\contentsline {subsection}{\numberline {4.1}Stage 3b --- The signature layer}{8}{subsection.4.1}%
+\contentsline {subsection}{\numberline {4.2}Stage 3c --- The verdict gate}{8}{subsection.4.2}%
+\contentsline {subsection}{\numberline {4.3}Stage 3d --- Explaining a prediction}{9}{subsection.4.3}%
+\contentsline {subsection}{\numberline {4.4}Stage 3e --- Classifier quality}{10}{subsection.4.4}%
+\contentsline {section}{\numberline {5}Stage 4 --- Building the time-series dataset}{11}{section.5}%
+\contentsline {subsection}{\numberline {5.1}Stage 4b --- The 10-check validation / leakage audit}{13}{subsection.5.1}%
+\contentsline {section}{\numberline {6}Stage 5 --- Forecasting the next window (one-step LSTM)}{14}{section.6}%
+\contentsline {subsection}{\numberline {6.1}Stage 5b --- The multi-step forecast (H1--H6)}{15}{subsection.6.1}%
+\contentsline {subsection}{\numberline {6.2}Stage 5c --- The infiltration forecast (world model)}{16}{subsection.6.2}%
+\contentsline {section}{\numberline {7}Stage 6 --- MITRE ATT\&CK context}{17}{section.7}%
+\contentsline {section}{\numberline {8}Stage 7 --- The dashboard, panel by panel}{18}{section.8}%
+\contentsline {section}{\numberline {9}Stage 8 --- The command line}{19}{section.9}%
+\contentsline {section}{\numberline {10}Project history}{21}{section.10}%
+\contentsline {section}{PART II --- Function index}{22}{part*.29}%
+\contentsline {section}{PART III --- Attacks and how this app handles them}{28}{part*.30}%
+\contentsline {section}{\numberline {11}The three levers}{28}{section.11}%
+\contentsline {section}{\numberline {12}Attack-by-attack}{28}{section.12}%
+\contentsline {section}{\numberline {13}Coverage --- an honest table}{33}{section.13}%
+\contentsline {section}{PART IV --- Real attacks in India}{34}{part*.33}%
+\contentsline {section}{PART V --- The 2026 AI-era landscape}{36}{part*.34}%
+\contentsline {section}{\numberline {14}Can the present model and data solve the coverage gap?}{36}{section.14}%
+\contentsline {section}{\numberline {15}Direction of the field}{36}{section.15}%
+\contentsline {section}{\numberline {16}Open-source projects that have already solved large parts}{37}{section.16}%
+\contentsline {section}{PART VI --- The roadmap}{38}{part*.37}%
+\contentsline {section}{\numberline {17}Step 1 --- Widen the front door}{38}{section.17}%
+\contentsline {section}{\numberline {18}Step 2 --- Refresh the detector}{38}{section.18}%
+\contentsline {section}{\numberline {19}Step 3 --- Track C: communication-graph GNN}{38}{section.19}%
+\contentsline {section}{\numberline {20}Step 4 --- Tracks E + G: real-time forecasting + LLM triage}{38}{section.20}%
+\contentsline {section}{\numberline {21}Step 5 --- Tracks H + I: deception + graduated response}{38}{section.21}%
+\contentsline {section}{\numberline {22}Step 6 --- Package for enterprise}{39}{section.22}%
+\contentsline {section}{\numberline {23}What this is not}{39}{section.23}%
+\contentsline {section}{PART VII --- From NIDS to XDR}{40}{part*.40}%
+\contentsline {section}{\numberline {24}Why PCAP alone is blind}{40}{section.24}%
+\contentsline {section}{\numberline {25}The SOC Visibility Triad + XDR fusion}{40}{section.25}%
+\contentsline {section}{\numberline {26}The architecture --- six tiers}{41}{section.26}%
+\contentsline {section}{\numberline {27}What to install --- open-source tools, and where each plugs into NIDS}{41}{section.27}%
+\contentsline {section}{\numberline {28}XDR-in-a-box --- if you want less assembly}{42}{section.28}%
+\contentsline {section}{\numberline {29}The smallest first step for this repo}{42}{section.29}%
+\contentsline {section}{Appendices}{43}{part*.43}%
+\contentsline {subsection}{Appendix A --- Glossary}{43}{section*.44}%
+\contentsline {subsection}{Appendix B --- Key numbers}{43}{section*.44}%
+\contentsline {subsection}{Appendix C --- Sources}{44}{table.23}%
