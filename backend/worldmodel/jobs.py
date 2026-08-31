@@ -54,7 +54,7 @@ def start_training(force_rebuild: bool = False, allow_ungated: bool = False) -> 
         ctx = multiprocessing.get_context("spawn")
         _process = ctx.Process(target=_worker, args=(bool(force_rebuild), bool(allow_ungated)), daemon=True)
         _process.start()
-        return write_status(**_default_status(), stage="starting", pid=_process.pid)
+        return write_status(stage="starting", pid=_process.pid, evaluation_status=None, error=None)
 
 
 __all__ = ["forecast", "read_status", "start_training", "write_status"]
