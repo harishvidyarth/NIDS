@@ -28,16 +28,16 @@ Milestones tab and the calendar below compresses to hit it first.
 
 | Member | Skill | Role | Owns (PS req + deviations) |
 |---|---|---|---|
-| **Jayakumar** | Linux networking (`jayakumar-hacker`) | Data & Features Lead | R1, D1 (packet/PCAP path), D2 (Recon label) |
-| **Harish Vidyarth N** | ML / PyTorch; repo admin (`harishvidyarthcsecs`) | Model & Forecast Lead | R2, R7, D4 (release gate); CI, branch protection, release tag |
-| **Archana D** | AI/DS, Power BI | Explainability & Evaluation Lead | R3, R4, R5, D3 (generalization write-up), D6; the 2-page architecture doc (E3) |
-| **Kaviya V** | AI prototype dev; **Team Lead** (`kaviya` branch) | Platform & Demo Lead + PM | R6; `docker compose` one-command demo; STIX-lite alert + SOC PDF; owns Milestones tab + daily-report enforcement |
-| **Manjari** | Analysis, testing, offensive testing | QA & Red-Team Lead | Fresh-machine install test; adversarial / unseen-attack testing feeding D3; pytest coverage on the new packet path; judge Q&A doc |
-| **Sujitha** | PPT, frontend UI/UX | Media & Submission Lead | E1 (repo public / Drive link, D5), E2 (README polish), E4 (2-min video), E5 (5-slide deck); cockpit UI/UX polish |
+| **Harish Vidyarth N** | ML / PyTorch; repo admin (`harishvidyarth`) | **Development** — model & forecast core | R2, R7, D4 (release gate); CI, branch protection, release tag; **E1 + D5** (repo public / Drive link); submits on the portal; mentors Manjari on the attack side |
+| **Kaviya V** | AI prototype dev; **Team Lead** (`kaviya` branch) | **Development** — platform core + PM | R6; FastAPI backend + no-build SOC UI; `docker compose` one-command demo; STIX-lite alert + SOC PDF; **E2** (README + setup); owns Milestones tab + daily-report enforcement |
+| **Jayakumar** | Linux networking (`jayakumar-hacker`) | **Prototype** — data & packet path | R1, D1 (packet/PCAP path), D2 (Recon label); wires the end-to-end demo prototype |
+| **Archana D** | AI/DS, Power BI | **Prototype** — explainability & evaluation | R3, R4, R5, D3 (generalization write-up), D6; the 2-page architecture doc (E3); prototype output panels; drafts the portal submission text |
+| **Manjari** | Reading/writing/analysis; learning offensive testing | **Pitch + Red-Team (in training)** | Delivers the 5-slide pitch + judge Q&A; runs attack scenarios against the prototype to produce unseen-attack evidence for **D3** (mentored by Harish + Jayakumar — see section 6) |
+| **Sujitha** | Canva, PPT, UI/UX — **does not use git** | **Media & Design** | **E4** (2-min demo video, edited in Canva / CapCut) and **E5** (5-slide deck in Canva); SOC-UI mockups in Canva/Figma for a dev to implement; diagram polish. Hands final files to the team — never touches the repo. |
 
 Every PS requirement (R1–R8) and every deviation (D1–D6) has exactly one owner.
 R8 (enterprise / CII framing) is a shared narrative task led by Archana in the
-architecture doc and Sujitha in the deck.
+architecture doc and reflected by Sujitha in the deck.
 
 ---
 
@@ -45,12 +45,12 @@ architecture doc and Sujitha in the deck.
 
 | Phase | Window | Goal | Lead(s) |
 |---|---|---|---|
-| 0 | Sep 1 | Tracker sheet live; PS saved; roles locked; commit + push the ~67-file WIP; tag `v0.3-pre-sih` | Kaviya, Sujitha, Harish |
-| 1 | Sep 1–6 | **D1** packet/PCAP path *trained* (not gated) + **D2** Recon label; **D4** release gate green | Jayakumar, Harish |
-| 2 | Sep 7–11 | **D3** generalization write-up (train CIC → test CTU-13 / DARPA, honest); final benchmark table (R7); 2-page architecture doc (E3, resolves **D6**) | Archana (+ Jayakumar, Harish) |
-| 3 | Sep 12–15 | 2-min demo video (E4); 5-slide deck (E5); `docker compose up` one-command demo verified on a clean machine; UI/UX polish | Sujitha, Kaviya, Manjari |
-| 4 | Sep 16–18 | Buffer + polish; judge Q&A doc; SIH portal submission text; **repo public / Drive code link** (E1, **D5**) | Sujitha, Manjari, all |
-| — | **Sep 19** | **Submit on the SIH portal** | Sujitha (Harish confirms) |
+| 0 | Sep 1 | Tracker sheet live; PS saved; roles locked; commit + push the WIP; tag `v0.3-pre-sih` | Kaviya, Harish |
+| 1 | Sep 1–6 | **D1** packet/PCAP path *trained* (not gated) + **D2** Recon label; **D4** release gate green | Jayakumar (D1/D2), Harish + Kaviya (D4) |
+| 2 | Sep 7–11 | **D3** generalization write-up (honest domain-shift); final benchmark table (R7); 2-page architecture doc (E3, resolves **D6**); prototype wired end-to-end | Archana, Jayakumar |
+| 3 | Sep 12–15 | 2-min demo video (E4 — Sujitha, Canva); 5-slide deck (E5 — Sujitha, Canva); `docker compose up` one-command demo on a clean machine; Manjari attack-training run | Sujitha (deck/video), Kaviya, Manjari |
+| 4 | Sep 16–18 | Buffer + polish; judge Q&A prep; portal submission text (Archana drafts); **repo public / Drive code link** (E1, **D5** — Harish); pitch dry-run (Manjari) | Harish, Archana, Manjari |
+| — | **Sep 19** | **Submit on the SIH portal** | Harish |
 
 Dependency: Phases 2–4 assume Phase 1 lands on time. If D1 or D4 slips past
 Sep 6, Kaviya cuts the GNN stretch and any non-blocking polish first.
@@ -93,5 +93,44 @@ Each item both closes a deviation and strengthens a USP.
 7. **Tamper-evident prediction log** (hash-chained JSONL) — a lightweight
    offline answer to competitors' blockchain audit trail; nice-to-have.
 
-Out of scope for this sprint: the sibling `NIDS` repo, live firewall response,
-real eBPF sensors, federated learning.
+Out of scope for this sprint: `network-attack-forecasting` (retired — features
+being ported per `docs/REPO_SWITCH.md`), real eBPF sensors, federated learning.
+The dry-run firewall response module stays (demo-only, nothing auto-applied).
+
+---
+
+## 6. Teaching Manjari to attack (red-team, in training)
+
+Goal: Manjari can, by Phase 3, run a repeatable set of attack scenarios against
+the running prototype and read the output — this produces the "unseen attack"
+evidence for **D3** and prepares her for judge Q&A.
+
+**Mentors:** Harish (what the model sees / how to read a forecast) + Jayakumar
+(the tooling / safe lab setup).
+
+**Lab rules:** everything on `localhost` or a throwaway VM / an isolated lab
+subnet the team controls. Never scan or flood any network, host, or service the
+team does not own. Capture to pcap, replay into the prototype offline.
+
+**Session 1 (~90 min, by Sep 8) — recon + scan:**
+- `nmap -sS -T4 localhost` and `-sV`, `-p-` — watch a Reconnaissance window
+  appear in the forecast (validates **D2**).
+- `nmap` timing templates `-T2` vs `-T5` — see how a slow scan hides from
+  flow thresholds but shows in packet-level timing features.
+- Record each run as a pcap in `pcaps/redteam/`.
+
+**Session 2 (~90 min, by Sep 11) — flood + replay:**
+- `hping3 --flood -S -p 80 <lab-target>` (SYN flood) and a UDP flood — watch
+  the infiltration-probability curve climb and the MITRE stage move to Impact.
+- Replay a held-out attack family from CTU-13 / CICIoT2023 that was **not** in
+  training, through the offline upload path — this is the D3 generalization run.
+- She writes 1 paragraph per scenario: what she did, what the forecast showed,
+  where it was wrong.
+
+**Deliverable:** `docs/REDTEAM_SCENARIOS.md` — the commands, the pcaps, the
+observed vs expected forecast per scenario. Feeds `docs/SIH_COMPLETION_ANALYSIS.md`
+D3 and the judge Q&A doc.
+
+**Tools:** `nmap`, `hping3` (or `scapy` for custom packets), `tcpdump` for
+capture, the prototype's own file-upload replay path. All already installable on
+the team's Linux boxes; Jayakumar sets up the lab VM.
