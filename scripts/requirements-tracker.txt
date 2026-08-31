@@ -1,0 +1,5 @@
+# Dependencies for scripts/build_sih_tracker.py (SIH26153 team tracker sheet).
+# Install into the repo venv:  .venv/bin/pip install -r scripts/requirements-tracker.txt
+google-api-python-client>=2.100
+google-auth-oauthlib>=1.2
+google-auth>=2.30

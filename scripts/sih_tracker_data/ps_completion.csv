@@ -1,0 +1,19 @@
+Metric,Value,,,,,,
+Weighted core completion %,"=ROUND(SUMPRODUCT(D6:D12,E6:E12)/SUM(D6:D12),0)",,,,,,
+,,,,,,,
+Core requirements (R1-R7),,,,,,,
+ID,Requirement,Owner,Weight,% done,Weighted,Evidence,Notes
+R1,Feature pipeline: flow CSV + packet/PCAP -> normalised matrix,Jayakumar,20,60,=D6*E6/100,windows.parquet; packet_features.py,packet path trained only on DARPA-98; canonical v2 untrained (D1)
+R2,"Trained world model (dynamics, not classifier) + scripts + weights + config",Harish,25,75,=D7*E7/100,lstm_weights.pt; train.py; config.yaml,release_gate.passed=false (D4)
+R3,Supervised dynamics learning; generalises to unseen attacks,Archana,15,45,=D8*E8/100,CTU-13 cross-dataset run,LSTM 0.51 < baseline 0.63 macro-F1 (D3)
+R4,Infiltration engine: K-step sim -> prob timeline + MITRE stage + top features,Archana,15,80,=D9*E9/100,rollout() K=5; mitre.py; attention+SHAP,"4 stages only, no Reconnaissance (D2)"
+R5,"Explainability per prediction (SHAP or attention), not black-box",Archana,8,90,=D10*E10/100,attention weights + shap.LinearExplainer,SHAP on LogReg proxy (documented)
+R6,"Offline demo (Streamlit/Flask/CLI), PCAP or CSV, timeline+flags+stage",Kaviya,10,70,=D11*E11/100,app/app.py; app/api.py; cli.py,PCAP input -> readiness failure (D1)
+R7,Benchmark vs logistic-regression baseline (F1/P/R/FPR),Harish,7,80,=D12*E12/100,docs/SUBMISSION.md benchmark table,reconcile with failing release gate
+,,,,,,,
+"Deliverable packaging (E1-E5) — tracked, not in the core rollup",,,,,,,
+E1,Source code link (GitHub/Drive),Sujitha,,40,,repo private,make public / Drive zip (D5)
+E2,README with setup,Sujitha,,95,,README.md; README-OPS.md; DEMO_RUNBOOK.md,polish pass
+E3,Architecture doc (max 2 pages),Archana,,85,,docs/ARCHITECTURE_NOTE.md,trim to 2 pp; single state story (D6)
+E4,Demo video (max 2 min),Sujitha,,45,,docs/DEMO_VIDEO_SCRIPT.md,recording unverified
+E5,Technical presentation (max 5 slides),Sujitha,,55,,docs/SLIDES.md,deck unverified

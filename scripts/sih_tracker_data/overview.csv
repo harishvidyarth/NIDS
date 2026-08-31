@@ -1,0 +1,17 @@
+Field,Value
+PS Number,SIH26153
+Title,AI based Network Attack Forecasting from Network Traffic Data
+Organisation,National Technical Research Organisation (NTRO)
+Category / Theme,Software / Blockchain & Cybersecurity
+Idea submission deadline,2026-09-20
+Team working cutoff,2026-09-19
+Days left to deadline,"=DATE(2026,9,20)-TODAY()"
+Repo,github.com/harishvidyarthcsecs/network-attack-forecasting (private)
+Public code link (E1),TBD — Sujitha
+Demo video link (E4),TBD — Sujitha
+Slides link (E5),TBD — Sujitha
+Tracker owner / PM,Kaviya V
+Current core completion %,='PS Completion'!B2
+USP 1,"Production-grade MLOps spine (release gate, drift, shadow retrain, honest negatives)"
+USP 2,4 real dataset adapters + published cross-dataset generalisation evidence
+USP 3,End-to-end defender workflow: forecast -> MITRE stage -> attention+SHAP -> STIX-lite alert + SOC PDF

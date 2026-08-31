@@ -1,0 +1,8 @@
+Risk,Impact,Likelihood,Mitigation,Owner
+D1 or D4 slips past Sep 6,High — cascades into every later phase,Medium,Cut the GNN stretch + non-blocking polish first; daily check at standup,Kaviya
+Manjari still learning offensive testing at demo time,Medium — weak D3 attack evidence + shaky Q&A,Medium,Structured attack-training plan in docs/SIH_TEAM_PLAN.md section 6; Harish + Jayakumar pair with her twice before Phase 3; canned scenario scripts committed,Harish
+Release gate can't be made green in time,High — credibility hit under evaluation,Medium,Ship with the honest failing report + a documented remediation plan rather than hiding it,Harish
+Cross-dataset generalisation stays a net loss,Medium — weakens R3 claim,High,Report honestly as domain shift + scoped future work; do not overclaim in the deck,Archana
+Demo video / deck started too late,Medium — rushed E4/E5,Medium,Hard-schedule Phase 3 Sep 12-15; script + slide content already written,Sujitha
+Repo stays private at submission,High — E1 fails outright,Low,Phase 4 checklist item with Harish as admin; decision recorded in Milestones tab,Sujitha
+Two dozen teams ship the same reference design,Medium — blends in,High,"Lead the pitch with the MLOps spine + generalisation evidence, not a bigger single-dataset F1",Kaviya

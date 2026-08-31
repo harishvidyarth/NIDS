@@ -1,0 +1,7 @@
+Phase,Window,Goal,Owner,Status,Evidence link
+0,Sep 1,Tracker sheet live; PS saved; roles locked; commit + push the WIP; tag v0.3-pre-sih,Kaviya / Harish / Sujitha,Not started,
+1,Sep 1-6,D1 packet/PCAP path trained (not gated) + D2 Recon label; D4 release gate green,"Jayakumar (D1/D2) / Harish + Kaviya (D4, dev)",Not started,
+2,Sep 7-11,"D3 generalisation write-up; final benchmark (R7); 2-page architecture doc (E3, resolves D6); prototype wired end-to-end",Archana / Jayakumar,Not started,
+3,Sep 12-15,2-min demo video (E4); 5-slide deck (E5); docker compose one-command demo on a clean machine; Manjari attack-training run,Sujitha (deck/video) / Kaviya / Manjari,Not started,
+4,Sep 16-18,"Buffer + polish; judge Q&A prep; portal submission text; repo public / Drive link (E1, D5); pitch dry-run",Manjari (pitch) / Sujitha / all,Not started,
+Submit,Sep 19,Submit on the SIH portal (1-day buffer before 20 Sep),Sujitha (Harish confirms),Not started,
